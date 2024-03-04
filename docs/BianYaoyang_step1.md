@@ -89,8 +89,10 @@ riscv64-unknown-elf-ld kernel/entry.o -T kernel/kernel.ld -o kernel/kernel -z ma
 ### 将用户文件写入磁盘
 
 先创建一个空的fs.img磁盘映像
-
+``` shell
 dd if=/dev/zero of=fs.img bs=1M count=256
+```
+
 
 ### 运行QEMU
 
