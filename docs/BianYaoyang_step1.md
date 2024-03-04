@@ -2,14 +2,11 @@
 
 第一步是至少能跑起来。
 
+实现一个什么也不做的内核，并且在qemu上能运行和调试。
+
+为了确保内核真实运行，我们令寄存器a0加1，然后使用gdb调试
+
 学习https://github.com/mit-pdos/xv6-riscv/
-
-## QEMU参数
-
-QEMUOPTS = -machine virt -bios none -kernel $K/kernel -m 128M -smp $(CPUS) -nographic
-QEMUOPTS += -global virtio-mmio.force-legacy=false
-QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0
-QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
 ## 必须文件
 
@@ -44,8 +41,6 @@ kernel.ld 保证entry.S / _entry 在 0x80000000 * where qemu's -kernel jumps.
 ### SECTION {}
 
 指定段的链接规则
-
-
 
 ### . = (ADDRESS);
 
@@ -85,9 +80,11 @@ name可以包含*作为通配符
 
 ### 编译内核
 
-riscv64-unknown-elf-gcc -c kernel/entry.S -o kernel/entry.o
+``` shell
+riscv64-unknown-elf-gcc -c kernel/entry.S -o kernel/entry.o -Wall -Werror -O -fno-omit-frame-pointer -ggdb -gdwarf-2 -MD -mcmodel=medany -ffreestanding -fno-common -nostdlib -mno-relax -I. -fno-stack-protector -fno-pie -no-pie
 
-riscv64-unknown-elf-ld kernel/entry.o -T kernel/kernel.ld -o kernel/kernel
+riscv64-unknown-elf-ld kernel/entry.o -T kernel/kernel.ld -o kernel/kernel -z max-page-size=4096
+```
 
 ### 将用户文件写入磁盘
 
@@ -97,6 +94,68 @@ dd if=/dev/zero of=fs.img bs=1M count=256
 
 ### 运行QEMU
 
+``` shell
 qemu-system-riscv64 -machine virt -bios none -kernel kernel/kernel -m 128M -smp 1 -nographic -global virtio-mmio.force-legacy=false -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+```
 
-## 至此已经实现了进入entry入口点的部分
+-m 参数制定内存大小
+
+-smp 参数制定CPU核心数
+
+** 至此已经实现了进入entry入口点的部分 **
+
+## gdb调试
+
+qemu支持gdb调试，原理是通过tcp将内核信息传递给gdb
+
+在qemu参数中添加 -S -gdb tcp::port 来实现
+
+-S 是让cpu不进行start up等待gdb发送信息
+
+``` shell
+qemu-system-riscv64 -machine virt -bios none -kernel kernel/kernel -m 128M -smp 1 -nographic -global virtio-mmio.force-legacy=false -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0 -S -gdb tcp::26000
+```
+
+
+在另一个窗口打开riscv64-unknown-elf-gdb 
+
+使用target remote:26000 截获qemu
+
+使用file kernel/kernel 导入符号表
+
+测试结果
+
+``` shell
+
+(gdb) target remote:26000
+Remote debugging using :26000
+warning: No executable has been specified and target does not support
+determining executable automatically.  Try using the "file" command.
+0x0000000000001000 in ?? ()
+(gdb) file kernel/kernel
+A program is being debugged already.
+Are you sure you want to change the file? (y or n) y
+Reading symbols from kernel/kernel...
+(gdb) b end
+Breakpoint 1 at 0x80000002: file kernel/entry.S, line 7.
+(gdb) i registers 
+...
+a0             0x0      0
+...
+(gdb) c
+Continuing.
+
+Breakpoint 1, end () at kernel/entry.S:7
+7               j end
+(gdb) i registers 
+...
+a0             0x1      1
+...
+
+```
+可以发现entry函数正常运行
+
+
+## 编写makefile
+
+为了后续程序的编译测试方便，这里我为该项目编写最初步的Makefile
