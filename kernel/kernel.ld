@@ -6,4 +6,13 @@ SECTIONS {
     .text : {
         *(.text)
     }
+    .bss : {
+        *(.bss)
+    }
+    .data : {
+        *(.data)
+    }
+    .srodata : {
+        *(.srodata)
+    }
 }

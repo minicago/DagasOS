@@ -2,19 +2,24 @@ K=kernel
 
 OBJS = \
   $K/entry.o \
+  $K/const.o \
+  $K/start.o \
+  $K/main.o \
+  $K/csr.o \
 
 TOOLPREFIX = riscv64-unknown-elf-
 
 CC = $(TOOLPREFIX)gcc
 LD = $(TOOLPREFIX)ld
 
-CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb -gdwarf-2
+CFLAGS = -Wall -Werror -O0 -fno-omit-frame-pointer -ggdb -gdwarf-2
 CFLAGS += -MD
 CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax
-CFLAGS += -I.
+CFLAGS += -I$K/include
 CFLAGS += -fno-stack-protector
 CFLAGS += -fno-pie -no-pie
+
 
 LDFLAGS = -z max-page-size=4096
 
