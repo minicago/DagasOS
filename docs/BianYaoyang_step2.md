@@ -37,9 +37,7 @@ M模式下八个控制状态寄存器（CSR）是机器模式下异常处理的�
 7) mscratch（Machine Scratch）它暂时存放一个字大小的数据。
 8) mstatus（Machine Status）它保存全局中断使能，以及许多其他的状态。
 
-详见 [RISCV-Interrupts](https://riscv.org/wp-content/uploads/2016/07/Tue0900_RISCV-20160712-Interrupts.pdf)
-
-在S模式下也有S模式的CSR。
+详见 unpriv-isa-asciidoc
 
 
 ### CSR 操作
@@ -94,3 +92,14 @@ __volatile__ 禁止优化
 
 我们将在start函数中进行CSR寄存器的设置，但需要先设置堆栈。
 
+在start中我们需要设置以下寄存器
+
+1) mstatus中的MPP位，使mret后进入S态。 
+2) pmpaddr和pmpcfg，使得所有内存空间对系统合法
+3) mepc 设置返回S态位置为main函数
+
+由于频繁测试，这里为Makefile添加了run-gdb功能
+
+暂时取消了gcc的O1优化
+
+经过gdb断点调试，发现成功进入main函数。
