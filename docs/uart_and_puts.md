@@ -2,7 +2,7 @@
 
 ## AVX
 
-AVX code as follow:
+AVX (as well as rcore-os) code as follow:
 
 ``` c
 void consputc(int c) {
@@ -36,11 +36,31 @@ void consputc(int c) {
 
 Which means they call ``uart8250_putc`` function when realmachine instead of ``sbi_console_putchar`` in stimulation.
 
+In which, they use a asm like ecall to output:
+``` rust
+// from rcore-os
+pub fn console_putchar(ch: u8) {
+    let ret: usize;
+    let arg0: usize = ch as usize;
+    let arg1: usize = 0;
+    let arg2: usize = 0;
+    let which: usize = 1;
+    unsafe {
+        asm!("ecall"
+             : "={x10}" (ret)
+             : "{x10}" (arg0), "{x11}" (arg1), "{x12}" (arg2), "{x17}" (which)
+             : "memory"
+             : "volatile"
+        );
+    }
+}
+```
+
 hint: sbi is abbr. of Serial Bus Interface
 
 We focus on stimulation.
 
-As https://www.bookstack.cn/read/rCore_tutorial_doc/8aa6b11e33b20358.md saying, they are using OpenSBI lib to manage serial interfaces.
+As https://www.bookstack.cn/read/rCore_tutorial_doc/8aa6b11e33b20358.md saying, they are using OpenSBI lib to manage hardwires.
 
 So we may consider that they are just calling OpenSBI. In fact, it may be a kind of bios which qemu will start with when we set ``-bios default``
 
@@ -49,7 +69,7 @@ But when trying this, I encountered:
 qemu-system-riscv64: Unable to load the RISC-V firmware "opensbi-riscv64-virt-fw_jump.bin"
 ```
 
-Where should be our main direction.
+I stuck here. Where should be our main direction.
 
 
 ## xv6
