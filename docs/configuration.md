@@ -5,7 +5,7 @@
 
 ### install qemu
 
-just download code and compile as saying.
+just download code and compile as https://wiki.qemu.org/Hosts/Linux saying.
 
 ### compile ``riscv64-unknown-elf``
 
