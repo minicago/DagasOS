@@ -1,12 +1,10 @@
 # 初步环境
 
-第一步是至少能跑起来。
+## 目标
 
-实现一个什么也不做的内核，并且在qemu上能运行和调试。
+1) 内核能正常开始运行entry的汇编。
 
-为了确保内核真实运行，我们令寄存器a0加1，然后使用gdb调试
-
-学习https://github.com/mit-pdos/xv6-riscv/
+2) 可以使用gdb去调试内核
 
 ## Tool Chain Installing
 
@@ -32,21 +30,31 @@ make -j$(nproc)
 sudo make install
 ```
 
+## 步骤
+
+
 ## 必须文件
+1) 编写entry.S汇编代码，使用交叉编译工具链编译并链接entry.S，生成内核。
 
-### virtio_disk.c
+2) 尝试使用shell指令生成空的用户程序磁盘映像。
 
-提供虚拟磁盘的IO功能
+3) 在shell中运行qemu
+
+4) 为qemu添加gdb所用的参数，并且在gdb中调试内核
+
+5) 为以上内容构建Makefile，方便之后的调试
+
+## 参考资料
+
+https://github.com/mit-pdos/xv6-riscv/
+
+## 必须文件
 
 ### kernel.ld user.ld
 
 链接脚本
 
 kernel.ld 保证entry.S / _entry 在 0x80000000 * where qemu's -kernel jumps.
-
-### mkfs.c 
-
-创建 fs.img 磁盘镜像
 
 ### entry.S
 
@@ -184,6 +192,18 @@ a0             0x1      1
 可以发现entry函数正常运行
 
 
-## 编写makefile
+## 编写Makefile
 
-为了后续程序的编译测试方便，这里我为该项目编写最初步的Makefile
+为了后续程序的编译测试方便，这里我为该项目编写最初步的Makefile。
+
+### tags
+
+tags 伪对象可以自动追踪函数的实现，可以大幅简化Makefile。
+
+### %
+
+通配符， 可以为每个符合要求的对象生成对应的目标。
+
+## 总结
+
+这一部分实现了qemu启动到运行entry.S中代码的功能，并且为之后调试内核提供了gdb的测试port。
