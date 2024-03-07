@@ -4,7 +4,7 @@
 
 void strap_init(){
 
-    W_CSR(stvec, (uint64) stvec);
+    // W_CSR(stvec, 0);
     goto checkstvec;
     checkstvec:
 

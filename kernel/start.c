@@ -2,7 +2,6 @@
 # include "csr.h"
 # include "strap.h"
 int main();
-uint64 mstatus = 0; 
 int start(){
 
     //set mstatus.mpp as S-mode 
