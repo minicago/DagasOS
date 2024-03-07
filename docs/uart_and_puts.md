@@ -124,3 +124,9 @@ Core defines pasted as follow:
 So we may consider that if we'd like to write sth, we should just set ``(byte *)(0x10000000L) = c``
 
 But, I haven't found where xv6 specificed it(0x10000000L) as uart0.
+
+## Our implementation 
+
+We try to imitate what xv6 does, and encountered a tons of problem.
+
+First we had't write enough documentation
