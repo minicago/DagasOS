@@ -4,5 +4,6 @@
 #define uint16 unsigned short
 #define uint32 unsigned int
 #define uint64 unsigned long long
+typedef unsigned long uintptr_t;
 
 #endif
