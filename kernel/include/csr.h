@@ -24,6 +24,19 @@
 
 #define PMPCFG_L 0x20 //lock bit
 
+// INTR
+#define S_INTR_MASK 0x222
+#define S_SOFTWARE_INTR 0x2
+#define S_TIMER_INTR 0x20
+#define S_EXTERNAL_INTR 0x200
+
+#define M_INTR_MASK 0x888
+#define M_SOFTWARE_INTR 0x8
+#define M_TIMER_INTR 0x80
+#define M_EXTERNAL_INTR 0x800
+
+// EXCEPTION
+#define INSTRU
 
 // CSR operation
 
