@@ -5,6 +5,7 @@ void dosomething(){}
 
 int main(){
     dosomething();
+    uartinit();
     uartputc_sync('a');
     return 0;
 }

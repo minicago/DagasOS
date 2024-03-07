@@ -37,23 +37,21 @@ void consputc(int c) {
 Which means they call ``uart8250_putc`` function when realmachine instead of ``sbi_console_putchar`` in stimulation.
 
 In which, they use a asm like ecall to output:
-``` rust
+``` c
 // from rcore-os
-pub fn console_putchar(ch: u8) {
-    let ret: usize;
-    let arg0: usize = ch as usize;
-    let arg1: usize = 0;
-    let arg2: usize = 0;
-    let which: usize = 1;
-    unsafe {
-        asm!("ecall"
-             : "={x10}" (ret)
-             : "{x10}" (arg0), "{x11}" (arg1), "{x12}" (arg2), "{x17}" (which)
-             : "memory"
-             : "volatile"
-        );
-    }
-}
+#define SBI_CALL(eid, fid, arg0, arg1, arg2, arg3) ({		\
+	register uintptr_t a0 asm ("a0") = (uintptr_t)(arg0);	\
+	register uintptr_t a1 asm ("a1") = (uintptr_t)(arg1);	\
+	register uintptr_t a2 asm ("a2") = (uintptr_t)(arg2);	\
+	register uintptr_t a3 asm ("a3") = (uintptr_t)(arg3);	\
+	register uintptr_t a7 asm ("a7") = (uintptr_t)(eid);	\
+	register uintptr_t a6 asm ("a6") = (uintptr_t)(fid);	\
+	asm volatile ("ecall"					\
+		      : "+r" (a0), "+r" (a1)				\
+		      : "r" (a6), "r" (a2), "r" (a3), "r" (a7)	\
+		      : "memory");				\
+	a0;							\
+})
 ```
 
 hint: sbi is abbr. of Serial Bus Interface
