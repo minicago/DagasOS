@@ -3,7 +3,15 @@
 #include "print.h"
 
 void strap_init(){
+
     W_CSR(stvec, (uint64) stvec);
+    goto checkstvec;
+    checkstvec:
+
+    uint64 x = 1;
+    R_CSR(stvec, x);    
+    printf("stvec = %p %p\n",x, (uint64) stvec);
+    
 
 }
 

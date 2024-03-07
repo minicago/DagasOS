@@ -20,7 +20,7 @@ int start(){
     //delegate interrupt to S-mode
     W_CSR(medeleg, EXC_MASK);
     W_CSR(mideleg, S_INTR_MASK);
-    W_CSR(sie, S_INTR_MASK);
+    S_CSR(sie, S_INTR_MASK);
 
     // mret to main
     asm("mret");
