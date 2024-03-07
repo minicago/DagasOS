@@ -2,7 +2,7 @@
 
 const static char digits[] = "0123456789abcdef";
 
-void constputc(char ch) {
+void consputc(char ch) {
     uartputc_sync(ch);
 }
 
@@ -26,6 +26,6 @@ void printint(int val, int base, int sign) {
     }
 
     while(--i >= 0) {
-        constputc(buf[i]);
+        consputc(buf[i]);
     }
 }
