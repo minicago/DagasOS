@@ -1,5 +1,6 @@
 # include "uart.h"
+# include "types.h"
 
 void constputc(char ch);
 
-void printint(int val, int base, int sign);
+void printptr(uint64 ptr);

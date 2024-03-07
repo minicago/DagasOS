@@ -1,4 +1,5 @@
 # include "print.h"
+# include "types.h"
 
 const static char digits[] = "0123456789abcdef";
 
@@ -6,7 +7,7 @@ void consputc(char ch) {
     uartputc_sync(ch);
 }
 
-void printint(int val, int base, int sign) {
+static void printint(int val, int base, int sign) {
     char buf[16];
     int real_val = val;
     int i;
@@ -27,5 +28,13 @@ void printint(int val, int base, int sign) {
 
     while(--i >= 0) {
         consputc(buf[i]);
+    }
+}
+
+void printptr(uint64 ptr) {
+    int i;
+    consputc('0'); consputc('x');
+    for(i = 0; i < sizeof(uint64) * 2; ++i, ptr <<= 4) {
+        consputc(digits[ptr >> (sizeof(uint64) * 8 - 4)]);
     }
 }
