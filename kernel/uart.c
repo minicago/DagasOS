@@ -40,8 +40,7 @@ void uartputc_sync(int c)
 //   pop_off();
 }
 
-void
-uartinit(void)
+void uartinit(void)
 {
   // disable interrupts.
   WriteReg(IER, 0x00);

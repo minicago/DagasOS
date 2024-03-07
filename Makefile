@@ -6,6 +6,7 @@ OBJS = \
   $K/start.o \
   $K/main.o \
   $K/csr.o \
+  $K/uart.o \
 
 TOOLPREFIX = riscv64-unknown-elf-
 
@@ -28,8 +29,8 @@ QEMU = qemu-system-riscv64
 
 CPUS := 1
 
-# QEMUBIOS = none
-QEMUBIOS = /home/smokey-days/Desktop/Courses/os/DagasOS/sbi-qemu
+QEMUBIOS = none
+# QEMUBIOS = /home/smokey-days/Desktop/Courses/os/DagasOS/sbi-qemu
 QEMUOPTS = -machine virt -bios ${QEMUBIOS} -kernel $K/kernel -m 128M -smp $(CPUS) -nographic
 QEMUOPTS += -global virtio-mmio.force-legacy=false
 QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0

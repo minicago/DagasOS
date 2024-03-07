@@ -12,7 +12,7 @@ SECTIONS {
     .data : {
         *(.data)
     }
-    .srodata : {
+    .rodata : {
         *(.srodata)
     }
 }

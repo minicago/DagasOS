@@ -1,5 +1,5 @@
 # include "types.h"
-# include "uart.c"
+# include "uart.h"
 
 void dosomething(){}
 
