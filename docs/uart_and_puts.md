@@ -62,6 +62,8 @@ We focus on stimulation.
 
 As https://www.bookstack.cn/read/rCore_tutorial_doc/8aa6b11e33b20358.md saying, they are using OpenSBI lib to manage hardwires.
 
+hint: https://riscv.org/wp-content/uploads/2019/06/13.30-RISCV_OpenSBI_Deep_Dive_v5.pdf describes OpenSBI principles.
+
 So we may consider that they are just calling OpenSBI. In fact, it may be a kind of bios which qemu will start with when we set ``-bios default``
 
 But when trying this, I encountered:
