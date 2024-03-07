@@ -64,13 +64,13 @@ hint: https://riscv.org/wp-content/uploads/2019/06/13.30-RISCV_OpenSBI_Deep_Dive
 
 So we may consider that they are just calling OpenSBI. In fact, it may be a kind of bios which qemu will start with when we set ``-bios default``
 
-But when trying this, I encountered:
+But when trying this, we encountered:
 ``` shell
 qemu-system-riscv64: Unable to load the RISC-V firmware "opensbi-riscv64-virt-fw_jump.bin"
 ```
 
-I stuck here. Where should be our main direction.
-
+<!-- I stuck here. Where should be our main direction. -->
+We finally found that we may just simply use ``-bios bin_path`` to add my OpenSBI binary.
 
 ## xv6
 
