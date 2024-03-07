@@ -129,4 +129,8 @@ But, I haven't found where xv6 specificed it(0x10000000L) as uart0.
 
 We try to imitate what xv6 does, and encountered a tons of problem.
 
-First we had't write enough documentation
+首先是因为文档没有写清楚，导致沟通上出现问题，没有及时把新增的 .c 文件编译成的 .o 添加到 Makefile 里，使得编译结果没有更新。
+
+然后是我们的 stack 段没有动态指定，而事实上它应该要动态指定。具体操作是声明一个常量，然后在 link 步骤里替换到重新指定栈顶的部份。
+
+最后是，load 立即数应该用 ``li`` 而非 ``la``，同时 ``addi`` 也不能作用于超过 12 位宽的立即数。
