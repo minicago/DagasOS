@@ -1,3 +1,4 @@
+.global stvec
 stvec:
         addi sp, sp, -256
 
