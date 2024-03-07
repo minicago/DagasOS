@@ -1,12 +1,10 @@
 K=kernel
 
-OBJS = \
-  $K/entry.o \
-  $K/const.o \
-  $K/start.o \
-  $K/main.o \
-  $K/csr.o \
-  $K/uart.o \
+SRC_C = $(wildcard $K/*.c)
+OBJS = $K/entry.o
+OBJS += $(patsubst $K/%.c, $K/%.o ,$(SRC_C) )
+
+
 
 TOOLPREFIX = riscv64-unknown-elf-
 
