@@ -27,7 +27,7 @@
 // CSR operation
 
 # define W_CSR(csr, variable) \
-asm("CSRRW x0, "#csr", %0": :"r"(variable))
+asm("CSRW "#csr", %0": :"r"(variable))
 
 # define R_CSR(csr, variable) \
 asm("CSRR %0, "#csr: "=r"(variable):)

@@ -4,7 +4,7 @@
 
 void strap_init(){
 
-    // W_CSR(stvec, 0);
+    W_CSR(stvec, (uint64) stvec);
     goto checkstvec;
     checkstvec:
 
@@ -16,5 +16,9 @@ void strap_init(){
 }
 
 void strap_handler(){
-    printf("uh oh, unexpected!");
+    printf("uh oh, unexpected!\n");
+    uint64 sepc = 0;
+    R_CSR(sepc, sepc);
+    sepc += 4;
+    W_CSR(sepc, sepc);
 }

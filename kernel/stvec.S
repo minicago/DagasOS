@@ -1,4 +1,5 @@
 .global stvec
+.align 4
 stvec:
         addi sp, sp, -256
 
