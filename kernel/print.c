@@ -25,10 +25,10 @@ static void printint(int val, int base, int sign) {
     }
 
     i = 0;
-    while(real_val) {
+    do {
         buf[i++] = digits[real_val % base];
         real_val /= base;
-    }
+    } while(real_val);
 
     if(sign) {
         buf[i++] = '-';

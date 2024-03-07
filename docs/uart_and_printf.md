@@ -125,7 +125,7 @@ So we may consider that if we'd like to write sth, we should just set ``(byte *)
 
 But, I haven't found where xv6 specificed it(0x10000000L) as uart0.
 
-## Our implementation 
+## Our implementation of uart
 
 We try to imitate what xv6 does, and encountered a tons of problem.
 
@@ -136,3 +136,17 @@ We try to imitate what xv6 does, and encountered a tons of problem.
 然后是我们的 stack 段没有动态指定，而事实上它应该要动态指定。具体操作是声明一个常量，然后在 link 步骤里替换到重新指定栈顶的部份。
 
 load 立即数应该用 ``li`` 而非 ``la``，同时 ``addi`` 也不能作用于超过 12 位宽的立即数。
+
+## ``printf``
+
+我们需要实现一个格式化输出。这里我们在 ``xv6`` 的基础上进行一些扩展。
+
+具体来说，我们希望实现：
+- %c
+- %d
+- %u
+- %x
+- %p
+- %s
+
+简单操作一通即可。
