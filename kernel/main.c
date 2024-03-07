@@ -5,6 +5,6 @@ void dosomething(){}
 int main(){
     dosomething();
     uartinit();
-    printptr(114514);
+    printf("%s, %c, %d, %u, %x, %p, Helloworld, %% \n", "Helloworld", 'H', -16, -1, -1, -1);
     return 0;
 }

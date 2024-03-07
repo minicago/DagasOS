@@ -1,6 +1,7 @@
+# include <stdarg.h>
+
 # include "uart.h"
 # include "types.h"
+# include "defs.h"
 
-void constputc(char ch);
-
-void printptr(uint64 ptr);
+void printf(char *fmt, ...);
