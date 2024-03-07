@@ -1,9 +1,9 @@
 K=kernel
 
 SRC_C = $(wildcard $K/*.c)
-SRC_S = $(wildcard $K/*.S)
-OBJS = $(patsubst $K/%.c, $K/%.o ,$(SRC_C) )
-OBJS += $(patsubst $K/%.S, $K/%.o ,$(SRC_S) )
+OBJS = $K/entry.o
+OBJS += $(patsubst $K/%.c, $K/%.o ,$(SRC_C) )
+
 
 
 TOOLPREFIX = riscv64-unknown-elf-
