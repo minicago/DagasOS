@@ -3,4 +3,6 @@
 
 #define asm __asm__ __volatile__
 
+#define NULL ((void *)(0))
+
 #endif

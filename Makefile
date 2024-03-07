@@ -17,7 +17,7 @@ CFLAGS = -Wall -Werror -O0 -fno-omit-frame-pointer -ggdb -gdwarf-2
 CFLAGS += -MD
 CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax
-CFLAGS += -I$K/include
+CFLAGS += -I$K/include -I.
 CFLAGS += -fno-stack-protector
 CFLAGS += -fno-pie -no-pie
 
