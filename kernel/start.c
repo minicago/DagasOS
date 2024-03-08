@@ -1,7 +1,9 @@
 # include "types.h"
 # include "csr.h"
 # include "strap.h"
-int main();
+# include "timer.h"
+# include "defs.h"
+
 int start(){
 
     //set mstatus.mpp as S-mode 
@@ -20,6 +22,9 @@ int start(){
     W_CSR(medeleg, EXC_MASK);
     W_CSR(mideleg, S_INTR_MASK);
     S_CSR(sie, S_INTR_MASK);
+    
+    //timer init
+    timer_init();
 
     // mret to main
     asm("mret");
