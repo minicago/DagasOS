@@ -15,4 +15,6 @@ SECTIONS {
     .rodata : {
         *(.srodata)
     }
+
+    PROVIDE(pmem_base = .);
 }

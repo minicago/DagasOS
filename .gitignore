@@ -62,3 +62,6 @@ user/_*
 user/*.asm
 user/*.o
 user/*.d
+
+#vscode
+.vscode/
