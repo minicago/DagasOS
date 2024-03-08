@@ -76,7 +76,7 @@ dst=/mnt
 fs:
 	@if [ ! -f "fs.img" ]; then \
 		echo "making fs image..."; \
-		dd if=/dev/zero of=fs.img bs=512k count=512; \
+		dd if=/dev/zero of=fs.img bs=512 count=512; \
 		mkfs.vfat -F 32 -s 4 fs.img; fi
 	@sudo mount fs.img $(dst)
 	@make sdcard dst=$(dst)
