@@ -10,8 +10,11 @@ struct {
     struct ppage* free_pg_list;
 } pmem;
 
-void smem_init() {
-
+void pmem_init() {
+    printf("%p\n", PMEM_END);
+    *(char *)PMEM_END = 'a';
+    printf("test: %c\n", *(char *)PMEM_END);
+    p_range_free((void *)pmem_base, PMEM_END);
 }
 
 void p_range_free(void *start, void* end) {
@@ -23,7 +26,7 @@ void p_range_free(void *start, void* end) {
 
 void pfree(void *pa) {
     struct ppage* r;
-    if((uint64)pa % PG_SIZE != 0 || (char *)pa < pmem_base || (uint64)pa >= PMEM_END) {
+    if((uint64)pa % PG_SIZE != 0 || (char *)pa < pmem_base || pa >= PMEM_END) {
         panic("palloc error, pa not specified correct.");
     }
 

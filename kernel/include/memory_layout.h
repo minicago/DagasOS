@@ -2,7 +2,7 @@
 #define __MEMORY_LAYOUT__H__
 
 #define S_MEM_START 0x80000000L
-#define PMEM_END (S_MEM_START + 128 * 1024 * 1024)
+#define PMEM_END ((void *)(S_MEM_START + 128 * 1024 * 1024))
 
 #define PG_SIZE 4096
 

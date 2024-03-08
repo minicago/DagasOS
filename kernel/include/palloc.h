@@ -8,7 +8,9 @@
 #include "print.h"
 #include "defs.h"
 
+void pmem_init();
 void pfree(void *pa);
 void *palloc();
+void p_range_free(void *start, void *end);
 
 #endif
