@@ -63,16 +63,16 @@
 // CSR operation
 
 # define W_CSR(csr, variable) \
-asm("CSRW "#csr", %0": :"r"(variable))
+asm("CSRW "#csr", %0": :"r"((uint64) variable))
 
 # define R_CSR(csr, variable) \
 asm("CSRR %0, "#csr: "=r"(variable):)
 
 # define S_CSR(csr, variable) \
-asm("CSRRS x0, "#csr", %0": :"r"(variable))
+asm("CSRRS x0, "#csr", %0": :"r"((uint64) variable))
 
 # define C_CSR(csr, variable) \
-asm("CSRRC x0, "#csr", %0": :"r"(variable))
+asm("CSRRC x0, "#csr", %0": :"r"((uint64) variable))
 
 // CSR mepc : the address to which mret return
 

@@ -9,4 +9,6 @@ void strap_init();
 
 void intr_on();
 
+void intr_off();
+
 #endif 
