@@ -11,9 +11,6 @@ struct {
 } pmem;
 
 void pmem_init() {
-    printf("%p\n", PMEM_END);
-    *(char *)PMEM_END = 'a';
-    printf("test: %c\n", *(char *)PMEM_END);
     p_range_free((void *)pmem_base, PMEM_END);
 }
 
@@ -24,25 +21,35 @@ void p_range_free(void *start, void* end) {
     }
 }
 
+/*
+    After we free a page, a page should be full
+    of 'U' for each byte expect the first 8 byte
+    which should be a pointer point next free page.
+*/
 void pfree(void *pa) {
     struct ppage* r;
+
     if((uint64)pa % PG_SIZE != 0 || (char *)pa < pmem_base || pa >= PMEM_END) {
         panic("palloc error, pa not specified correct.");
     }
 
-    memset((char*) pa, 1, PG_SIZE);
+    memset((char*) pa, 'U', PG_SIZE);
 
-    r = pmem.free_pg_list->next;
-    pmem.free_pg_list->next = pa;
+    r = pmem.free_pg_list;
+    pmem.free_pg_list = pa;
     ((struct ppage*)pa)->next = r;
 }
 
+/*
+    After we alloc a page, a page should be full
+    of 'N' for each byte.
+*/
 void* palloc() {
-    struct ppage* r = pmem.free_pg_list->next;
+    struct ppage* r = pmem.free_pg_list;
 
     if(r != NULL) {
-        pmem.free_pg_list->next = r->next;
-        memset((char*) r, 5, sizeof(r));
+        pmem.free_pg_list = r->next;
+        memset((char*) r, 'N', sizeof(r));
     }
 
     return (void*)r;

@@ -14,9 +14,6 @@ int main(){
         Follow codes should be replaced by user program
     */
 
-    // Open Intr
-    intr_on();
-
     // Test for printf;
     printf("%s, %c, %d, %u, %x, %p, Helloworld, %% \n", "Helloworld", 'H', -16, -1, -1, -1);
     
@@ -27,8 +24,12 @@ int main(){
     *pg2 = 'B';
     printf("pg1: %c, pg2: %c\n", *pg1, *pg2);
     pfree(pg1);
-    printf("pg1: %p, pg2: %p\n", *pg1, *pg2);
+    printf("pg1: %u, pg2: %p\n", *pg1, *pg2);
     //asm("ebreak");
+
+    // Open Intr
+    intr_on();
+    
     while(1);
     return 0;
 }
