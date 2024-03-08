@@ -112,3 +112,8 @@ void printf(char *fmt, ...) {
         }
     }
 }
+
+void panic(char *str) {
+    printf("panic: %s\n", str);
+    while(1) {}
+}
