@@ -5,20 +5,21 @@
 void strap_init(){
 
     W_CSR(stvec, (uint64) stvec);
-    goto checkstvec;
-    checkstvec:
-
     uint64 x = 1;
     R_CSR(stvec, x);    
-    printf("stvec = %p %p\n",x, (uint64) stvec);
-    
-
 }
 
 void strap_handler(){
-    printf("uh oh, unexpected!\n");
-    uint64 sepc = 0;
+    uint64 stval = 0, sscratch = 0, sepc = 0, sip = 0, scause = 0;
+    R_CSR(stval, stval);
+    R_CSR(sscratch, sscratch);
     R_CSR(sepc, sepc);
-    sepc += 4;
-    W_CSR(sepc, sepc);
+    R_CSR(sip, sip);
+    R_CSR(scause, scause);
+    printf("scause = %p, stval = %p, sscratch = %p, sepc = %p, sip = %p\n", scause, stval, sscratch, sepc, sip);
+    while(1);
+}
+
+void intr_on(){
+    S_CSR(sstatus, SSTATUS_SIE);
 }

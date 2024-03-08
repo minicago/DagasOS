@@ -1,8 +1,11 @@
 K=kernel
 
 SRC_C = $(wildcard $K/*.c)
+
 OBJS = $K/entry.o
-OBJS += $K/stvec.o
+OBJS += $K/stvec.o \
+		$K/mtvec.o
+
 OBJS += $(patsubst $K/%.c, $K/%.o ,$(SRC_C) )
 
 
