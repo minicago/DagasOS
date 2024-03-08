@@ -9,7 +9,6 @@ int main(){
     uartinit();
     strap_init();
     intr_on();
-
     printf("%s, %c, %d, %u, %x, %p, Helloworld, %% \n", "Helloworld", 'H', -16, -1, -1, -1);
     //asm("ebreak");
     while(1);
