@@ -1,7 +1,8 @@
 #ifndef __UART__H__
 #define __UART__H__
 
-#define UART0 0x10000000l
+#include "memory_layout.h"
+
 #define UART0_IRQ 10
 
 #define UART_REG(reg) ((volatile unsigned char *)(UART0 + reg))

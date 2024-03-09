@@ -1,4 +1,4 @@
-#include "palloc.h"
+#include "pmm.h"
 
 extern char pmem_base[];
 

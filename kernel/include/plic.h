@@ -1,7 +1,8 @@
 #ifndef __PLIC__H__
 #define __PLIC__H__
 
-#define PLIC 0x0c000000L
+#include "memory_layout.h"
+
 #define PLIC_PRIORITY (PLIC + 0x0)
 #define PLIC_PENDING (PLIC + 0x1000)
 #define PLIC_MENABLE (PLIC + 0x2000)
