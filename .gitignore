@@ -56,3 +56,12 @@ dkms.conf
 
 #kernel
 kernel/kernel
+
+#user
+user/_*
+user/*.asm
+user/*.o
+user/*.d
+
+#vscode
+.vscode/

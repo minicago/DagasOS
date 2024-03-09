@@ -23,3 +23,7 @@ void strap_handler(){
 void intr_on(){
     S_CSR(sstatus, SSTATUS_SIE);
 }
+
+void intr_off(){
+    C_CSR(sstatus, SSTATUS_SIE);
+}
