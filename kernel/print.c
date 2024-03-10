@@ -106,8 +106,11 @@ void printf(char *fmt, ...) {
                     consputc(*str);
                 }
                 break;
+            case '%':
+                consputc('%'); // for %%, puts %
+                break;
             default:
-                consputc('%'); consputc(ch); // other cases, include % itself, puts %%.
+                consputc('%'); consputc(ch); // other cases, puts %[ch].
                 break;
         }
     }
