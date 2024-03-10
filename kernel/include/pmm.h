@@ -8,6 +8,10 @@
 #include "print.h"
 #include "defs.h"
 
+#define PMEM_END ((void *)(MAX_PA))
+
+extern char pmem_base[];
+
 void pmem_init();
 void pfree(void *pa);
 void *palloc();

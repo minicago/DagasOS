@@ -3,27 +3,34 @@
 
 // optional setting
 
+#include "pmm.h"
+#include "defs.h"
+
 #define QEMU_MEMORY_SIZE 128 * 1024 * 1024
 
 #define PG_SIZE 4096
 
-#define MAX_VA (S_MEM_START + QEMU_MEMORY_SIZE)
+
 
 // physic layout
 
 #define UART0 0x10000000ull
 
-#define CLINT 0x2000000ull
+#define CLINT0 0x2000000ull
 
-#define S_MEM_START 0x80000000ull
+#define KERNEL0 0x80000000ull
 
-#define PLIC 0x0c000000ull
+#define PLIC0 0x0c000000ull
 
-#define PMEM_END ((void *)(S_MEM_START + QEMU_MEMORY_SIZE))
+#define PMEM0 (uint64) pmem_base
+
+#define MAX_PA (KERNEL0 + QEMU_MEMORY_SIZE)
 
 // kernel virtual layout
 
 #define TRAMPOLINE (MAX_VA - PG_SIZE)
+
+#define MAX_VA (1ull << (9 + 9 + 9 + 12 - 1))
 
 // user virtual layout in same place
 

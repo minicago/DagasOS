@@ -2,6 +2,7 @@
 #define __VMM__H__
 
 #include "types.h"
+#include "defs.h"
 
 typedef uint64 pte_t;
 typedef pte_t* pagetable_t;
@@ -48,8 +49,12 @@ typedef pte_t* pagetable_t;
 #define PTA_PNN_MASK  0x00000fffffffffffull
 #define PTA_PNN_OFFSET 0
 
+#define sfencevma asm("sfence.vma zero, zero")
+
 pte_t* walk(pagetable_t pagetable, uint64 va, int alloc);
 
 int mappages(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, uint64 perm);
+
+void kvminit();
 
 #endif

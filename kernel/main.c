@@ -2,6 +2,7 @@
 #include "strap.h"
 #include "csr.h"
 #include "pmm.h"
+#include "vmm.h"
 
 void dosomething(){}
 
@@ -10,6 +11,7 @@ int main(){
     uartinit();
     strap_init();
     pmem_init();
+    kvminit();
     /*
         Follow codes should be replaced by user program
     */

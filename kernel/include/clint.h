@@ -3,7 +3,7 @@
 
 #include "memory_layout.h"
 
-#define CLINT_MTIMECMP (CLINT + 0x4000)
-#define CLINT_MTIME (CLINT + 0xBFF8) // cycles since boot.
+#define CLINT_MTIMECMP (CLINT0 + 0x4000)
+#define CLINT_MTIME (CLINT0 + 0xBFF8) // cycles since boot.
 
 #endif
