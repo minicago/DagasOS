@@ -19,7 +19,6 @@ typedef pte_t* pagetable_t;
 #define PTE_PNN_MASK 0x1ffffffffffc00ull
 #define PTE_PNN_SHIFT 10
 #define PTE_RSW_MASK 0x400ull
-#define PTE_PG_OFFSET_SHIFT 12
 #define PTE_PG_LV_SHIFT 9
 #define PTE_PG_LV_MASK 0x1ff
 #define PTE_D 0x80 //Dirty
@@ -32,13 +31,13 @@ typedef pte_t* pagetable_t;
 #define PTE_V 0x1 //availble
 
 #define PTE_INDEX(va, level) \
-    ( ( (va) >> (PTE_PG_OFFSET_SHIFT + (level) * PTE_PG_LV_SHIFT) ) & PTE_PG_LV_MASK )
+    ( ( (va) >> (PG_OFFSET_SHIFT + (level) * PTE_PG_LV_SHIFT) ) & PTE_PG_LV_MASK )
 
 #define PA2PTE(pa) \
-    ( (uint64) pa << PTE_PNN_SHIFT ) 
+    (( (uint64) pa >> PG_OFFSET_SHIFT ) << PTE_PNN_SHIFT)
 
 #define PTE2PA(pte) \
-    (( (uint64) pte & PTE_PNN_MASK) >> PTE_PNN_SHIFT )  
+    ((( (uint64) pte & PTE_PNN_MASK) >> PTE_PNN_SHIFT )  << PG_OFFSET_SHIFT)
 
 #define PTA_MODE_MASK 0xf000000000000000ull
 #define PTA_MODE_NONE 0x0000000000000000ull
@@ -49,7 +48,7 @@ typedef pte_t* pagetable_t;
 #define PTA_PNN_MASK  0x00000fffffffffffull
 #define PTA_PNN_OFFSET 0
 
-#define sfencevma asm("sfence.vma zero, zero")
+#define sfencevma() asm("sfence.vma zero, zero")
 
 pte_t* walk(pagetable_t pagetable, uint64 va, int alloc);
 

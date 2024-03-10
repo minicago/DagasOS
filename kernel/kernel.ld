@@ -15,6 +15,6 @@ SECTIONS {
     .rodata : {
         *(.srodata)
     }
-
+    . = ALIGN(0x1000);
     PROVIDE(pmem_base = .);
 }

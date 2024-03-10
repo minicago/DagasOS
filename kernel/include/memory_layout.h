@@ -10,7 +10,9 @@
 
 #define PG_SIZE 4096
 
+#define PG_OFFSET_SHIFT 12
 
+#define PG_OFFSET_MASK 0xfff
 
 // physic layout
 
