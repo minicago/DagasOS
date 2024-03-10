@@ -50,4 +50,6 @@ typedef pte_t* pagetable_t;
 
 pte_t* walk(pagetable_t pagetable, uint64 va, int alloc);
 
+int mappages(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, uint64 perm);
+
 #endif

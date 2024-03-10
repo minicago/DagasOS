@@ -3,24 +3,45 @@
 #include "print.h"
 #include "pmm.h"
 
-pte_t* walk(pagetable_t root, uint64 va, int alloc){
-    if( (uint64) root >= MAX_VA ) {
+/*
+*walk in pagetable to find pte
+*alloc : alloc a physical page for pagetable on route.
+*/
+pte_t* walk(pagetable_t pagetable, uint64 va, int alloc){
+    if( (uint64) pagetable >= MAX_VA ) {
         panic("walk : bad root pagetable");
     }
     for(int level = 2; level > 0; level --){
-        pte_t *pte = &root[PTE_INDEX(va, level)];
+        pte_t *pte = &pagetable[PTE_INDEX(va, level)];
         if(*pte & PTE_V) {
-            root = (pagetable_t) PTE2PA(*pte);
+            pagetable = (pagetable_t) PTE2PA(*pte);
         } else {
             if(alloc){
-                root = palloc();
-                if (root == 0) return 0;
+                pagetable = palloc();
+                if (pagetable == 0) return 0;
                 else{
-                    memset(root, 0, PG_SIZE);
-                    * pte = PA2PTE(root) | PTE_V;
+                    memset(pagetable, 0, PG_SIZE);
+                    * pte = PA2PTE(pagetable) | PTE_V;
                 }
             } else return 0;
         }
     }
-    return &root[PTE_INDEX(va, 0)];
+    return &pagetable[PTE_INDEX(va, 0)];
+}
+
+int mappages(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, uint64 perm){
+    uint64 vpg_l = PG_FLOOR(va);
+    uint64 vpg_r = PG_CEIL(va + sz);
+    
+    uint64 *pte;
+
+    if (sz == 0) return 0;
+
+    for(int i = vpg_l; i <= vpg_r; i+=PG_SIZE){
+        pte = walk(pagetable, i, 1);
+        if(pte == NULL) return -1;
+        if(*pte & PTE_V) panic("mappages : remmap");
+        *pte = PA2PTE(pa) | perm | PTE_V;
+        pa += PG_SIZE;
+    }
 }

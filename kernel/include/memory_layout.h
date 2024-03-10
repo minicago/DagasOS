@@ -38,4 +38,6 @@
 
 #define PG_CEIL(addr) (((addr) + PG_SIZE - 1) & ~(PG_SIZE - 1))
 
+#define PG_FLOOR(addr) ((addr) & ~(PG_SIZE - 1))
+
 #endif
