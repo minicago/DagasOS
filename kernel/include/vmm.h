@@ -39,14 +39,14 @@ typedef pte_t* pagetable_t;
 #define PTE2PA(pte) \
     ((( (uint64) pte & PTE_PNN_MASK) >> PTE_PNN_SHIFT )  << PG_OFFSET_SHIFT)
 
-#define PTA_MODE_MASK 0xf000000000000000ull
-#define PTA_MODE_NONE 0x0000000000000000ull
-#define PTA_MODE_SV39 0x4000000000000000ull
-#define PTA_MODE_SV48 0x5000000000000000ull
-#define PTA_ASID_MASK 0x0ffff00000000000ull
-#define PTA_ASID_OFFSET 44
-#define PTA_PNN_MASK  0x00000fffffffffffull
-#define PTA_PNN_OFFSET 0
+#define ATP_MODE_MASK 0xf000000000000000ull
+#define ATP_MODE_NONE 0x0000000000000000ull
+#define ATP_MODE_SV39 0x8000000000000000ull
+#define ATP_MODE_SV48 0x9000000000000000ull
+#define ATP_ASID_MASK 0x0ffff00000000000ull
+#define ATP_ASID_OFFSET 44
+#define ATP_PNN_MASK  0x00000fffffffffffull
+#define ATP_PNN_OFFSET 0
 
 #define sfencevma() asm("sfence.vma zero, zero")
 

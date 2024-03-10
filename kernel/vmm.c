@@ -10,11 +10,27 @@ pagetable_t kernel_pagetable;
 *walk in pagetable to find pte
 *alloc : alloc a physical page for pagetable on route.
 */
+void print_pte(pte_t* pte){
+    printf("pa : %p\n",PTE2PA(*pte));
+}
+
+void print_page_table(pagetable_t pagetable){
+    printf("*******\n");
+    printf("page_table:%p\n", (uint64) pagetable);
+    for(int i = 0; i < 512; i++){
+        if(pagetable[i] != 0){
+            printf("index %d:",i);
+            print_pte(&pagetable[i]);            
+        }
+
+    }   
+}
+
 pte_t* walk(pagetable_t pagetable, uint64 va, int alloc){
     if( (uint64) pagetable >= MAX_VA ) {
         panic("walk : bad root pagetable");
     }
-    for(int level = 2; level > 0; level --){
+    for(int level = 2; level >= 1; level --){
         pte_t *pte = &pagetable[PTE_INDEX(va, level)];
         if(*pte & PTE_V) {
             pagetable = (pagetable_t) PTE2PA(*pte);
@@ -38,7 +54,6 @@ uint64 va2pa(pagetable_t pagetable, uint64 va){
 }
 
 int mappages(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, uint64 perm){
-    printf("%p %p\n",va, sz);
     uint64 va_l = PG_FLOOR(va);
     uint64 va_r = PG_CEIL(va + sz);
     
@@ -50,6 +65,7 @@ int mappages(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, uint64 perm
         pte = walk(pagetable, i, 1);
         if(pte == NULL) return -1;
         if(*pte & PTE_V) panic("mappages : remmap");
+        
         *pte = PA2PTE(pa) | perm | PTE_V;
         pa += PG_SIZE;
     }
@@ -77,11 +93,16 @@ void kvminit(){
 
     mappages(kernel_pagetable, UART0, UART0, PG_SIZE, PTE_R | PTE_W);
     mappages(kernel_pagetable, PLIC0, PLIC0, PG_SIZE, PTE_R | PTE_W);
-    mappages(kernel_pagetable, KERNEL0, KERNEL0, PMEM0 - KERNEL0, PTE_R | PTE_W | PTE_W);
+    mappages(kernel_pagetable, KERNEL0, KERNEL0, PMEM0 - KERNEL0, PTE_R | PTE_W | PTE_X);
     mappages(kernel_pagetable, PMEM0, PMEM0, MAX_PA - PMEM0, PTE_R | PTE_W);
+
     sfencevma();
-    W_CSR(satp, (uint64) kernel_pagetable);
+    
+    W_CSR(satp, ATP_MODE_SV39 | (uint64) kernel_pagetable >> PG_OFFSET_SHIFT);
+    
+    printf("%p\n", va2pa(kernel_pagetable, 0x80000002));
     sfencevma();
+    
 }
 
 uint64 vmdealloc(pagetable_t pagetable, uint64 va_l, uint64 va_r){
