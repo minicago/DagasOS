@@ -7,6 +7,8 @@
 
 #define MAX_PROCESS 256
 
+#define FORCE_CONV(type) (type) * (uint64*)
+
 enum PROCESS_STATE {
     UNUSED,
     USED,
@@ -28,7 +30,7 @@ typedef struct {
     int thread_count;
 } process_t;
 
-extern process_t* process;
+extern process_t process_pool[];
 
 process_t* alloc_process();
 void free_process(process_t* process);
