@@ -14,12 +14,12 @@ enum PROCESS_STATE {
 typedef struct {
     spinlock_t lock;
     // basic information
-    PROCESS_STATE state;
+    enum PROCESS_STATE state;
     int pid;
     pagetable_t pagetable;
 
     // sub process
-    process_t* parent;
+    struct process_t* parent;
     // linked_list_t* child; // current wo don't save children.
 
     // threads;

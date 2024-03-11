@@ -63,12 +63,12 @@ typedef struct {
 typedef struct {
     spinlock_t lock;
 
-    THREAD_STATE state;
+    enum THREAD_STATE state;
     thread_context_t context;
 
     uint64 stack_bottom;
 
-    trapframe_t trapframe;
+    struct trapframe_t trapframe;
 } thread_t;
 
 void context_switch(thread_context_t *pre, thread_context_t* cur);
