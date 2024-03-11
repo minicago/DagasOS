@@ -1,6 +1,7 @@
 #include "strap.h"
 #include "csr.h"
 #include "print.h"
+#include "cpu.h"
 
 void strap_init(){
 
@@ -26,4 +27,16 @@ void intr_on(){
 
 void intr_off(){
     C_CSR(sstatus, SSTATUS_SIE);
+}
+
+void intr_push_on(){
+    uint64 push_off_num = --get_cpu()->push_off_num;
+    if (push_off_num == 0) intr_on();
+}
+
+void intr_push_off(){
+    uint64 sstatus;
+    R_CSR(sstatus, sstatus);
+    if(sstatus & SSTATUS_SIE) intr_off();
+    get_cpu()->push_off_num++;
 }

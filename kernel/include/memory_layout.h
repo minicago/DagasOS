@@ -1,5 +1,5 @@
-#ifndef __MEMORY_LAYOUT__H__
-#define __MEMORY_LAYOUT__H__
+#ifndef __MEMORY__LAYOUT__H__
+#define __MEMORY__LAYOUT__H__
 
 // optional setting
 

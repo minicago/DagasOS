@@ -7,9 +7,9 @@
 #include "buf.h"
 
 void dosomething(){}
+#include "spinlock.h"
 
 int main(){
-    dosomething();
     uartinit();
     strap_init();
     pmem_init();
@@ -76,6 +76,12 @@ int main(){
     }
     printf("\n");
 
+    //test for spinlock
+    spinlock_t spinlock_test;
+    init_spinlock(&spinlock_test);
+    acquire_spinlock(&spinlock_test);
+    // acquire_spinlock(&spinlock_test);
+    release_spinlock(&spinlock_test);   
 
     // Open Intr
     intr_on();
