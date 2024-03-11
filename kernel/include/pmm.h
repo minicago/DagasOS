@@ -1,5 +1,5 @@
-#ifndef __PALLOC_H__
-#define __PALLOC_H__
+#ifndef __PALLOC__H__
+#define __PALLOC__H__
 
 #include "dagaslib.h"
 
