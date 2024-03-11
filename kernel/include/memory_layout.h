@@ -18,6 +18,10 @@
 
 #define UART0 0x10000000ull
 
+// virtio mmio interface
+#define VIRTIO0 0x10001000ull
+#define VIRTIO0_IRQ 1
+
 #define CLINT0 0x2000000ull
 
 #define KERNEL0 0x80000000ull
