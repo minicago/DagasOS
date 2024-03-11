@@ -3,11 +3,9 @@
 #include "csr.h"
 #include "pmm.h"
 #include "vmm.h"
-
-void dosomething(){}
+#include "spinlock.h"
 
 int main(){
-    dosomething();
     uartinit();
     strap_init();
     pmem_init();
@@ -28,6 +26,13 @@ int main(){
     pfree(pg1);
     printf("pg1: %u, pg2: %p\n", *pg1, *pg2);
     //asm("ebreak");
+
+    //test for spinlock
+    spinlock_t spinlock_test;
+    init_spinlock(&spinlock_test);
+    acquire_spinlock(&spinlock_test);
+    // acquire_spinlock(&spinlock_test);
+    release_spinlock(&spinlock_test);   
 
     // Open Intr
     intr_on();
