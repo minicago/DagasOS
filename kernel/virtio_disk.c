@@ -280,7 +280,7 @@ void virtio_disk_rw(struct buf *b, int write)
     // while(b->disk == 1) {
     // sleep(b, &disk.vdisk_lock);
     // }
-    for(int i=1;i<=10000;i++);
+    for(int i=1;i<=400000;i++);
     // printf("virtio_disk_rw: request%d status is %d\n", disk.avail->idx - 1, disk.info[idx[0]].status);
     
     if(disk.info[idx[0]].status != 0){
@@ -288,7 +288,7 @@ void virtio_disk_rw(struct buf *b, int write)
     }
     b->disk = 0; // disk is done with buf
     // wakeup(b);
-    
+
     disk.used_idx += 1;
 
     disk.info[idx[0]].b = 0;
