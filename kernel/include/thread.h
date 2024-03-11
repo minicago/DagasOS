@@ -66,9 +66,8 @@ typedef struct {
     THREAD_STATE state;
     thread_context_t context;
 
-    uint64 stack_bottom;
-
-    trapframe_t trapframe;
+    uint64 kstack_bottom;
+    trapframe_t* trapframe;
 } thread_t;
 
 void context_switch(thread_context_t *pre, thread_context_t* cur);
