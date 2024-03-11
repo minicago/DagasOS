@@ -5,6 +5,8 @@
 #include "vmm.h"
 #include "spinlock.h"
 
+#define MAX_PROCESS 256
+
 enum PROCESS_STATE {
     UNUSED,
     USED,
@@ -16,7 +18,7 @@ typedef struct {
     // basic information
     enum PROCESS_STATE state;
     int pid;
-    pagetable_t pagetable;
+    pagetable_t* pagetable;
 
     // sub process
     struct process_t* parent;
@@ -25,6 +27,8 @@ typedef struct {
     // threads;
     int thread_count;
 } process_t;
+
+extern process_t* process;
 
 process_t* alloc_process();
 void free_process(process_t* process);
