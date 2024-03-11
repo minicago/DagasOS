@@ -66,7 +66,8 @@ typedef struct {
     enum THREAD_STATE state;
     thread_context_t context;
 
-    uint64 stack_bottom;
+    uint64 kstack_bottom;
+    trapframe_t* trapframe;
 
     struct trapframe_t trapframe;
 } thread_t;
