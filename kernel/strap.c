@@ -31,12 +31,20 @@ void intr_off(){
 
 void intr_push_on(){
     uint64 push_off_num = --get_cpu()->push_off_num;
-    if (push_off_num == 0) intr_on();
+    if (push_off_num == 0) {
+        if(get_cpu()->intr_status != 0)
+            intr_on();
+    }
 }
 
 void intr_push_off(){
-    uint64 sstatus;
-    R_CSR(sstatus, sstatus);
-    if(sstatus & SSTATUS_SIE) intr_off();
-    get_cpu()->push_off_num++;
+    if (get_cpu()->push_off_num++ == 0){
+        uint64 sstatus;
+        R_CSR(sstatus, sstatus);
+        if(sstatus & SSTATUS_SIE) {
+            get_cpu()->intr_status = 1;
+            intr_off();
+        }
+        else get_cpu()->intr_status = 0;
+    }
 }

@@ -5,9 +5,10 @@
 #include "process.h"
 
 enum THREAD_STATE {
-    RUNNING,
-    READY,
-    SLEEPING,
+    T_RUNNING,
+    T_READY,
+    T_SLEEPING,
+    T_ZOMBIE,
 };
 
 typedef struct {
@@ -69,11 +70,16 @@ typedef struct {
     uint64 kstack_bottom;
     struct trapframe_t* trapframe;
 
+    process_t* process;
+    uint64 tid;
+
 } thread_t;
+
+#define MAX_THREAD 256
 
 void context_switch(thread_context_t *pre, thread_context_t* cur);
 
-thread_t* alloc_thread(process_t* porc, uint64 entry);
-void free_thread(thread_t thread);
+thread_t* alloc_thread();
+void free_thread(thread_t* thread);
 
 #endif

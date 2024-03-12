@@ -34,14 +34,20 @@
 
 // kernel virtual layout
 
+
+
 #define TRAMPOLINE (MAX_VA - PG_SIZE)
 
 #define MAX_VA (1ull << (9 + 9 + 9 + 12 - 1))
 
 // user virtual layout in same place
 
+#define TSTACK00 0x200000000ull
 
-#define TRAPFRAME (TRAMPOLINE - PG_SIZE)
+#define MAX_TSTACK_SIZE 0x10000ull
+
+#define TSTACK0(tid) TSTACK00 + MAX_TSTACK_SIZE * LSR_TX_IDLE
+
 
 //TRAMPOLINE here
 

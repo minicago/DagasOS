@@ -3,6 +3,7 @@
 #include "print.h"
 #include "pmm.h"
 #include "csr.h"
+#include "process.h"
 
 pagetable_t kernel_pagetable;
 
@@ -97,19 +98,17 @@ void kvminit(){
     mappages(kernel_pagetable, KERNEL0, KERNEL0, PMEM0 - KERNEL0, PTE_R | PTE_W | PTE_X);
     mappages(kernel_pagetable, PMEM0, PMEM0, MAX_PA - PMEM0, PTE_R | PTE_W);
 
-    sfencevma();
+    sfencevma_all(MAX_PROCESS);
     
-    W_CSR(satp, ATP_MODE_SV39 | (uint64) kernel_pagetable >> PG_OFFSET_SHIFT);
+    W_CSR(satp, ATP_MODE_SV39 | ((uint64) kernel_pagetable >> PG_OFFSET_SHIFT) | ((uint64) MAX_PROCESS << ATP_ASID_OFFSET) );
     
     printf("%p\n", va2pa(kernel_pagetable, 0x80000002));
-    sfencevma();
+    sfencevma_all(MAX_PROCESS);
     
 }
 
-uint64 vmdealloc(pagetable_t pagetable, uint64 va_l, uint64 va_r){
-    return 0;
-}
-
-uint64 vmalloc(pagetable_t pagetable, uint64 va_l, uint64 va_r, uint64 xperm){
-    return 0;
+pagetable_t* make_u_pagetable(){
+    pagetable_t* u_pagetable = palloc();
+    memset(u_pagetable, 0, sizeof(u_pagetable));
+    return u_pagetable;
 }

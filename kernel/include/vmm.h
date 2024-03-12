@@ -48,12 +48,18 @@ typedef pte_t* pagetable_t;
 #define ATP_PNN_MASK  0x00000fffffffffffull
 #define ATP_PNN_OFFSET 0
 
-#define sfencevma() asm("sfence.vma zero, zero")
+#define sfencevma(addr, asid) \
+    asm("sfence.vma %0, %1"::"r"(addr),"r"(asid))
+
+#define sfencevma_all(asid) \
+    asm("sfence.vma x0, %0"::"r"(asid))
 
 pte_t* walk(pagetable_t pagetable, uint64 va, int alloc);
 
 int mappages(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, uint64 perm);
 
 void kvminit();
+
+pagetable_t* make_u_pagetable();
 
 #endif
