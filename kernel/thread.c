@@ -4,6 +4,7 @@
 #include "memory_layout.h"
 #include "csr.h"
 #include "cpu.h"
+#include "coro.h"
 
 spinlock_t thread_pool_lock;
 
@@ -12,13 +13,7 @@ thread_t thread_pool[MAX_THREAD];
 
 thread_t* free_thread_head = NULL;
 
-void switch_to(thread_t* thread){
-    C_CSR(sstatus, SSTATUS_SPP);
-    W_CSR(sepc, thread->context->epc);
-    W_CSR(satp, thread->process->pagetable | (thread->process->pid << ATP_ASID_OFFSET));
-    context_switch(get_cpu()->kernel_context,thread->context);
-    asm("sret");
-}
+
 
 void thread_pool_init(){
     init_spinlock(&thread_pool_lock);

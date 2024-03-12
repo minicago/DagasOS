@@ -5,9 +5,9 @@
 #include "vmm.h"
 #include "virtio_disk.h"
 #include "buf.h"
-
-void dosomething(){}
 #include "spinlock.h"
+
+
 
 int main(){
     uartinit();

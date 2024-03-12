@@ -60,6 +60,7 @@ typedef struct {
 } thread_t;
 
 #define MAX_THREAD 256
+extern thread_t thread_pool[];
 
 void context_switch(context_t *pre, context_t* cur);
 

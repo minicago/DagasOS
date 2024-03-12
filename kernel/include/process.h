@@ -4,6 +4,9 @@
 #include "dagaslib.h"
 #include "vmm.h"
 #include "spinlock.h"
+#include <setjmp.h>
+
+extern jmp_buf kernel_env[];
 
 #define MAX_PROCESS 256
 
