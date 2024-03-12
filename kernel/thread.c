@@ -8,14 +8,12 @@ spinlock_t thread_pool_lock;
 
 thread_t thread_pool[MAX_THREAD];
 
-thread_t* runable_thread_head = NULL;
-
-thread_t* freed_thread_head = NULL;
+thread_t* free_thread_head = NULL;
 
 void thread_pool_init(){
     init_spinlock(&thread_pool_lock);
     acquire_spinlock(&thread_pool_lock);
-    freed_thread_head = &thread_pool[0];
+    free_thread_head = &thread_pool[0];
     for(uint64 i = 1; i < MAX_THREAD; i++){
         *(uint64*)&thread_pool[i] = (uint64) &thread_pool[i - 1];
     }
@@ -27,6 +25,7 @@ void entry_main(thread_t* thread){
     thread->context.pc = USER_ENTRY;
     thread->context.ra = USER_EXIT;
     thread->context.sp = TSTACK0(i) + MAX_TSTACK_SIZE - sizeof(struct trapframe_t);
+    thread->state = T_READY;
     memset(thread->context.s, 0, sizeof(thread->context.s));
     release_spinlock(&thread->lock);
 }
@@ -58,15 +57,15 @@ void init_thread(thread_t* thread){
 
 thread_t* alloc_thread(){
     acquire_spinlock(&thread_pool_lock);
-    thread_t* new_thread = freed_thread_head;
-    freed_thread_head = (thread_t*)*(uint64*) freed_thread_head;
+    thread_t* new_thread = free_thread_head;
+    free_thread_head = (thread_t*)*(uint64*) free_thread_head;
     release_spinlock(&thread_pool_lock);
     return new_thread;
 }
 
 void free_thread(thread_t* thread){
     acquire_spinlock(&thread_pool_lock);
-    *(thread_t**) thread = freed_thread_head;
-    freed_thread_head = thread;
+    *(thread_t**) thread = free_thread_head;
+    free_thread_head = thread;
     release_spinlock(&thread_pool_lock);
 }

@@ -1,4 +1,7 @@
 #include "pmm.h"
+#include "spinlock.h"
+
+spinlock_t pmm_lock;
 
 extern char pmem_base[];
 
@@ -11,6 +14,7 @@ struct {
 } pmem;
 
 void pmem_init() {
+    init_spinlock(&pmm_lock);
     p_range_free((void *)pmem_base, PMEM_END);
 }
 
@@ -27,6 +31,7 @@ void p_range_free(void *start, void* end) {
     which should be a pointer point next free page.
 */
 void pfree(void *pa) {
+    acquire_spinlock(&pmm_lock);
     struct ppage* r;
 
     if((uint64)pa % PG_SIZE != 0 || (char *)pa < pmem_base || pa >= PMEM_END) {
@@ -38,6 +43,7 @@ void pfree(void *pa) {
     r = pmem.free_pg_list;
     pmem.free_pg_list = pa;
     ((struct ppage*)pa)->next = r;
+    release_spinlock(&pmm_lock);
 }
 
 /*
@@ -46,11 +52,11 @@ void pfree(void *pa) {
 */
 void* palloc() {
     struct ppage* r = pmem.free_pg_list;
-
+    acquire_spinlock(&pmm_lock);
     if(r != NULL) {
         pmem.free_pg_list = r->next;
         memset((char*) r, 'N', sizeof(r));
     }
-
+    release_spinlock(&pmm_lock);
     return (void*)r;
 }
