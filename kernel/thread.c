@@ -38,8 +38,8 @@ thread_t* alloc_thread(){
     acquire_spinlock(&thread_pool_lock);
     thread_t* new_thread = freed_thread_head;
     freed_thread_head = (thread_t*)*(uint64*) freed_thread_head;
-    return new_thread;
     release_spinlock(&thread_pool_lock);
+    return new_thread;
 }
 
 void free_thread(thread_t* thread){
