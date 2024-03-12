@@ -20,7 +20,7 @@ typedef struct {
     spinlock_t lock;
     // basic information
     enum PROCESS_STATE state;
-    int pid;
+    int64 pid;
     pagetable_t* pagetable;
 
     // sub process

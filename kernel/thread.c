@@ -14,7 +14,9 @@ thread_t* free_thread_head = NULL;
 
 void switch_to(thread_t* thread){
     C_CSR(sstatus, SSTATUS_SPP);
-    W_CSR(sepc, thread->context.pc);
+    W_CSR(sepc, thread->context->epc);
+    W_CSR(satp, thread->process->pagetable | (thread->process->pid << ATP_ASID_OFFSET));
+    context_switch(get_cpu()->kernel_context,thread->context);
     asm("sret");
 }
 
@@ -30,11 +32,11 @@ void thread_pool_init(){
 
 void entry_main(thread_t* thread){
     acquire_spinlock(&thread->lock);
-    thread->context.pc = USER_ENTRY;
-    thread->context.ra = USER_EXIT;
-    thread->context.sp = TSTACK0(thread->tid) + MAX_TSTACK_SIZE - sizeof(struct trapframe_t);
+    thread->context->epc = USER_ENTRY;
+    thread->context->ra = USER_EXIT;
+    thread->context->sp = thread->kstack_bottom - sizeof(context_t);
     thread->state = T_READY;
-    memset(thread->context.s, 0, sizeof(thread->context.s));
+    // memset(thread->context.s, 0, sizeof(thread->context.s));
     release_spinlock(&thread->lock);
 }
 
@@ -44,7 +46,8 @@ void attach_to_process(thread_t* thread, process_t* process){
     process -> thread_count ++;
 
     uint64 pa = (uint64)palloc();
-    uint64 va = TSTACK0(thread->tid) + MAX_TSTACK_SIZE - PG_SIZE;
+    uint64 va = thread->kstack_bottom - PG_SIZE;
+    thread->context = (context_t*)thread->kstack_bottom - sizeof(context_t); // specific thread context at bottom of stack base
     mappages(kernel_pagetable, va, pa, PG_SIZE, PTE_R | PTE_W);
     mappages(*process->pagetable, va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
     sfencevma(va, MAX_THREAD);

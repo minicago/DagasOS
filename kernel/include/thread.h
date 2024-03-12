@@ -12,18 +12,7 @@ enum THREAD_STATE {
 };
 
 typedef struct {
-    uint64 ra;
-    uint64 sp;
-    uint64 pc;
-    uint64 s[12];
-} context_t;
-
-struct trapframe_t {
-  /*   0 */ uint64 kernel_satp;   // kernel page table
-  /*   8 */ uint64 kernel_sp;     // top of process's kernel stack
-  /*  16 */ uint64 kernel_trap;   // usertrap()
-  /*  24 */ uint64 epc;           // saved user program counter
-  /*  32 */ uint64 kernel_hartid; // saved kernel tp
+  /*  32 */ uint64 epc;
   /*  40 */ uint64 ra;
   /*  48 */ uint64 sp;
   /*  56 */ uint64 gp;
@@ -55,16 +44,15 @@ struct trapframe_t {
   /* 264 */ uint64 t4;
   /* 272 */ uint64 t5;
   /* 280 */ uint64 t6;
-};
+} context_t;
 
 typedef struct {
     spinlock_t lock;
 
     enum THREAD_STATE state;
-    context_t context;
+    context_t* context;
 
     uint64 kstack_bottom;
-    struct trapframe_t* trapframe;
 
     process_t* process;
     uint64 tid;
