@@ -2,6 +2,8 @@
 #include "spinlock.h"
 #include "vmm.h"
 #include "memory_layout.h"
+#include "csr.h"
+#include "cpu.h"
 
 spinlock_t thread_pool_lock;
 
@@ -9,6 +11,12 @@ spinlock_t thread_pool_lock;
 thread_t thread_pool[MAX_THREAD];
 
 thread_t* free_thread_head = NULL;
+
+void switch_to(thread_t* thread){
+    C_CSR(sstatus, SSTATUS_SPP);
+    W_CSR(sepc, thread->context.pc);
+    asm("sret");
+}
 
 void thread_pool_init(){
     init_spinlock(&thread_pool_lock);
@@ -24,7 +32,7 @@ void entry_main(thread_t* thread){
     acquire_spinlock(&thread->lock);
     thread->context.pc = USER_ENTRY;
     thread->context.ra = USER_EXIT;
-    thread->context.sp = TSTACK0(i) + MAX_TSTACK_SIZE - sizeof(struct trapframe_t);
+    thread->context.sp = TSTACK0(thread->tid) + MAX_TSTACK_SIZE - sizeof(struct trapframe_t);
     thread->state = T_READY;
     memset(thread->context.s, 0, sizeof(thread->context.s));
     release_spinlock(&thread->lock);
@@ -33,9 +41,10 @@ void entry_main(thread_t* thread){
 void attach_to_process(thread_t* thread, process_t* process){
     acquire_spinlock(&thread->lock);
     thread -> process = process;
+    process -> thread_count ++;
 
     uint64 pa = (uint64)palloc();
-    uint64 va = TSTACK0(i) + MAX_TSTACK_SIZE - PG_SIZE;
+    uint64 va = TSTACK0(thread->tid) + MAX_TSTACK_SIZE - PG_SIZE;
     mappages(kernel_pagetable, va, pa, PG_SIZE, PTE_R | PTE_W);
     mappages(*process->pagetable, va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
     sfencevma(va, MAX_THREAD);

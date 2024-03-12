@@ -14,6 +14,9 @@
 //MIE
 #define MSTATUS_MIE 0x8
 
+//SPP
+#define SSTATUS_SPP 0x100
+
 //SIE
 #define SSTATUS_SIE 0x2
 

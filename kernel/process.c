@@ -1,10 +1,17 @@
 #include "process.h"
+#include "memory_layout.h"
+#include "vmm.h"
 
 spinlock_t process_pool_lock;
 
 process_t process_pool[MAX_PROCESS];
 
 process_t* free_process_head = NULL;
+
+uint64 MAGIC_CODE[PG_SIZE] = {
+    0x00, 0x00, 0x00, 0x00,
+
+};
 
 void process_pool_init(){
     init_spinlock(&process_pool_lock);
@@ -33,9 +40,13 @@ process_t* alloc_process(){
     return new_process;
 }
 
-void process_thread(process_t* process){
+void free_process(process_t* process){
     acquire_spinlock(&process_pool_lock);
     *(process_t**) process = free_process_head;
     free_process_head = process;
     release_spinlock(&process_pool_lock);
+}
+
+void map_elf(process_t* process){
+    mappages(*process->pagetable, 0x0, (uint64) &MAGIC_CODE, PG_SIZE, PTE_X | PTE_U | PTE_R); //read_only
 }
