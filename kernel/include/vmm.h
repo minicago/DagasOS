@@ -48,6 +48,8 @@ typedef pte_t* pagetable_t;
 #define ATP_PNN_MASK  0x00000fffffffffffull
 #define ATP_PNN_OFFSET 0
 
+extern pagetable_t kernel_pagetable;
+
 #define sfencevma(addr, asid) \
     asm("sfence.vma %0, %1"::"r"(addr),"r"(asid))
 

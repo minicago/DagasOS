@@ -1,5 +1,6 @@
 #include "thread.h"
 #include "spinlock.h"
+#include "vmm.h"
 #include "memory_layout.h"
 
 spinlock_t thread_pool_lock;
@@ -21,6 +22,28 @@ void thread_pool_init(){
     release_spinlock(&thread_pool_lock);
 }
 
+void entry_main(thread_t* thread){
+    acquire_spinlock(&thread->lock);
+    thread->context.pc = USER_ENTRY;
+    thread->context.ra = USER_EXIT;
+    thread->context.sp = TSTACK0(i) + MAX_TSTACK_SIZE - sizeof(struct trapframe_t);
+    memset(thread->context.s, 0, sizeof(thread->context.s));
+    release_spinlock(&thread->lock);
+}
+
+void attach_to_process(thread_t* thread, process_t* process){
+    acquire_spinlock(&thread->lock);
+    thread -> process = process;
+
+    uint64 pa = (uint64)palloc();
+    uint64 va = TSTACK0(i) + MAX_TSTACK_SIZE - PG_SIZE;
+    mappages(kernel_pagetable, va, pa, PG_SIZE, PTE_R | PTE_W);
+    mappages(*process->pagetable, va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
+    sfencevma(va, MAX_THREAD);
+    sfencevma(va, process->pid);
+    release_spinlock(&thread->lock);
+}
+
 void init_thread(thread_t* thread){
     init_spinlock(&thread->lock);
     acquire_spinlock(&thread->lock);
@@ -29,7 +52,6 @@ void init_thread(thread_t* thread){
     thread->process = NULL;
     memset(&thread->context, 0, sizeof(thread->context)); 
     thread->kstack_bottom = TSTACK0(thread->tid) + MAX_TSTACK_SIZE;
-    
     
     release_spinlock(&thread->lock);
 }

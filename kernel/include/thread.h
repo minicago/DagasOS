@@ -12,11 +12,11 @@ enum THREAD_STATE {
 };
 
 typedef struct {
-    uint32 ra;
-    uint32 sp;
-
-    uint32 s[12];
-} context_content_t;
+    uint64 ra;
+    uint64 sp;
+    uint64 pc;
+    uint64 s[12];
+} context_t;
 
 struct trapframe_t {
   /*   0 */ uint64 kernel_satp;   // kernel page table
@@ -58,14 +58,10 @@ struct trapframe_t {
 };
 
 typedef struct {
-    uint64 addr;
-} thread_context_t;
-
-typedef struct {
     spinlock_t lock;
 
     enum THREAD_STATE state;
-    thread_context_t context;
+    context_t context;
 
     uint64 kstack_bottom;
     struct trapframe_t* trapframe;
@@ -77,7 +73,7 @@ typedef struct {
 
 #define MAX_THREAD 256
 
-void context_switch(thread_context_t *pre, thread_context_t* cur);
+void context_switch(context_t *pre, context_t* cur);
 
 thread_t* alloc_thread();
 void free_thread(thread_t* thread);

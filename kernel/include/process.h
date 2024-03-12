@@ -7,7 +7,8 @@
 
 #define MAX_PROCESS 256
 
-#define FORCE_CONV(type) (type) * (uint64*)
+#define USER_ENTRY 0x00000000ull
+#define USER_EXIT 0x80000000ull
 
 enum PROCESS_STATE {
     UNUSED,
