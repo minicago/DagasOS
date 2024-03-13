@@ -2,7 +2,7 @@
 #include "types.h"
 #include "strap.h"
 void init_spinlock(spinlock_t* spinlock){
-    spinlock = 0;
+    *spinlock = 0;
     __sync_synchronize();
 }
 
