@@ -10,6 +10,7 @@ typedef struct{
     uint64 push_off_num;
     int intr_status;
     coro_t* current_coro;
+    coro_t scheduler_coro;
 }cpu_t;
 
 cpu_t* get_cpu();

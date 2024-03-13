@@ -3,7 +3,10 @@
 # include "cpu.h"
 
 coro_t thread_manager_coro[MAX_THREAD];
-coro_t scheduler_coro;
+
+// in the future to realize multihart, we need to
+
+// coro_t scheduler_coro;
 
 coro_t* current;
 
@@ -16,19 +19,12 @@ void switch_coro(coro_t* dest){
 
 void init_thread_manager_coro(uint64 tid){
     get_cpu()->current_coro = &thread_manager_coro[tid];
-    switch_coro(&scheduler_coro);
     return ;
 }
 
 void coro_init(){
-    get_cpu()->current_coro = &scheduler_coro;
-    for(uint64 i = 0; i < MAX_THREAD; i++){
-        init_thread_manager_coro(i);
-        //thread_manager_coro[i].env.ra =(uint64) forkret;
-        //thread_manager_coro[i].env.sp = 
-    }
-}
-// current == 
+
+} 
 
 void scheduler_loop(){
     while (1)
@@ -44,8 +40,18 @@ void scheduler_loop(){
             }
         }
     }
-    
+}
 
+void fake_entry(coro_t* coro, uint64 entry){
+    coro->env.ra = entry;
+}
+
+void fake_sp(coro_t* coro, uint64 sp){
+    coro->env.sp = sp;
+}
+
+void clean_s(coro_t* coro, uint64 sp){
+    memset(coro->env.s, 0, sizeof(coro->env.s));
 }
 
 

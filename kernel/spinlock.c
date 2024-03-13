@@ -22,7 +22,7 @@ void release_spinlock(spinlock_t* spinlock){
 
 int try_acquire_spinlock(spinlock_t* spinlock){
     intr_push_off();
-    if (__sync_lock_test_and_set(spinlock, 1) != 0){
+    if (__sync_lock_test_and_set(spinlock, 1) != 1){
         __sync_synchronize();
         return 1;
     }else {
