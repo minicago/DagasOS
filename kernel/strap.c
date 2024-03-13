@@ -8,8 +8,10 @@ void set_strap_stvec(){
 }
 
 void set_strap_uservec(){
-    //intr_on();
-    W_CSR(stvec, TRAMPOLINE + USER_VEC_OFFSET);
+
+    
+    printf("trap:%p\n",TRAMPOLINE + USER_VEC_OFFSET);
+    W_CSR(stvec, (TRAMPOLINE + USER_VEC_OFFSET));
 }
 
 void strap_init(){
@@ -20,15 +22,23 @@ void usertrap(){
     intr_off();
     set_strap_stvec();
     printf("Genius, you enter user trap!\n");
+    int64 tid = get_tid();
+    thread_pool[tid].state = T_READY;
+    release_spinlock(&thread_pool[tid].lock);
+    switch_coro(&get_cpu()->scheduler_coro);
+    entry_to_user();
 }
 
 void strap_handler(){
+    
     uint64 stval = 0, sscratch = 0, sepc = 0, sip = 0, scause = 0;
     R_CSR(stval, stval);
     R_CSR(sscratch, sscratch);
     R_CSR(sepc, sepc);
     R_CSR(sip, sip);
     R_CSR(scause, scause);
+    
+    if (scause == 0x8000000000000001ull) asm("sret");
     printf("scause = %p, stval = %p, sscratch = %p, sepc = %p, sip = %p\n", scause, stval, sscratch, sepc, sip);
     while(1);
 }

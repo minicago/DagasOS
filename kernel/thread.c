@@ -34,9 +34,7 @@ void entry_main(thread_t* thread){
 
     acquire_spinlock(&thread->lock);
     thread->trapframe->kernel_satp = 
-    ((uint64) MAX_PROCESS << ATP_ASID_OFFSET) |
-    ((uint64) kernel_pagetable << ATP_PNN_OFFSET) |
-    ATP_MODE_SV39;
+        ATP(MAX_THREAD, kernel_pagetable); 
     thread->trapframe->kernel_trap = (uint64 )usertrap;
     thread->trapframe->epc = USER_ENTRY;
     thread->trapframe->ra = USER_EXIT;
@@ -94,12 +92,13 @@ void entry_to_user(){
     W_CSR(sepc, thread_pool[tid].trapframe->epc);
     C_CSR(sstatus, SSTATUS_SPP);
     R_REG(sp, thread_pool[tid].trapframe->kernel_sp); 
-    W_CSR(sscratch, &thread_pool[tid].trapframe);
-    
+    W_CSR(sscratch, thread_pool[tid].trapframe);
+    printf("trapframe:%p\n",thread_pool[tid].trapframe);
     printf("go to user\n");
     set_strap_uservec();
-    ((userret_t*) (TRAMPOLINE + USER_RET_OFFSET) )(thread_pool[tid].trapframe, 
-    ((uint64) thread_pool[tid].process->pid << ATP_ASID_OFFSET) |
-    ((uint64) thread_pool[tid].process->pagetable << ATP_PNN_OFFSET) |
-    ATP_MODE_SV39);
+    printf("%p\n", *(uint64*) walk( thread_pool[tid].process->pagetable ,0, 0) );
+    ((userret_t*) (TRAMPOLINE + USER_RET_OFFSET) )(
+    thread_pool[tid].trapframe, 
+    ATP(thread_pool[tid].process->pid, thread_pool[tid].process->pagetable) );
+
 }

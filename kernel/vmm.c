@@ -32,7 +32,7 @@ pte_t* walk(pagetable_t pagetable, uint64 va, int alloc){
     if( (uint64) pagetable >= MAX_VA ) {
         panic("walk : bad root pagetable");
     }
-    for(int level = 2; level >= 1; level --){
+    for(int level = 2; level > 0; level --){
         pte_t *pte = &pagetable[PTE_INDEX(va, level)];
         if(*pte & PTE_V) {
             pagetable = (pagetable_t) PTE2PA(*pte);
@@ -100,7 +100,7 @@ void kvminit(){
     mappages(kernel_pagetable, PMEM0, PMEM0, MAX_PA - PMEM0, PTE_R | PTE_W);
     mappages(kernel_pagetable, TRAMPOLINE, (uint64) trampoline, PG_SIZE, PTE_R | PTE_W | PTE_X);
     
-    W_CSR(satp, ATP_MODE_SV39 | ((uint64) kernel_pagetable >> PG_OFFSET_SHIFT) | ((uint64) MAX_PROCESS << ATP_ASID_OFFSET) );
+    W_CSR(satp, ATP(MAX_THREAD, kernel_pagetable) );
     
     sfencevma_all(MAX_PROCESS);
     
@@ -109,7 +109,6 @@ void kvminit(){
 pagetable_t make_u_pagetable(){
     pagetable_t u_pagetable = palloc();
     memset(u_pagetable, 0, PG_SIZE);
-    printf("%p\n",u_pagetable);
     mappages(u_pagetable, TRAMPOLINE, (uint64) trampoline, PG_SIZE, PTE_R | PTE_W | PTE_X);    
     return u_pagetable;
 }

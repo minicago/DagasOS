@@ -68,7 +68,6 @@ uservec:
 # userret (trapframe)
 userret:
         csrw satp, a1
-        
         srli    a1,a1,44
         slli    a1,a1,48
         srli    a1,a1,48        
@@ -110,7 +109,6 @@ userret:
 	# restore user a0
         ld a0, 112(a0)
         
-        sfence.vma zero, a1
         # return to user mode and user pc.
         # usertrapret() set up sstatus and sepc.
         sret

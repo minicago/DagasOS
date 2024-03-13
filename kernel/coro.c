@@ -29,7 +29,7 @@ void scheduler_loop(){
                     switch_coro(&thread_manager_coro[i]);
                 }
                 
-                release_spinlock(&thread_pool[i].lock);
+                // release_spinlock(&thread_pool[i].lock);
             }
         }
     }
