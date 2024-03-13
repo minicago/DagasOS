@@ -67,13 +67,14 @@ uservec:
 .globl userret
 # userret (trapframe)
 userret:
-        ld a1, 16(a0)
-        csrw satp, t0
+        csrw satp, a1
+        
         srli    a1,a1,44
         slli    a1,a1,48
         srli    a1,a1,48        
         sfence.vma zero, a1
-
+        
+        
         # restore all but a0 from TRAPFRAME
         ld ra, 40(a0)
         ld sp, 48(a0)

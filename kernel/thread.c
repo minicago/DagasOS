@@ -8,6 +8,7 @@
 #include "strap.h"
 #include "reg.h"
 #include "process.h"
+#include "strap.h"
 
 spinlock_t thread_pool_lock;
 
@@ -33,8 +34,8 @@ void entry_main(thread_t* thread){
 
     acquire_spinlock(&thread->lock);
     thread->trapframe->kernel_satp = 
-    ((uint64) thread->process->pid << ATP_ASID_OFFSET) |
-    ((uint64) thread->process->pagetable << ATP_PNN_OFFSET) |
+    ((uint64) MAX_PROCESS << ATP_ASID_OFFSET) |
+    ((uint64) kernel_pagetable << ATP_PNN_OFFSET) |
     ATP_MODE_SV39;
     thread->trapframe->kernel_trap = (uint64 )usertrap;
     thread->trapframe->epc = USER_ENTRY;
@@ -96,5 +97,9 @@ void entry_to_user(){
     W_CSR(sscratch, &thread_pool[tid].trapframe);
     
     printf("go to user\n");
-    ((userret_t*) (TRAMPOLINE + USER_RET_OFFSET) )(thread_pool[tid].trapframe);
+    set_strap_uservec();
+    ((userret_t*) (TRAMPOLINE + USER_RET_OFFSET) )(thread_pool[tid].trapframe, 
+    ((uint64) thread_pool[tid].process->pid << ATP_ASID_OFFSET) |
+    ((uint64) thread_pool[tid].process->pagetable << ATP_PNN_OFFSET) |
+    ATP_MODE_SV39);
 }

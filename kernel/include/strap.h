@@ -6,7 +6,7 @@
 
 void trampoline();
 void uservec();
-void userret(trapframe_t* trapframe);
+void userret(trapframe_t* trapframe, uint64 atp);
 
 typedef typeof(userret) userret_t; 
 
