@@ -7,8 +7,9 @@ SECTIONS {
         *(.text)
         . = ALIGN(0x1000);
         trampoline_base = .;
-        *(.trampsec)
-        # ASSERT(. - trampoline_base == 0x1000, "error: trampoline larger than one page");
+        *(trampsec)
+        . = ALIGN(0x1000);
+        ASSERT(. - trampoline_base == 0x1000, "error: trampoline larger than one page");
     }
     . = ALIGN(16);
     .bss : {
