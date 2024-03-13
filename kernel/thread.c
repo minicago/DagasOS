@@ -83,5 +83,6 @@ void entry_to_user(){
     if(tid == -1) panic("wrong coro");
     W_CSR(sepc, thread_pool[tid].trapframe->epc);
     C_CSR(sstatus, SSTATUS_SPP);
+    W_CSR(sscratch, &thread_pool[tid].trapframe);
     // call trapret in trampoline
 }
