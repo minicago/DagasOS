@@ -60,7 +60,7 @@ void init_thread_manager_coro(uint64 tid){
     sfencevma(va, MAX_THREAD);
     sfencevma(va, thread_pool[tid].process->pid);
 
-    thread_pool[tid].trapframe = (trapframe_t*) COROSTACK_BOTTOM(tid) - sizeof(trapframe_t);
+    thread_pool[tid].trapframe = (trapframe_t*) (COROSTACK_BOTTOM(tid) - sizeof(trapframe_t));
     set_sp(&thread_manager_coro[tid], (uint64) thread_pool[tid].trapframe);
  
     
@@ -75,6 +75,5 @@ int get_tid(){
 }
 
 void init_as_scheduler(){
-    printf("?");
     get_cpu()->current_coro = &get_cpu()->scheduler_coro;
 }

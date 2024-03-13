@@ -4,6 +4,7 @@
 #include "pmm.h"
 #include "csr.h"
 #include "process.h"
+#include "strap.h"
 
 pagetable_t kernel_pagetable;
 
@@ -97,7 +98,7 @@ void kvminit(){
     mappages(kernel_pagetable, VIRTIO0, VIRTIO0, PG_SIZE, PTE_R | PTE_W);
     mappages(kernel_pagetable, KERNEL0, KERNEL0, PMEM0 - KERNEL0, PTE_R | PTE_W | PTE_X);
     mappages(kernel_pagetable, PMEM0, PMEM0, MAX_PA - PMEM0, PTE_R | PTE_W);
-    mappages(kernel_pagetable, TRAMPOLINE, TRAMPOLINE, PG_SIZE, PTE_R | PTE_W | PTE_X);
+    mappages(kernel_pagetable, TRAMPOLINE, (uint64) trampoline, PG_SIZE, PTE_R | PTE_W | PTE_X);
     
     W_CSR(satp, ATP_MODE_SV39 | ((uint64) kernel_pagetable >> PG_OFFSET_SHIFT) | ((uint64) MAX_PROCESS << ATP_ASID_OFFSET) );
     
@@ -107,7 +108,8 @@ void kvminit(){
 
 pagetable_t make_u_pagetable(){
     pagetable_t u_pagetable = palloc();
-    memset(u_pagetable, 0, sizeof(u_pagetable));
-    mappages(u_pagetable, TRAMPOLINE, TRAMPOLINE, PG_SIZE, PTE_R | PTE_W | PTE_X);
+    memset(u_pagetable, 0, PG_SIZE);
+    printf("%p\n",u_pagetable);
+    mappages(u_pagetable, TRAMPOLINE, (uint64) trampoline, PG_SIZE, PTE_R | PTE_W | PTE_X);    
     return u_pagetable;
 }

@@ -143,23 +143,31 @@ int main(){
     
     kernel_test();
 
-    
+    process_pool_init();
+    thread_pool_init();
 
     
 
     process_t* p = alloc_process();
     printf("get process\n");
     init_process(p);
+    printf("init process\n");
     map_elf(p);
+    printf("map process\n");
     
 
     thread_t* t = alloc_thread();
+    printf("get thread\n");
     init_thread(t);
+    printf("init thread\n");
     attach_to_process(t, p);
+    printf("attached done\n");
+    
 
     init_thread_manager_coro(t->tid);
-
+    printf("init manager done\n");
     entry_main(t);
+    printf("entry done\n");
 
     scheduler_loop();
     

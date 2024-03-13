@@ -4,14 +4,14 @@
 #include "types.h"
 #include "thread.h"
 
-extern void* trampoline;
+void trampoline();
 void uservec();
 void userret(trapframe_t* trapframe);
 
 typedef typeof(userret) userret_t; 
 
-#define USER_VEC_OFFSET ((uint64) ((void*) uservec - trampoline))
-#define USER_RET_OFFSET ((uint64) ((void*) userret - trampoline))
+#define USER_VEC_OFFSET ((uint64) ((void*) uservec - (void*)trampoline))
+#define USER_RET_OFFSET ((uint64) ((void*) userret - (void*)trampoline))
 
 
 void set_strap_uservec();

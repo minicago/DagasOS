@@ -29,8 +29,14 @@ void thread_pool_init(){
 }
 
 // only work after init thread manager coro
-void entry_main(thread_t* thread){
+void entry_main(thread_t* thread){        
+
     acquire_spinlock(&thread->lock);
+    thread->trapframe->kernel_satp = 
+    ((uint64) thread->process->pid << ATP_ASID_OFFSET) |
+    ((uint64) thread->process->pagetable << ATP_PNN_OFFSET) |
+    ATP_MODE_SV39;
+    thread->trapframe->kernel_trap = (uint64 )usertrap;
     thread->trapframe->epc = USER_ENTRY;
     thread->trapframe->ra = USER_EXIT;
     thread->trapframe->sp = thread->kstack_bottom - sizeof(trapframe_t);
@@ -42,10 +48,7 @@ void attach_to_process(thread_t* thread, process_t* process){
     acquire_spinlock(&thread->lock);
     thread -> process = process;
     process -> thread_count ++;
-    thread->trapframe->kernel_satp = 
-    ((uint64) thread->process->pid << ATP_ASID_OFFSET) |
-    ((uint64) thread->process->pagetable << ATP_PNN_OFFSET) |
-    ATP_MODE_SV39;
+
     uint64 pa = (uint64)palloc();
     uint64 va = thread->kstack_bottom - PG_SIZE;
     // mappages(kernel_pagetable, va, pa, PG_SIZE, PTE_R | PTE_W);
@@ -62,8 +65,7 @@ void init_thread(thread_t* thread){
 
     thread->tid = thread - thread_pool;
     thread->process = NULL;
-    thread->trapframe->kernel_trap = (uint64 )usertrap;
-    memset(&thread->trapframe, 0, sizeof(thread->trapframe)); 
+ 
     thread->kstack_bottom = TSTACK_BOTTOM(thread->tid);
     
     release_spinlock(&thread->lock);
@@ -85,12 +87,14 @@ void free_thread(thread_t* thread){
 }
 
 void entry_to_user(){
+    printf("entry to user\n");
     int tid = get_tid();
     if(tid == -1) panic("wrong coro");
-    
     W_CSR(sepc, thread_pool[tid].trapframe->epc);
     C_CSR(sstatus, SSTATUS_SPP);
-    W_CSR(sscratch, &thread_pool[tid].trapframe);
     R_REG(sp, thread_pool[tid].trapframe->kernel_sp); 
+    W_CSR(sscratch, &thread_pool[tid].trapframe);
+    
+    printf("go to user\n");
     ((userret_t*) (TRAMPOLINE + USER_RET_OFFSET) )(thread_pool[tid].trapframe);
 }
