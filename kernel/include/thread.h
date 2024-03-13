@@ -44,13 +44,13 @@ typedef struct {
   /* 264 */ uint64 t4;
   /* 272 */ uint64 t5;
   /* 280 */ uint64 t6;
-} context_t;
+} trapframe_t;
 
 typedef struct {
     spinlock_t lock;
 
     enum THREAD_STATE state;
-    context_t* context;
+    trapframe_t* trapframe;
 
     uint64 kstack_bottom;
 
@@ -60,10 +60,11 @@ typedef struct {
 } thread_t;
 
 #define MAX_THREAD 256
-
-void context_switch(context_t *pre, context_t* cur);
+extern thread_t thread_pool[];
 
 thread_t* alloc_thread();
 void free_thread(thread_t* thread);
+
+void entry_to_user();
 
 #endif

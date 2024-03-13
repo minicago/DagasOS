@@ -8,7 +8,7 @@
 
 struct
 {
-  spinlock_t *lock;
+  spinlock_t lock;
   struct buf buf[NBUF];
 
   // Linked list of all buffers, through prev/next.
@@ -21,7 +21,7 @@ void block_cache_init(void)
 {
   struct buf *b;
 
-  init_spinlock(block_cache.lock);
+  init_spinlock(&block_cache.lock);
 
   // Create linked list of buffers
   block_cache.head.prev = &block_cache.head;
@@ -44,7 +44,7 @@ static struct buf *get_block(uint32 dev, uint32 block_idx)
 {
   struct buf *b;
 
-  acquire_spinlock(block_cache.lock);
+  acquire_spinlock(&block_cache.lock);
 
   // Is the block already cached?
   for (b = block_cache.head.next; b != &block_cache.head; b = b->next)
@@ -52,7 +52,7 @@ static struct buf *get_block(uint32 dev, uint32 block_idx)
     if (b->dev == dev && b->block_idx == block_idx)
     {
       b->refcnt++;
-      release_spinlock(block_cache.lock);
+      release_spinlock(&block_cache.lock);
       // acquiresleep(&b->lock);
       return b;
     }
@@ -69,7 +69,7 @@ static struct buf *get_block(uint32 dev, uint32 block_idx)
       b->valid = 0;
       b->refcnt = 1;
       b->disk = 0;
-      release_spinlock(block_cache.lock);
+      release_spinlock(&block_cache.lock);
       // acquiresleep(&b->lock);
       return b;
     }
@@ -82,11 +82,9 @@ static struct buf *get_block(uint32 dev, uint32 block_idx)
 struct buf *read_block(uint32 dev, uint32 block_idx)
 {
   struct buf *b;
-  printf("read_block: read");
   b = get_block(dev, block_idx);
   if (!b->valid)
   {
-    printf("read_block: vir read");
     virtio_disk_rw(b, 0);
     b->valid = 1;
   }
@@ -110,7 +108,7 @@ void release_block(struct buf *b)
 
   // releasesleep(&b->lock);
 
-  acquire_spinlock(block_cache.lock);
+  acquire_spinlock(&block_cache.lock);
   b->refcnt--;
   if (b->refcnt == 0)
   {
@@ -123,19 +121,19 @@ void release_block(struct buf *b)
     block_cache.head.next = b;
   }
 
-  release_spinlock(block_cache.lock);
+  release_spinlock(&block_cache.lock);
 }
 
 void pin_block(struct buf *b)
 {
-  acquire_spinlock(block_cache.lock);
+  acquire_spinlock(&block_cache.lock);
   b->refcnt++;
-  release_spinlock(block_cache.lock);
+  release_spinlock(&block_cache.lock);
 }
 
 void unpin_block(struct buf *b)
 {
-  acquire_spinlock(block_cache.lock);
+  acquire_spinlock(&block_cache.lock);
   b->refcnt--;
-  release_spinlock(block_cache.lock);
+  release_spinlock(&block_cache.lock);
 }

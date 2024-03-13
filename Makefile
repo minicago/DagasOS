@@ -6,7 +6,9 @@ SRC_C = $(wildcard $K/*.c)
 OBJS = $K/entry.o
 OBJS += $K/stvec.o \
 		$K/mtvec.o \
-		$K/context_switch.o
+		$K/context_switch.o \
+		$K/coro_switch.o \
+		$K/trampoline.o 
 
 OBJS += $(patsubst $K/%.c, $K/%.o ,$(SRC_C) )
 
