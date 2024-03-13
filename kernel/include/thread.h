@@ -12,7 +12,11 @@ enum THREAD_STATE {
 };
 
 typedef struct {
-  /*  32 */ uint64 epc;
+  /*   0 */ uint64 kernel_satp;   // kernel page table
+  /*   8 */ uint64 kernel_sp;     // top of process's kernel stack
+  /*  16 */ uint64 kernel_trap;   // usertrap()
+  /*  24 */ uint64 epc;           // saved user program counter
+  /*  32 */ uint64 kernel_hartid; // saved kernel tp
   /*  40 */ uint64 ra;
   /*  48 */ uint64 sp;
   /*  56 */ uint64 gp;
@@ -62,7 +66,17 @@ typedef struct {
 #define MAX_THREAD 256
 extern thread_t thread_pool[];
 
+void thread_pool_init();
+
+// only work after init thread manager coro
+void entry_main(thread_t* thread);
+
+void attach_to_process(thread_t* thread, process_t* process);
+
+void init_thread(thread_t* thread);
+
 thread_t* alloc_thread();
+
 void free_thread(thread_t* thread);
 
 void entry_to_user();

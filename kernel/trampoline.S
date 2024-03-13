@@ -65,9 +65,14 @@ uservec:
         jr t0
 
 .globl userret
-# userret (trapframe, satp)
+# userret (trapframe)
 userret:
-        csrw satp, a1
+        ld a1, 16(a0)
+        csrw satp, t0
+        srli    a1,a1,44
+        slli    a1,a1,48
+        srli    a1,a1,48        
+        sfence.vma zero, a1
 
         # restore all but a0 from TRAPFRAME
         ld ra, 40(a0)
@@ -100,10 +105,11 @@ userret:
         ld t4, 264(a0)
         ld t5, 272(a0)
         ld t6, 280(a0)
-
+        
 	# restore user a0
         ld a0, 112(a0)
         
+        sfence.vma zero, a1
         # return to user mode and user pc.
         # usertrapret() set up sstatus and sepc.
         sret

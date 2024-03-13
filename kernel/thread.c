@@ -5,6 +5,9 @@
 #include "csr.h"
 #include "cpu.h"
 #include "coro.h"
+#include "strap.h"
+#include "reg.h"
+#include "process.h"
 
 spinlock_t thread_pool_lock;
 
@@ -39,12 +42,14 @@ void attach_to_process(thread_t* thread, process_t* process){
     acquire_spinlock(&thread->lock);
     thread -> process = process;
     process -> thread_count ++;
-
+    thread->trapframe->kernel_satp = 
+    ((uint64) thread->process->pid << ATP_ASID_OFFSET) |
+    ((uint64) thread->process->pagetable << ATP_PNN_OFFSET) |
+    ATP_MODE_SV39;
     uint64 pa = (uint64)palloc();
     uint64 va = thread->kstack_bottom - PG_SIZE;
-
     // mappages(kernel_pagetable, va, pa, PG_SIZE, PTE_R | PTE_W);
-    mappages(*process->pagetable, va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
+    mappages(process->pagetable, va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
     // sfencevma(va, MAX_THREAD);
     sfencevma(va, process->pid);
 
@@ -57,6 +62,7 @@ void init_thread(thread_t* thread){
 
     thread->tid = thread - thread_pool;
     thread->process = NULL;
+    thread->trapframe->kernel_trap = (uint64 )usertrap;
     memset(&thread->trapframe, 0, sizeof(thread->trapframe)); 
     thread->kstack_bottom = TSTACK_BOTTOM(thread->tid);
     
@@ -81,8 +87,10 @@ void free_thread(thread_t* thread){
 void entry_to_user(){
     int tid = get_tid();
     if(tid == -1) panic("wrong coro");
+    
     W_CSR(sepc, thread_pool[tid].trapframe->epc);
     C_CSR(sstatus, SSTATUS_SPP);
     W_CSR(sscratch, &thread_pool[tid].trapframe);
-    // call trapret in trampoline
+    R_REG(sp, thread_pool[tid].trapframe->kernel_sp); 
+    ((userret_t*) (TRAMPOLINE + USER_RET_OFFSET) )(thread_pool[tid].trapframe);
 }

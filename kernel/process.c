@@ -9,7 +9,7 @@ process_t process_pool[MAX_PROCESS];
 process_t* free_process_head = NULL;
 
 uint64 MAGIC_CODE[PG_SIZE] = {
-    0x00, 0x00, 0x00, 0x00,
+    0x73, 0x00, 0x00, 0x00,
 
 };
 
@@ -48,5 +48,5 @@ void free_process(process_t* process){
 }
 
 void map_elf(process_t* process){
-    mappages(*process->pagetable, 0x0, (uint64) &MAGIC_CODE, PG_SIZE, PTE_X | PTE_U | PTE_R); //read_only
+    mappages(process->pagetable, 0x0, (uint64) &MAGIC_CODE, PG_SIZE, PTE_X | PTE_U | PTE_R); //read_only
 }

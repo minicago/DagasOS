@@ -5,7 +5,12 @@ SECTIONS {
     . = 0x80000000; /*QEMU entry is set at 0x80000000*/
     .text : {
         *(.text)
+        . = ALIGN(0x1000);
+        trampoline_base = .;
+        *(.trampsec)
+        # ASSERT(. - trampoline_base == 0x1000, "error: trampoline larger than one page");
     }
+    . = ALIGN(16);
     .bss : {
         *(.bss)
     }

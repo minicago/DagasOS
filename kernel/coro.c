@@ -19,6 +19,7 @@ void switch_coro(coro_t* dest){
 }
 
 void scheduler_loop(){
+    printf("enter loop!\n");
     while (1)
     {
         for (int i = 0 ; i < MAX_THREAD; i++){
@@ -54,7 +55,7 @@ void init_thread_manager_coro(uint64 tid){
     uint64 pa = (uint64)palloc();
     uint64 va = COROSTACK_BOTTOM(tid) - PG_SIZE;
 
-    mappages(*thread_pool[tid].process->pagetable, va, pa, PG_SIZE, PTE_W | PTE_R);
+    mappages(thread_pool[tid].process->pagetable, va, pa, PG_SIZE, PTE_W | PTE_R);
     mappages(kernel_pagetable, va, pa, PG_SIZE, PTE_W | PTE_R) ;
     sfencevma(va, MAX_THREAD);
     sfencevma(va, thread_pool[tid].process->pid);
@@ -74,5 +75,6 @@ int get_tid(){
 }
 
 void init_as_scheduler(){
+    printf("?");
     get_cpu()->current_coro = &get_cpu()->scheduler_coro;
 }

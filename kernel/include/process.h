@@ -4,9 +4,6 @@
 #include "dagaslib.h"
 #include "vmm.h"
 #include "spinlock.h"
-#include <setjmp.h>
-
-extern jmp_buf kernel_env[];
 
 #define MAX_PROCESS 256
 
@@ -24,7 +21,7 @@ typedef struct {
     // basic information
     enum PROCESS_STATE state;
     int64 pid;
-    pagetable_t* pagetable;
+    pagetable_t pagetable;
 
     // sub process
     struct process_t* parent;
@@ -36,7 +33,10 @@ typedef struct {
 
 extern process_t process_pool[];
 
+void process_pool_init();
+void init_process(process_t* process);
 process_t* alloc_process();
 void free_process(process_t* process);
+void map_elf(process_t* process);
 
 #endif

@@ -97,18 +97,17 @@ void kvminit(){
     mappages(kernel_pagetable, VIRTIO0, VIRTIO0, PG_SIZE, PTE_R | PTE_W);
     mappages(kernel_pagetable, KERNEL0, KERNEL0, PMEM0 - KERNEL0, PTE_R | PTE_W | PTE_X);
     mappages(kernel_pagetable, PMEM0, PMEM0, MAX_PA - PMEM0, PTE_R | PTE_W);
-
-    sfencevma_all(MAX_PROCESS);
+    mappages(kernel_pagetable, TRAMPOLINE, TRAMPOLINE, PG_SIZE, PTE_R | PTE_W | PTE_X);
     
     W_CSR(satp, ATP_MODE_SV39 | ((uint64) kernel_pagetable >> PG_OFFSET_SHIFT) | ((uint64) MAX_PROCESS << ATP_ASID_OFFSET) );
     
-    printf("%p\n", va2pa(kernel_pagetable, 0x80000002));
     sfencevma_all(MAX_PROCESS);
     
 }
 
-pagetable_t* make_u_pagetable(){
-    pagetable_t* u_pagetable = palloc();
+pagetable_t make_u_pagetable(){
+    pagetable_t u_pagetable = palloc();
     memset(u_pagetable, 0, sizeof(u_pagetable));
+    mappages(u_pagetable, TRAMPOLINE, TRAMPOLINE, PG_SIZE, PTE_R | PTE_W | PTE_X);
     return u_pagetable;
 }

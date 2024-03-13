@@ -62,6 +62,6 @@ int mappages(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, uint64 perm
 
 void kvminit();
 
-pagetable_t* make_u_pagetable();
+pagetable_t make_u_pagetable();
 
 #endif

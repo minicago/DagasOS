@@ -3,11 +3,23 @@
 #include "print.h"
 #include "cpu.h"
 
-void strap_init(){
+void set_strap_stvec(){
+    W_CSR(stvec, stvec);
+}
 
-    W_CSR(stvec, (uint64) stvec);
-    uint64 x = 1;
-    R_CSR(stvec, x);    
+void set_strap_uservec(){
+    //intr_on();
+    W_CSR(stvec, TRAMPOLINE + USER_VEC_OFFSET);
+}
+
+void strap_init(){
+    set_strap_stvec();
+}
+
+void usertrap(){
+    intr_off();
+    set_strap_stvec();
+    printf("Genius, you enter user trap!\n");
 }
 
 void strap_handler(){

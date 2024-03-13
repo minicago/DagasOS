@@ -32,4 +32,8 @@ int get_tid();
 
 void init_as_scheduler();
 
+void init_thread_manager_coro(uint64 tid);
+
+void scheduler_loop();
+
 #endif

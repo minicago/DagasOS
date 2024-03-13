@@ -118,15 +118,41 @@ int kernel_test(){
 }
 
 int main(){
-    uartinit();
-    strap_init();
-    pmem_init();
-    kvminit();
-    virtio_disk_init();
     
+    uartinit();
+    printf("uart init finished!\n");
+    strap_init();
+    printf("strap init finished!\n");
+    pmem_init();
+    printf("pmem init finished!\n");
+    kvminit();
+    printf("kvm init finished!\n");
+    virtio_disk_init();
+    printf("virtio disk init finished!\n");
     init_as_scheduler();
-
+    
     kernel_test();
+
+    
+
+    
+
+    process_t* p = alloc_process();
+    printf("get process\n");
+    init_process(p);
+    map_elf(p);
+    
+
+    thread_t* t = alloc_thread();
+    init_thread(t);
+    attach_to_process(t, p);
+
+    init_thread_manager_coro(t->tid);
+
+    entry_main(t);
+
+    scheduler_loop();
+    
     /*
         Follow codes should be replaced by user program
     */
