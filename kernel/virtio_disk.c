@@ -209,7 +209,7 @@ static int alloc3_desc(int *idx)
 
 void virtio_disk_rw(struct buf *b, int write)
 {
-    uint64 sector = b->blockno * (BSIZE / 512);
+    uint64 sector = b->block_idx * (BSIZE / 512);
 
     // acquire(&disk.vdisk_lock);
 
@@ -280,7 +280,10 @@ void virtio_disk_rw(struct buf *b, int write)
     // while(b->disk == 1) {
     // sleep(b, &disk.vdisk_lock);
     // }
-    for(int i=1;i<=400000;i++);
+    int cnt = 0;
+    int max_cnt = 40;
+    while(disk.info[idx[0]].status != 0 && cnt++<max_cnt)
+        for(int i=1;i<=10000;i++);
     // printf("virtio_disk_rw: request%d status is %d\n", disk.avail->idx - 1, disk.info[idx[0]].status);
     
     if(disk.info[idx[0]].status != 0){

@@ -20,6 +20,18 @@ cp app \\mnt
 umount \\mnt
 ```
 
+## 读取虚拟磁盘（virtio_disk）
+
+### virtio概要
+
+virtio是半虚拟化的解决方案，对半虚拟化Hypervisor的一组通用I/O设备的抽象。它提供了一套上层应用与各 Hypervisor 虚拟化设备（KVM，Xen，VMware等）之间的通信框架和编程接口。
+![alt text](img/virtio_framework.png)
+而我们就是利用virtio在qemu创建了一块虚拟磁盘设备x0，同时将x0连接到virtio mmio总线上。具体参数如下：
+```bash
+qemu ... -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+```
+要读取虚拟磁盘就是要实现一个virtio驱动库，该库通过virtio mmio总线与虚拟磁盘进行通信。
+
 ### FAT32文件系统的结构
 
 主要可以分为三个部分：

@@ -5,19 +5,14 @@
 #include "vmm.h"
 #include "virtio_disk.h"
 #include "buf.h"
+#include "bio.h"
 #include "spinlock.h"
 #include "coro.h"
 
-int virtio_test(){
-    // Test for virtio_disk read and write
-    struct buf* buf = palloc();
-    buf->blockno = 0;
-    buf->disk = 0;
-    buf->valid = 0;
-    buf->refcnt = 1;
+int bio_test(){
+    // Test for bio read and write
     printf("read disk 0\n");
-    virtio_disk_rw(buf, 0);
-    printf("buf->disk: %d\n", buf->disk);
+    struct buf* buf = read_block(VIRTIO_DISK_DEV, 0);
     printf("first 20 of buf->data: ");
     for(int i=0;i<20;i++){
         printf("%x ", buf->data[i]);
@@ -25,23 +20,35 @@ int virtio_test(){
     printf("\n");
     printf("last 20 of buf->data: ");
     for(int i=BSIZE-20-1;i<BSIZE;i++){
+        printf("%x ", buf->data[i]);
+    }
+    printf("\n");
+    release_block(buf);
+
+    printf("read disk 1\n");
+    buf = read_block(VIRTIO_DISK_DEV, 1);
+    printf("first 20 of buf->data: ");
+    for(int i=0;i<20;i++){
         printf("%x ", buf->data[i]);
     }
     printf("\n");
 
     printf("write disk 1\n");
-    buf->blockno = 1;
-    for(uint8 i=0;i<20;i++) {
-        buf->data[i] = i;
+    for(int i=0;i<20;i++){
+        buf->data[i]++;
     }
-    for(int i=BSIZE-20-1;i<BSIZE;i++) {
-        buf->data[i] = BSIZE-i;
-    }
-    virtio_disk_rw(buf, 1);
-
+    write_block(buf);
+    
     printf("read disk 1\n");
-    virtio_disk_rw(buf, 0);
-    printf("buf->disk: %d\n", buf->disk);
+    printf("first 20 of buf->data: ");
+    for(int i=0;i<20;i++){
+        printf("%x ", buf->data[i]);
+    }
+    printf("\n");
+    release_block(buf);
+
+    printf("read disk 0\n");
+    buf = read_block(VIRTIO_DISK_DEV, 0);
     printf("first 20 of buf->data: ");
     for(int i=0;i<20;i++){
         printf("%x ", buf->data[i]);
@@ -52,6 +59,7 @@ int virtio_test(){
         printf("%x ", buf->data[i]);
     }
     printf("\n");
+    release_block(buf);
     return 1;
 }
 
@@ -107,9 +115,9 @@ int kernel_test(){
     if(coro_test() == 0) panic("coro error!"); 
     else printf("coro_test pass\n");
 
-    printf("**************\nvirtio_test:\n");
-    if(virtio_test() == 0) panic("virtio error!");
-    else printf("virtio_test pass\n");
+    printf("**************\nbio_test:\n");
+    if(bio_test() == 0) panic("bio error!");
+    else printf("bio_test pass\n");
 
     printf("********************************\n");
     printf("* Congrulation! ALL TEST PASS! *\n");
@@ -128,6 +136,8 @@ int main(){
     kvminit();
     printf("kvm init finished!\n");
     virtio_disk_init();
+    block_cache_init();
+    
     printf("virtio disk init finished!\n");
     init_as_scheduler();
     
