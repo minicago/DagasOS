@@ -18,6 +18,7 @@ int coro_longjmp(env_t*, int);
 
 typedef struct {
   env_t env;
+  uint64 coro_stack_bottom;
 } coro_t;
 
 // extern coro_t thread_manager_coro[];
@@ -26,5 +27,9 @@ typedef struct {
 // extern coro_t* current;
 
 void switch_coro(coro_t* );
+
+int get_tid();
+
+void init_as_scheduler();
 
 #endif

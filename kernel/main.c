@@ -110,7 +110,7 @@ int kernel_test(){
     printf("**************\nvirtio_test:\n");
     if(virtio_test() == 0) panic("virtio error!");
     else printf("virtio_test pass\n");
-    
+
     printf("********************************\n");
     printf("* Congrulation! ALL TEST PASS! *\n");
     printf("********************************\n");
@@ -123,6 +123,8 @@ int main(){
     pmem_init();
     kvminit();
     virtio_disk_init();
+    
+    init_as_scheduler();
 
     kernel_test();
     /*

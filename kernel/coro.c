@@ -1,6 +1,7 @@
-# include "coro.h"
-# include "thread.h"
-# include "cpu.h"
+#include "coro.h"
+#include "thread.h"
+#include "cpu.h"
+#include "memory_layout.h"
 
 coro_t thread_manager_coro[MAX_THREAD];
 
@@ -16,15 +17,6 @@ void switch_coro(coro_t* dest){
         coro_longjmp(&dest->env, 1);
     }
 }
-
-void init_thread_manager_coro(uint64 tid){
-    get_cpu()->current_coro = &thread_manager_coro[tid];
-    return ;
-}
-
-void coro_init(){
-
-} 
 
 void scheduler_loop(){
     while (1)
@@ -42,17 +34,45 @@ void scheduler_loop(){
     }
 }
 
-void fake_entry(coro_t* coro, uint64 entry){
+void set_entry(coro_t* coro, uint64 entry){
     coro->env.ra = entry;
 }
 
-void fake_sp(coro_t* coro, uint64 sp){
+void set_sp(coro_t* coro, uint64 sp){
     coro->env.sp = sp;
 }
 
-void clean_s(coro_t* coro, uint64 sp){
+void clean_s(coro_t* coro){
     memset(coro->env.s, 0, sizeof(coro->env.s));
 }
 
+// only work after that thread has been attached to process
+void init_thread_manager_coro(uint64 tid){
+    clean_s(&thread_manager_coro[tid]);
+    thread_manager_coro[tid].coro_stack_bottom = COROSTACK_BOTTOM(tid);
+    
+    uint64 pa = (uint64)palloc();
+    uint64 va = COROSTACK_BOTTOM(tid) - PG_SIZE;
 
+    mappages(*thread_pool[tid].process->pagetable, va, pa, PG_SIZE, PTE_W | PTE_R);
+    mappages(kernel_pagetable, va, pa, PG_SIZE, PTE_W | PTE_R) ;
+    sfencevma(va, MAX_THREAD);
+    sfencevma(va, thread_pool[tid].process->pid);
 
+    thread_pool[tid].trapframe = (trapframe_t*) COROSTACK_BOTTOM(tid) - sizeof(trapframe_t);
+    set_sp(&thread_manager_coro[tid], (uint64) thread_pool[tid].trapframe);
+ 
+    
+    set_entry(&thread_manager_coro[tid] ,(uint64) entry_to_user);
+
+}
+
+int get_tid(){
+    int64 index = get_cpu()->current_coro - thread_manager_coro;
+    if(index >= MAX_THREAD || index < 0) return -1;
+    else return index;
+}
+
+void init_as_scheduler(){
+    get_cpu()->current_coro = &get_cpu()->scheduler_coro;
+}
