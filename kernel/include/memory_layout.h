@@ -20,7 +20,6 @@
 
 // virtio mmio interface
 #define VIRTIO0 0x10001000ull
-#define VIRTIO0_IRQ 1
 
 #define CLINT0 0x2000000ull
 

@@ -8,9 +8,10 @@
 #include "bio.h"
 #include "spinlock.h"
 #include "coro.h"
+#include "fat32.h"
 
 int bio_test(){
-    // Test for bio read and write
+    //Test for bio read and write
     printf("read disk 0\n");
     struct buf* buf = read_block(VIRTIO_DISK_DEV, 0);
     printf("first 20 of buf->data: ");
@@ -60,6 +61,7 @@ int bio_test(){
     }
     printf("\n");
     release_block(buf);
+    flush_cache_to_disk();
     return 1;
 }
 
@@ -119,6 +121,10 @@ int kernel_test(){
     if(bio_test() == 0) panic("bio error!");
     else printf("bio_test pass\n");
 
+    printf("**************\nfat32_test:\n");
+    if(fat32_test() == 0) panic("fat32 error!");
+    else printf("fat32_test pass\n");
+
     printf("********************************\n");
     printf("* Congrulation! ALL TEST PASS! *\n");
     printf("********************************\n");
@@ -136,9 +142,10 @@ int main(){
     kvminit();
     printf("kvm init finished!\n");
     virtio_disk_init();
-    block_cache_init();
-    
     printf("virtio disk init finished!\n");
+    block_cache_init();
+    printf("block cache init finished!\n");
+
     init_as_scheduler();
     
     kernel_test();

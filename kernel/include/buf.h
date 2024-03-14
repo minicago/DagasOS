@@ -5,10 +5,11 @@
 #include "fs.h"
 
 struct buf {
+  int dirty;   //0: clean, 1: dirty
   int valid;   // has data been read from disk?
   int disk;    // does disk "own" buf?
   uint32 dev;
-  uint32 block_idx;
+  uint32 block_id;
   // struct sleeplock lock;
   uint32 refcnt;
   struct buf *prev; // LRU cache list

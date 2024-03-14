@@ -46,8 +46,8 @@ QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 $K/kernel: $(OBJS) $K/kernel.ld
 	$(LD) $(LDFLAGS) -T $K/kernel.ld -o $K/kernel $(OBJS) 
 
-fs.img:
-	dd if=/dev/zero of=fs.img bs=1M count=256
+# fs.img:
+# 	dd if=/dev/zero of=fs.img bs=1M count=256
 
 qemu: $K/kernel fs.img
 	$(QEMU) $(QEMUOPTS)

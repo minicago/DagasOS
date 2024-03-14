@@ -11,6 +11,7 @@
 #include "pmm.h"
 #include "fs.h"
 #include "virtio_disk.h"
+#include "spinlock.h"
 
 // the address of virtio mmio register r.
 #define R(r) ((volatile uint32 *)(VIRTIO0 + (r)))
@@ -52,10 +53,14 @@ static struct disk
     // one-for-one with descriptors, for convenience.
     struct virtio_blk_req ops[NUM];
 
+    spinlock_t lock;
+
 } disk;
 
 void virtio_disk_init(void)
 {
+    init_spinlock(&disk.lock);
+    
     uint32 status = 0;
 
     if (*R(VIRTIO_MMIO_MAGIC_VALUE) != 0x74726976 ||
@@ -209,9 +214,9 @@ static int alloc3_desc(int *idx)
 
 void virtio_disk_rw(struct buf *b, int write)
 {
-    uint64 sector = b->block_idx * (BSIZE / 512);
+    uint64 sector = b->block_id * (BSIZE / 512);
 
-    // acquire(&disk.vdisk_lock);
+    acquire_spinlock(&disk.lock);
 
     // the spec's Section 5.2 says that legacy block operations use
     // three descriptors: one for type/reserved/sector, one for the
@@ -267,12 +272,12 @@ void virtio_disk_rw(struct buf *b, int write)
     // tell the device the first index in our chain of descriptors.
     disk.avail->ring[disk.avail->idx % NUM] = idx[0];
 
-    // __sync_synchronize();
+    __sync_synchronize();
 
     // tell the device another avail ring entry is available.
     disk.avail->idx += 1; // not % NUM ...
 
-    // __sync_synchronize();
+    __sync_synchronize();
 
     *R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0; // value is queue number
 
@@ -281,7 +286,7 @@ void virtio_disk_rw(struct buf *b, int write)
     // sleep(b, &disk.vdisk_lock);
     // }
     int cnt = 0;
-    int max_cnt = 40;
+    int max_cnt = 80;
     while(disk.info[idx[0]].status != 0 && cnt++<max_cnt)
         for(int i=1;i<=10000;i++);
     // printf("virtio_disk_rw: request%d status is %d\n", disk.avail->idx - 1, disk.info[idx[0]].status);
@@ -297,12 +302,12 @@ void virtio_disk_rw(struct buf *b, int write)
     disk.info[idx[0]].b = 0;
     free_chain(idx[0]);
 
-    // release(&disk.vdisk_lock);
+    release_spinlock(&disk.lock);
 }
 
 void virtio_disk_intr()
 {
-    // acquire(&disk.vdisk_lock);
+    acquire_spinlock(&disk.lock);
 
     // the device won't raise another interrupt until we tell it
     // we've seen this interrupt, which the following line does.
@@ -312,14 +317,14 @@ void virtio_disk_intr()
     // in the next interrupt, which is harmless.
     *R(VIRTIO_MMIO_INTERRUPT_ACK) = *R(VIRTIO_MMIO_INTERRUPT_STATUS) & 0x3;
 
-    // __sync_synchronize();
+    __sync_synchronize();
 
     // the device increments disk.used->idx when it
     // adds an entry to the used ring.
 
     while (disk.used_idx != disk.used->idx)
     {
-        // __sync_synchronize();
+        __sync_synchronize();
         int id = disk.used->ring[disk.used_idx % NUM].id;
 
         if (disk.info[id].status != 0)
@@ -332,5 +337,5 @@ void virtio_disk_intr()
         disk.used_idx += 1;
     }
 
-    // release(&disk.vdisk_lock);
+    release_spinlock(&disk.lock);
 }

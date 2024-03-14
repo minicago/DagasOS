@@ -3,7 +3,7 @@
 
 void* memcpy(void *dest, const void *src, unsigned int n);
 void* memset(void* dest, int c, unsigned long n);
-
+int strcmp(const char *s1, const char *s2);
 typedef struct {
     struct linked_list_t* next;
     void* content;
