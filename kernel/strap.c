@@ -23,7 +23,7 @@ void usertrap(){
     set_strap_stvec();
     printf("Genius, you enter user trap!\n");
     int64 tid = get_tid();
-    thread_pool[tid].state = T_READY;
+    thread_pool[tid].state = T_SLEEPING;
     release_spinlock(&thread_pool[tid].lock);
     switch_coro(&get_cpu()->scheduler_coro);
     entry_to_user();

@@ -38,7 +38,7 @@ void entry_main(thread_t* thread){
     thread->trapframe->kernel_trap = (uint64 )usertrap;
     thread->trapframe->epc = USER_ENTRY;
     thread->trapframe->ra = USER_EXIT;
-    thread->trapframe->sp = thread->kstack_bottom - sizeof(trapframe_t);
+    thread->trapframe->sp = thread->user_stack_bottom;
     thread->state = T_READY;
     release_spinlock(&thread->lock);
 }
@@ -49,12 +49,18 @@ void attach_to_process(thread_t* thread, process_t* process){
     process -> thread_count ++;
 
     uint64 pa = (uint64)palloc();
-    uint64 va = thread->kstack_bottom - PG_SIZE;
-    // mappages(kernel_pagetable, va, pa, PG_SIZE, PTE_R | PTE_W);
+    uint64 va = thread->user_stack_bottom - PG_SIZE;
     mappages(process->pagetable, va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
-    // sfencevma(va, MAX_THREAD);
     sfencevma(va, process->pid);
+    process->thread_count ++;
+    release_spinlock(&thread->lock);
+}
 
+void detach_from_process(thread_t* thread){
+    acquire_spinlock(&thread->lock);
+    unmappages(thread->process->pagetable, thread->user_stack_bottom - thread->user_stack_size, thread->user_stack_size, 1);
+    unmappages(thread->process->pagetable, thread->coro_stack_bottom - thread->coro_stack_size ,thread->user_stack_size, 1); 
+    sfencevma_all(thread->process->pid);
     release_spinlock(&thread->lock);
 }
 
@@ -65,7 +71,8 @@ void init_thread(thread_t* thread){
     thread->tid = thread - thread_pool;
     thread->process = NULL;
  
-    thread->kstack_bottom = TSTACK_BOTTOM(thread->tid);
+    thread->user_stack_bottom = TSTACK_BOTTOM(thread->tid);
+    thread->user_stack_size = PG_SIZE;
     
     release_spinlock(&thread->lock);
 }

@@ -51,9 +51,10 @@ void clean_s(coro_t* coro){
 void init_thread_manager_coro(uint64 tid){
     clean_s(&thread_manager_coro[tid]);
     thread_manager_coro[tid].coro_stack_bottom = COROSTACK_BOTTOM(tid);
-    
+    thread_manager_coro[tid].coro_stack_size = PG_SIZE;
+
     uint64 pa = (uint64)palloc();
-    uint64 va = COROSTACK_BOTTOM(tid) - PG_SIZE;
+    uint64 va = thread_manager_coro[tid].coro_stack_bottom - PG_SIZE;
 
     mappages(thread_pool[tid].process->pagetable, va, pa, PG_SIZE, PTE_W | PTE_R);
     mappages(kernel_pagetable, va, pa, PG_SIZE, PTE_W | PTE_R) ;
@@ -65,6 +66,10 @@ void init_thread_manager_coro(uint64 tid){
  
     
     set_entry(&thread_manager_coro[tid] ,(uint64) entry_to_user);
+
+}
+
+void abandon_thread_manager_coro(uint64 tid){
 
 }
 

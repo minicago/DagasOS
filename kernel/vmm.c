@@ -76,8 +76,8 @@ int mappages(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, uint64 perm
 
 void unmappages(pagetable_t pagetable, uint64 va, uint64 sz, uint64 free_p){
     pte_t *pte;
-    for (uint64 i = 0; i < sz; i++){
-        pte = walk(pagetable, va + i * PG_SIZE, 0);
+    for (uint64 i = 0; i < sz; i += PG_SIZE){
+        pte = walk(pagetable, va + i, 0);
         if(pte == 0 || !(*pte & PTE_V)){
             panic("unmappages : no such mmap");
         }

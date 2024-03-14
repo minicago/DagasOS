@@ -56,7 +56,10 @@ typedef struct {
     enum THREAD_STATE state;
     trapframe_t* trapframe;
 
-    uint64 kstack_bottom;
+    uint64 coro_stack_bottom;
+    uint64 coro_stack_size;
+    uint64 user_stack_bottom;
+    uint64 user_stack_size;
 
     process_t* process;
     uint64 tid;
