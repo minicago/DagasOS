@@ -19,6 +19,7 @@ int coro_longjmp(env_t*, int);
 typedef struct {
   env_t env;
   uint64 coro_stack_bottom;
+  uint64 coro_stack_size;
 } coro_t;
 
 // extern coro_t thread_manager_coro[];

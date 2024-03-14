@@ -64,6 +64,8 @@ pte_t* walk(pagetable_t pagetable, uint64 va, int alloc);
 
 int mappages(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, uint64 perm);
 
+void unmappages(pagetable_t pagetable, uint64 va, uint64 sz, uint64 free_p);
+
 void kvminit();
 
 void print_page_table(pagetable_t pagetable);
