@@ -25,6 +25,33 @@
 
 #define FAT32_LFN_LEN 13
 
+#define FAT32_OVER_SIZE -1
+
+#define FAT32_INVALID_CID_MASK 0x0ffffff0
+#define FAT32_FREE_CID 0
+#define FAT32_RESERVED_CID 1
+#define FAT32_END_CID 0x0ffffff8
+#define FAT32_BAD_CID 0x0ffffff7
+
+#define FAT32_CID_IS_VALID(cid) ((((cid) & FAT32_INVALID_CID_MASK) ^ FAT32_INVALID_CID_MASK) \
+    && ((cid) != FAT32_FREE_CID) && ((cid) != FAT32_RESERVED_CID))
+
+struct fat32_info
+{
+    uint32 bytes_per_sector;
+    uint32 sectors_per_cluster;
+    uint32 reserved_sectors;
+    uint32 hidden_sectors;
+    uint32 fat_cnt;
+    uint32 total_sectors;
+    uint32 sectors_per_fat;
+    uint32 root_cid;   // cluster id of root directory
+    uint32 fat_offset; // offset of fat in sectors
+    uint32 root_offset;
+    uint32 blocks_per_sector;
+    uint32 *fat;
+};
+
 void fat32_superblock_init(uint32 dev, struct superblock *sb);
 int fat32_test();
 

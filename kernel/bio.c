@@ -152,6 +152,7 @@ void unpin_block(struct buf *b)
   release_spinlock(&block_cache.lock);
 }
 
+// cnt is block's count, not byte's count
 void read_to_buffer(uint32 dev, uint32 block_id, uint32 cnt, void* buffer)
 {
   struct buf *b;
@@ -159,6 +160,27 @@ void read_to_buffer(uint32 dev, uint32 block_id, uint32 cnt, void* buffer)
     b = read_block(dev, block_id+i);
     memcpy(buffer+i*BSIZE, b->data, BSIZE);
     release_block(b);
+  }
+}
+
+void read_bytes_to_buffer(uint32 dev, uint32 block_id, int offset, int size, void* buffer)
+{
+  struct buf *b;
+  block_id += offset/BSIZE;
+  offset %= BSIZE;
+  while(size>0) {
+    b = read_block(dev, block_id);
+    if(size>=BSIZE) {
+      memcpy(buffer, b->data+offset, BSIZE-offset);
+    }
+    else {
+      memcpy(buffer, b->data+offset, size-offset);
+    }
+    buffer+=BSIZE-offset;
+    size-=BSIZE-offset;
+    offset=0;
+    release_block(b);
+    block_id++;
   }
 }
 

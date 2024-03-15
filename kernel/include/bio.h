@@ -12,6 +12,7 @@ void flush_block(struct buf *b);
 void pin_block(struct buf *);
 void unpin_block(struct buf *);
 void read_to_buffer(uint32 dev, uint32 block_id, uint32 cnt, void* buffer);
+void read_bytes_to_buffer(uint32 dev, uint32 block_id, int offset, int size, void* buffer);
 void flush_cache_to_disk();
 
 #endif

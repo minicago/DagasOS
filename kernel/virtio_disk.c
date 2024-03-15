@@ -286,7 +286,7 @@ void virtio_disk_rw(struct buf *b, int write)
     // sleep(b, &disk.vdisk_lock);
     // }
     int cnt = 0;
-    int max_cnt = 80;
+    int max_cnt = 400;
     while(disk.info[idx[0]].status != 0 && cnt++<max_cnt)
         for(int i=1;i<=10000;i++);
     // printf("virtio_disk_rw: request%d status is %d\n", disk.avail->idx - 1, disk.info[idx[0]].status);

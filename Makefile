@@ -80,7 +80,7 @@ tags: $(OBJS)
 
 dst=/mnt
 # Make fs image
-fs:
+fs.img:
 	@if [ ! -f "fs.img" ]; then \
 		echo "making fs image..."; \
 		dd if=/dev/zero of=fs.img bs=512 count=512; \

@@ -121,9 +121,13 @@ int kernel_test(){
     if(bio_test() == 0) panic("bio error!");
     else printf("bio_test pass\n");
 
-    printf("**************\nfat32_test:\n");
-    if(fat32_test() == 0) panic("fat32 error!");
-    else printf("fat32_test pass\n");
+    // printf("**************\nfat32_test:\n");
+    // if(fat32_test() == 0) panic("fat32 error!");
+    // else printf("fat32_test pass\n");
+
+    printf("**************\nfile_test:\n");
+    if(file_test() == 0) panic("file error!");
+    else printf("file_test pass\n");
 
     printf("********************************\n");
     printf("* Congrulation! ALL TEST PASS! *\n");
