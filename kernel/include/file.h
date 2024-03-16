@@ -52,5 +52,5 @@ void release_inode(inode_t *node);
 int read_inode(inode_t *node, int offset, int size, void *buffer);
 
 int file_test();
-int load_and_map(inode_t *node, pagetable_t pagetable, uint64 va, int offset, int size, uint64 perm);
+int load_and_map(inode_t *inode, pagetable_t pagetable, uint64 va, int offset, int size, uint64 perm);
 #endif

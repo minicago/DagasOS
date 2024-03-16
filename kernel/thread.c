@@ -59,7 +59,6 @@ void attach_to_process(thread_t* thread, process_t* process){
 void detach_from_process(thread_t* thread){
     acquire_spinlock(&thread->lock);
     unmappages(thread->process->pagetable, thread->user_stack_bottom - thread->user_stack_size, thread->user_stack_size, 1);
-    unmappages(thread->process->pagetable, thread->coro_stack_bottom - thread->coro_stack_size ,thread->user_stack_size, 1); 
     sfencevma_all(thread->process->pid);
     release_spinlock(&thread->lock);
 }

@@ -69,10 +69,6 @@ void init_thread_manager_coro(uint64 tid){
 
 }
 
-void abandon_thread_manager_coro(uint64 tid){
-
-}
-
 int get_tid(){
     int64 index = get_cpu()->current_coro - thread_manager_coro;
     if(index >= MAX_THREAD || index < 0) return -1;
