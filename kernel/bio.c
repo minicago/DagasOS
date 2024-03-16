@@ -170,14 +170,16 @@ void read_bytes_to_buffer(uint32 dev, uint32 block_id, int offset, int size, voi
   offset %= BSIZE;
   while(size>0) {
     b = read_block(dev, block_id);
-    if(size>=BSIZE) {
+    if(size>=BSIZE-offset) {
       memcpy(buffer, b->data+offset, BSIZE-offset);
+      buffer+=BSIZE-offset;
+      size-=BSIZE-offset;
     }
     else {
-      memcpy(buffer, b->data+offset, size-offset);
+      memcpy(buffer, b->data+offset, size);
+      buffer+=size;
+      size-=size;
     }
-    buffer+=BSIZE-offset;
-    size-=BSIZE-offset;
     offset=0;
     release_block(b);
     block_id++;

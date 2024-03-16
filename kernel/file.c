@@ -137,7 +137,7 @@ int file_test() {
     char buffer[4096];
     //print_inode(node);
     int ss = node->size > 4096 ? 4096 : node->size;
-    int size = read_inode(node, 0, ss, buffer);
+    int size = read_inode(node, 1040, ss, buffer);
     //printf("file: read test.txt finished%d\n",size);
     buffer[size] = '\0';
     for(int i = 0; i < size; i++) {
