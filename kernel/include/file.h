@@ -38,12 +38,18 @@ struct inode_struct{
   superblock_t *sb;
 };
 
+// root(/) inode, can only be used after filesystem_init called
 extern inode_t root;
 
+// will init inode cache, root inode's superblock and root inode
 void filesystem_init(uint32 type);
+// will lookup inode in dir, and return inode
 inode_t* lookup_inode(inode_t *dir, char *filename);
+// once inode is not used, release it
 void release_inode(inode_t *node);
+// read inode's data to buffer, the unit of offset is byte
 int read_inode(inode_t *node, int offset, int size, void *buffer);
+
 int file_test();
 
 #endif
