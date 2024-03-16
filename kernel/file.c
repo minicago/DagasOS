@@ -131,7 +131,7 @@ int file_test() {
     filesystem_init(FS_TYPE_FAT32);
     printf("file: filesystem init\n");
     print_inode(&root);
-    inode_t *node = lookup_inode(&root, "test");
+    inode_t *node = look_up_path(&root, "test");
     print_inode(node);
     //printf("file: root txt's inode finished\n");
     char buffer[4096];
@@ -179,3 +179,20 @@ int load_and_map(inode_t *inode, pagetable_t pagetable, uint64 va, int offset, i
     }
     return sum_size;
 }
+
+inode_t* look_up_path(inode_t* root, char *path){
+    inode_t* res = root;
+    char* filename = path;
+    int end = 0;
+    for(int i = 0; ; i++){
+        if(path[i] == '/' || path[i] == '\0'){
+            if(path[i] == '\0') end = 1;
+            path[i] = '\0';
+            res = lookup_inode(res, filename);
+            filename = path + i + 1;
+            if(end != 0) break;
+            path[i] = '/';
+        }
+    }
+    return res;
+} 

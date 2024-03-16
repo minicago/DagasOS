@@ -1,9 +1,9 @@
 #include "elf.h"
 #include "process.h"
-#include "fat32.h"
+#include "file.h"
 #include "vmm.h"
 
-int load_elf(process_t* process, inode_t* elf){
+int load_elf_from_inode(process_t* process, inode_t* elf){
     
     elf_hdr_t elf_hdr;
     if(read_inode(elf, 0, sizeof(elf_hdr_t),&elf_hdr) != sizeof(elf_hdr_t) )
@@ -21,13 +21,16 @@ int load_elf(process_t* process, inode_t* elf){
         
         load_and_map(elf, process->pagetable, prog_hdr.vaddr, prog_hdr.off, prog_hdr.filesz, FLAGS2PERM(prog_hdr.flags));
     } 
-
+    return 1;
 
 elf_hdr_err:
 pagetable_err:
 prog_hdr_err:
     //to be added
     return 0;
-    
+}
 
+int load_elf(process_t* process, char* path){
+    inode_t* elf = look_up_path(&root, path);
+    return load_elf_from_inode(process, elf);
 }

@@ -49,6 +49,6 @@ typedef struct prog_hdr_struct{
 #define ELF_PROG_FLAG_WRITE     2
 #define ELF_PROG_FLAG_READ      4
 
-int load_elf(process_t* process, inode_t* elf);
+int load_elf(process_t* process, char* path);
 
 #endif
