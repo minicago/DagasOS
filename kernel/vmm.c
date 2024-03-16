@@ -50,9 +50,27 @@ pte_t* walk(pagetable_t pagetable, uint64 va, int alloc){
     return &pagetable[PTE_INDEX(va, 0)];
 }
 
+void walk_and_free(pagetable_t pagetable, int level){
+    if( (uint64) pagetable >= MAX_VA ) {
+        panic("walk_and_free : bad root pagetable");
+    }
+    for(int i = 0; i < PTE_NUM; i++){
+        pte_t *pte = &pagetable[i];
+        if(*pte & PTE_V) {
+            walk_and_free( (pagetable_t) PTE2PA(*pte), level - 1);
+            if(level == 1){
+                if(! (*pte & PTE_G) ) pfree((void*) PTE2PA(*pte));
+            } 
+        }
+    }
+    pfree((void*) pagetable);
+}
+
 uint64 va2pa(pagetable_t pagetable, uint64 va){
     if(va > MAX_VA) return 0;
-    return PTE2PA (*walk(pagetable, va, 0)) | (va & PG_OFFSET_MASK);
+    pte_t *pte = walk(pagetable, va, 0);
+    if (*pte == 0) return 0;
+    else return PTE2PA (*pte) | (va & PG_OFFSET_MASK);
 }
 
 int mappages(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, uint64 perm){
@@ -93,22 +111,31 @@ void kvminit(){
     if(kernel_pagetable == NULL) panic("kvminit : alloc kernel pagetable");
     memset(kernel_pagetable, 0, PG_SIZE);
 
+    
     mappages(kernel_pagetable, VIRTIO0, VIRTIO0, PG_SIZE, PTE_R | PTE_W);
     mappages(kernel_pagetable, UART0, UART0, PG_SIZE, PTE_R | PTE_W);
     mappages(kernel_pagetable, PLIC0, PLIC0, PG_SIZE, PTE_R | PTE_W);
     mappages(kernel_pagetable, KERNEL0, KERNEL0, PMEM0 - KERNEL0, PTE_R | PTE_W | PTE_X);
     mappages(kernel_pagetable, PMEM0, PMEM0, MAX_PA - PMEM0, PTE_R | PTE_W);
-    mappages(kernel_pagetable, TRAMPOLINE, (uint64) trampoline, PG_SIZE, PTE_R | PTE_W | PTE_X);
+    mappages(kernel_pagetable, TRAMPOLINE, (uint64) trampoline, PG_SIZE, PTE_R | PTE_W | PTE_X );
     
+    sfencevma_all(MAX_PROCESS);
+
     W_CSR(satp, ATP(MAX_THREAD, kernel_pagetable) );
     
     sfencevma_all(MAX_PROCESS);
     
 }
 
-pagetable_t make_u_pagetable(){
+pagetable_t alloc_user_pagetable(){
     pagetable_t u_pagetable = palloc();
     memset(u_pagetable, 0, PG_SIZE);
     mappages(u_pagetable, TRAMPOLINE, (uint64) trampoline, PG_SIZE, PTE_R | PTE_W | PTE_X);    
     return u_pagetable;
+}
+
+void free_user_pagetable(pagetable_t pagetable){
+    unmappages(pagetable, TRAMPOLINE, PG_SIZE, 0);
+
+    walk_and_free(pagetable, 2);
 }

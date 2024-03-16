@@ -2,6 +2,7 @@
 #define __FILE__H__
 
 #include "types.h"
+#include "vmm.h"
 
 #define MAX_INODE 128
 
@@ -45,5 +46,5 @@ inode_t* lookup_inode(inode_t *dir, char *filename);
 void release_inode(inode_t *node);
 int read_inode(inode_t *node, int offset, int size, void *buffer);
 int file_test();
-
+int load_and_map(inode_t *node, pagetable_t pagetable, uint64 va, int offset, int size, uint64 perm);
 #endif

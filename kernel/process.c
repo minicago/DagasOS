@@ -27,7 +27,7 @@ void process_pool_init(){
 void init_process(process_t* process){
     init_spinlock(&process->lock);
     acquire_spinlock(&process->lock);
-    process->pagetable = make_u_pagetable();
+    process->pagetable = alloc_user_pagetable();
     process->thread_count = 0;
     process->pid = process - process_pool;
     release_spinlock(&process->lock);

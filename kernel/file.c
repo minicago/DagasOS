@@ -148,3 +148,34 @@ int file_test() {
     release_inode(node);
     return 1;
 }
+
+int load_and_map(inode_t *inode, pagetable_t pagetable, uint64 va, int offset, int size, uint64 perm){
+    uint64 va_l = PG_FLOOR(va);
+    uint64 va_r = PG_CEIL(va + size);
+    int sum_size = 0;
+    for(uint64 i = va_l; i < va_r; i += PG_SIZE){
+        pte_t* pte = walk(pagetable, i, 0);
+        uint64 pa = PTE2PA(*pte);
+        if(!(*pte & PTE_V)){
+            pa = (uint64) palloc();
+            mappages(pagetable, i, pa, PG_SIZE, perm);
+        } else {
+            if((*pte | perm) != perm) return 0;
+        }
+        int size_in_page = PG_SIZE;
+        int real_size = 0;
+        if (i + PG_SIZE > va + size) {
+            size_in_page -= (i + PG_SIZE) - (va + size);
+        }        
+        if (i < va){
+            size_in_page -= va -  i;
+            real_size = read_inode(inode, offset, size_in_page,(void*) (pa + va - i));
+        }
+        else {
+            real_size = read_inode(inode, i - va + offset, size_in_page,(void*) pa);
+        }
+        sum_size += real_size;
+        if (real_size != size_in_page) break;
+    }
+    return sum_size;
+}

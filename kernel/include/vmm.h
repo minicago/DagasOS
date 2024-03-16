@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "defs.h"
+#include "memory_layout.h"
 
 typedef uint64 pte_t;
 typedef pte_t* pagetable_t;
@@ -16,6 +17,7 @@ typedef pte_t* pagetable_t;
 //   12..20 -- 9 bits of level-0 index.
 //    0..11 -- 12 bits of byte offset within the page.
 
+#define PTE_NUM (PG_SIZE / sizeof(pte_t))
 #define PTE_PNN_MASK 0x1ffffffffffc00ull
 #define PTE_PNN_SHIFT 10
 #define PTE_RSW_MASK 0x400ull
@@ -70,6 +72,8 @@ void kvminit();
 
 void print_page_table(pagetable_t pagetable);
 
-pagetable_t make_u_pagetable();
+pagetable_t alloc_user_pagetable();
+
+void free_user_pagetable(pagetable_t pagetable);
 
 #endif
