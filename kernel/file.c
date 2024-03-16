@@ -6,12 +6,12 @@
 #include "fat32.h"
 
 static spinlock_t cache_lock;
-static struct inode inode[MAX_INODE];
+static inode_t inode[MAX_INODE];
 static uint32 next[MAX_INODE];
 static uint32 prev[MAX_INODE];
 static uint32 head;
-struct inode root;
-struct superblock root_superblock;
+inode_t root;
+superblock_t root_superblock;
 
 void inode_cache_init(void){
     init_spinlock(&cache_lock);
@@ -28,7 +28,7 @@ void inode_cache_init(void){
     }
 }
 
-static struct inode* get_inode(uint32 dev, uint32 id) {
+static inode_t* get_inode(uint32 dev, uint32 id) {
     acquire_spinlock(&cache_lock);
     for (int i = next[head]; i != head; i = next[i]){
         if (inode[i].dev == dev && inode[i].id == id){
@@ -61,7 +61,7 @@ void filesystem_init(uint32 type) {
         case FS_TYPE_FAT32:
             fat32_superblock_init(VIRTIO_DISK_DEV, root.sb);
             root.dev = VIRTIO_DISK_DEV;
-            root.id = ((struct fat32_info *)root.sb->extra)->root_cid;
+            root.id = ((fat32_info_t *)root.sb->extra)->root_cid;
             root.refcnt = 1;
             root.valid = 1;
             root.type = T_DIR;
@@ -73,8 +73,8 @@ void filesystem_init(uint32 type) {
     }
 }
 
-struct inode* lookup_inode(struct inode *dir, char *filename) {
-    struct inode node;
+inode_t* lookup_inode(inode_t *dir, char *filename) {
+    inode_t node;
     if (dir->type != T_DIR) {
         panic("lookup_inode: not a directory");
     }
@@ -84,7 +84,7 @@ struct inode* lookup_inode(struct inode *dir, char *filename) {
     if (dir->sb->lookup_inode(dir, filename, &node) == 0) {
         panic("lookup_inode: can't find file");
     }
-    struct inode* res = get_inode(node.dev, node.id);
+    inode_t* res = get_inode(node.dev, node.id);
     acquire_spinlock(&cache_lock);
     if(res->valid) {
         res->refcnt++;
@@ -99,7 +99,7 @@ struct inode* lookup_inode(struct inode *dir, char *filename) {
     return res;
 }
 
-void release_inode(struct inode *node) {
+void release_inode(inode_t *node) {
     acquire_spinlock(&cache_lock);
     if (node->refcnt == 0) {
         panic("release_inode: already released");
@@ -108,7 +108,7 @@ void release_inode(struct inode *node) {
     release_spinlock(&cache_lock);
 }
 
-int read_inode(struct inode *node, int offset, int size, void *buffer) {
+int read_inode(inode_t *node, int offset, int size, void *buffer) {
     int real_size = size;
     
     //printf("read_inode: read %d bytes\n", real_size);
@@ -122,7 +122,7 @@ int read_inode(struct inode *node, int offset, int size, void *buffer) {
     return real_size;
 }
 
-void print_inode(struct inode *node) {
+void print_inode(inode_t *node) {
     printf("inode: dev=%d, id=%d, refcnt=%d, valid=%d, type=%d, size=%d\n", node->dev, node->id, node->refcnt, node->valid, node->type, node->size);
 }
 
@@ -131,7 +131,7 @@ int file_test() {
     filesystem_init(FS_TYPE_FAT32);
     printf("file: filesystem init\n");
     print_inode(&root);
-    struct inode *node = lookup_inode(&root, "test");
+    inode_t *node = lookup_inode(&root, "test");
     print_inode(node);
     //printf("file: root txt's inode finished\n");
     char buffer[4096];

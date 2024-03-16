@@ -16,7 +16,7 @@ enum PROCESS_STATE {
     ZOMBIE,
 };
 
-typedef struct {
+typedef struct process_struct {
     spinlock_t lock;
     // basic information
     enum PROCESS_STATE state;

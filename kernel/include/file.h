@@ -12,10 +12,9 @@
 #define FS_TYPE_NULL 0
 #define FS_TYPE_FAT32 1
 
-struct superblock;
-struct inode;
-
-struct superblock
+struct inode_struct;
+typedef struct inode_struct inode_t;
+typedef struct superblock_struct
 {
   uint32 dev;
   uint32 block_size;
@@ -23,12 +22,11 @@ struct superblock
   void *extra;
 
   //ops
-  int (*lookup_inode)(struct inode *dir, char *filename, struct inode *node);
-  int (*read_inode)(struct inode *node, int offset, int size, void *buffer);
-};
+  int (*lookup_inode)(inode_t *dir, char *filename, inode_t *node);
+  int (*read_inode)(inode_t *node, int offset, int size, void *buffer);
+} superblock_t;
 
-struct inode
-{
+struct inode_struct{
   uint32 dev; // Device number
   uint32 id;  // Inode number
   int refcnt; // Reference count
@@ -37,15 +35,15 @@ struct inode
   int valid;   // inode has been read from disk?
   uint16 type; // copy of disk inode
   uint32 size;
-  struct superblock *sb;
+  superblock_t *sb;
 };
 
-extern struct inode root;
+extern inode_t root;
 
 void filesystem_init(uint32 type);
-struct inode* lookup_inode(struct inode *dir, char *filename);
-void release_inode(struct inode *node);
-int read_inode(struct inode *node, int offset, int size, void *buffer);
+inode_t* lookup_inode(inode_t *dir, char *filename);
+void release_inode(inode_t *node);
+int read_inode(inode_t *node, int offset, int size, void *buffer);
 int file_test();
 
 #endif

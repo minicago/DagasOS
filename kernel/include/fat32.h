@@ -36,8 +36,7 @@
 #define FAT32_CID_IS_VALID(cid) ((((cid) & FAT32_INVALID_CID_MASK) ^ FAT32_INVALID_CID_MASK) \
     && ((cid) != FAT32_FREE_CID) && ((cid) != FAT32_RESERVED_CID))
 
-struct fat32_info
-{
+typedef struct {
     uint32 bytes_per_sector;
     uint32 sectors_per_cluster;
     uint32 reserved_sectors;
@@ -50,9 +49,9 @@ struct fat32_info
     uint32 root_offset;
     uint32 blocks_per_sector;
     uint32 *fat;
-};
+} fat32_info_t;
 
-void fat32_superblock_init(uint32 dev, struct superblock *sb);
+void fat32_superblock_init(uint32 dev, superblock_t *sb);
 int fat32_test();
 
 #endif

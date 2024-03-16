@@ -11,7 +11,7 @@ enum THREAD_STATE {
     T_ZOMBIE,
 };
 
-typedef struct {
+typedef struct trapframe_struct{
   /*   0 */ uint64 kernel_satp;   // kernel page table
   /*   8 */ uint64 kernel_sp;     // top of process's kernel stack
   /*  16 */ uint64 kernel_trap;   // usertrap()
@@ -50,7 +50,7 @@ typedef struct {
   /* 280 */ uint64 t6;
 } trapframe_t;
 
-typedef struct {
+typedef struct thread_struct{
     spinlock_t lock;
 
     enum THREAD_STATE state;

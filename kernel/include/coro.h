@@ -4,8 +4,7 @@
 #include "types.h"
 #include "thread.h"
 
-typedef struct
-{
+typedef struct env_struct {
   uint64 ra;
   uint64 sp;
   uint64 s[12];
@@ -16,7 +15,7 @@ int coro_setjmp(env_t*);
 
 int coro_longjmp(env_t*, int);
 
-typedef struct {
+typedef struct coro_struct{
   env_t env;
   uint64 coro_stack_bottom;
   uint64 coro_stack_size;
