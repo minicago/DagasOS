@@ -13,7 +13,7 @@ static uint32 head;
 inode_t root;
 superblock_t root_superblock;
 
-void inode_cache_init(void){
+static void inode_cache_init(void){
     init_spinlock(&cache_lock);
     head = 0;
     prev[head] = head;
