@@ -73,6 +73,25 @@ uint64 va2pa(pagetable_t pagetable, uint64 va){
     else return PTE2PA (*pte) | (va & PG_OFFSET_MASK);
 }
 
+int addpages(pagetable_t pagetable, uint64 va, uint64 sz, uint64 perm){
+    uint64 va_l = PG_FLOOR(va);
+    uint64 va_r = PG_CEIL(va + sz);
+    
+    pte_t *pte;
+
+    if (sz == 0) return 0;
+
+    for(uint64 i = va_l; i < va_r; i+=PG_SIZE){
+        pte = walk(pagetable, i, 1);
+        if(pte == NULL) return -1;
+        if(*pte & PTE_V) panic("mappages : remmap");
+        uint64 pa = (uint64) palloc();
+        if((void*)pa == NULL) panic("addpages: no physic pages");
+        *pte = PA2PTE(pa) | perm | PTE_V;
+    }
+    return 0;
+}
+
 int mappages(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, uint64 perm){
     uint64 va_l = PG_FLOOR(va);
     uint64 va_r = PG_CEIL(va + sz);
@@ -117,7 +136,7 @@ void kvminit(){
     mappages(kernel_pagetable, PLIC0, PLIC0, PG_SIZE, PTE_R | PTE_W);
     mappages(kernel_pagetable, KERNEL0, KERNEL0, PMEM0 - KERNEL0, PTE_R | PTE_W | PTE_X);
     mappages(kernel_pagetable, PMEM0, PMEM0, MAX_PA - PMEM0, PTE_R | PTE_W);
-    mappages(kernel_pagetable, TRAMPOLINE, (uint64) trampoline, PG_SIZE, PTE_R | PTE_W | PTE_X );
+    mappages(kernel_pagetable, TRAMPOLINE, (uint64) trampoline, PG_SIZE, PTE_R | PTE_X );
     
     sfencevma_all(MAX_PROCESS);
 
@@ -130,7 +149,7 @@ void kvminit(){
 pagetable_t alloc_user_pagetable(){
     pagetable_t u_pagetable = palloc();
     memset(u_pagetable, 0, PG_SIZE);
-    mappages(u_pagetable, TRAMPOLINE, (uint64) trampoline, PG_SIZE, PTE_R | PTE_W | PTE_X);    
+    mappages(u_pagetable, TRAMPOLINE, (uint64) trampoline, PG_SIZE, PTE_R | PTE_X);    
     return u_pagetable;
 }
 

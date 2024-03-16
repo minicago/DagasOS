@@ -50,19 +50,21 @@ typedef pte_t* pagetable_t;
 #define ATP_PNN_MASK  0x00000fffffffffffull
 #define ATP_PNN_OFFSET 0
 
-#define ATP(ASID, PNN) (((uint64) ((ASID) + 1) << ATP_ASID_OFFSET) | \
+#define ATP(ASID, PNN) (((uint64) ((ASID)) << ATP_ASID_OFFSET) | \
     ((uint64) (PNN) >> PG_OFFSET_SHIFT << ATP_PNN_OFFSET) | \
     ATP_MODE_SV39)
 
 extern pagetable_t kernel_pagetable;
 
 #define sfencevma(addr, asid) \
-    asm("sfence.vma %0, %1"::"r"(addr),"r"((asid) + 1))
+    asm("sfence.vma %0, %1"::"r"(addr),"r"((asid)))
 
 #define sfencevma_all(asid) \
-    asm("sfence.vma x0, %0"::"r"((asid) + 1))
+    asm("sfence.vma x0, %0"::"r"((asid)))
 
 pte_t* walk(pagetable_t pagetable, uint64 va, int alloc);
+
+int addpages(pagetable_t pagetable, uint64 va, uint64 sz, uint64 perm);
 
 int mappages(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, uint64 perm);
 

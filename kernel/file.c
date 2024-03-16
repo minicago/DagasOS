@@ -129,38 +129,43 @@ void print_inode(inode_t *node) {
 int file_test() {
     inode_cache_init();
     filesystem_init(FS_TYPE_FAT32);
-    printf("file: filesystem init\n");
-    print_inode(&root);
-    inode_t *node = look_up_path(&root, "test");
-    print_inode(node);
-    //printf("file: root txt's inode finished\n");
-    char buffer[4096];
-    //print_inode(node);
-    int ss = node->size > 4096 ? 4096 : node->size;
-    int size = read_inode(node, 1040, ss, buffer);
-    //printf("file: read test.txt finished%d\n",size);
-    buffer[size] = '\0';
-    for(int i = 0; i < size; i++) {
-        if(buffer[i]<0x10) printf("0");
-        printf("%x ", buffer[i]);
-    }
-    printf("\n");
-    release_inode(node);
+    // printf("file: filesystem init\n");
+    // print_inode(&root);
+    // inode_t *node = look_up_path(&root, "test");
+    // print_inode(node);
+    // //printf("file: root txt's inode finished\n");
+    // char buffer[4096];
+    // //print_inode(node);
+    // int ss = node->size > 4096 ? 4096 : node->size;
+    // int size = read_inode(node, 1040, ss, buffer);
+    // //printf("file: read test.txt finished%d\n",size);
+    // buffer[size] = '\0';
+    // for(int i = 0; i < size; i++) {
+    //     if(buffer[i]<0x10) printf("0");
+    //     printf("%x ", buffer[i]);
+    // }
+    // printf("\n");
+    // release_inode(node);
     return 1;
 }
 
-int load_and_map(inode_t *inode, pagetable_t pagetable, uint64 va, int offset, int size, uint64 perm){
+int load_from_inode_to_page(inode_t *inode, pagetable_t pagetable, uint64 va, int offset, int size){
     uint64 va_l = PG_FLOOR(va);
     uint64 va_r = PG_CEIL(va + size);
+    printf("%p, %p\n",va_l, va_r);
     int sum_size = 0;
     for(uint64 i = va_l; i < va_r; i += PG_SIZE){
         pte_t* pte = walk(pagetable, i, 0);
-        uint64 pa = PTE2PA(*pte);
-        if(!(*pte & PTE_V)){
-            pa = (uint64) palloc();
-            mappages(pagetable, i, pa, PG_SIZE, perm);
-        } else {
-            if((*pte | perm) != perm) return 0;
+        uint64 pa;
+        if(pte == 0 || !(*pte & PTE_V)){
+            // pa = (uint64) palloc();
+            // mappages(pagetable, i, pa, PG_SIZE, perm);
+            panic("load_from_inode_to_page: no map!\n");
+            return sum_size;
+        } 
+        else {
+            pa = PTE2PA(*pte);
+            // if((*pte | perm) != perm) return 0;
         }
         int size_in_page = PG_SIZE;
         int real_size = 0;

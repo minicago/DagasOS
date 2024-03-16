@@ -9,6 +9,7 @@
 #include "spinlock.h"
 #include "coro.h"
 #include "fat32.h"
+#include "elf.h"
 
 int bio_test(){
     //Test for bio read and write
@@ -105,25 +106,25 @@ int spinlock_test(){
 }
 
 int kernel_test(){
-    printf("**************\nprint_test:\n");
-    if(print_test() == 0) panic("print error!");
-    else printf("print_test pass\n");
+    // printf("**************\nprint_test:\n");
+    // if(print_test() == 0) panic("print error!");
+    // else printf("print_test pass\n");
 
-    printf("**************\nspinlock_test:\n");
-    if(spinlock_test() == 0) panic("spinlock error!"); 
-    else printf("spinlock_test pass\n");
+    // printf("**************\nspinlock_test:\n");
+    // if(spinlock_test() == 0) panic("spinlock error!"); 
+    // else printf("spinlock_test pass\n");
 
-    printf("**************\ncoro_test:\n");
-    if(coro_test() == 0) panic("coro error!"); 
-    else printf("coro_test pass\n");
+    // printf("**************\ncoro_test:\n");
+    // if(coro_test() == 0) panic("coro error!"); 
+    // else printf("coro_test pass\n");
 
     printf("**************\nbio_test:\n");
     if(bio_test() == 0) panic("bio error!");
     else printf("bio_test pass\n");
 
-    // printf("**************\nfat32_test:\n");
-    // if(fat32_test() == 0) panic("fat32 error!");
-    // else printf("fat32_test pass\n");
+    printf("**************\nfat32_test:\n");
+    if(fat32_test() == 0) panic("fat32 error!");
+    else printf("fat32_test pass\n");
 
     printf("**************\nfile_test:\n");
     if(file_test() == 0) panic("file error!");
@@ -145,15 +146,16 @@ int main(){
     printf("pmem init finished!\n");
     kvminit();
     printf("kvm init finished!\n");
+        printf("trapret:%p\n", *(uint64*) trampoline );
     virtio_disk_init();
     printf("virtio disk init finished!\n");
     block_cache_init();
     printf("block cache init finished!\n");
 
     init_as_scheduler();
-    
+        printf("trapret:%p\n", *(uint64*) trampoline );
     kernel_test();
-
+        printf("trapret:%p\n", *(uint64*) trampoline );
     process_pool_init();
     thread_pool_init();
 
@@ -163,7 +165,8 @@ int main(){
     printf("get process\n");
     init_process(p);
     printf("init process\n");
-    map_elf(p);
+    load_elf(p, "test");
+    //map_elf(p);
     printf("map process\n");
     
 

@@ -102,9 +102,9 @@ void entry_to_user(){
     printf("trapframe:%p\n",thread_pool[tid].trapframe);
     printf("go to user\n");
     set_strap_uservec();
-    printf("%p\n", *(uint64*) walk( thread_pool[tid].process->pagetable ,0, 0) );
+    printf("%p\n", PTE2PA( * walk( thread_pool[tid].process->pagetable ,0, 0)) );
     ((userret_t*) (TRAMPOLINE + USER_RET_OFFSET) )(
     thread_pool[tid].trapframe, 
     ATP(thread_pool[tid].process->pid, thread_pool[tid].process->pagetable) );
-
+    
 }
