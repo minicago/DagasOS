@@ -51,6 +51,8 @@ void release_inode(inode_t *node);
 // read inode's data to buffer, the unit of offset is byte
 int read_inode(inode_t *node, int offset, int size, void *buffer);
 
+void print_inode(inode_t *node);
+
 int file_test();
 
 int load_from_inode_to_page(inode_t *inode, pagetable_t pagetable, uint64 va, int offset, int size);

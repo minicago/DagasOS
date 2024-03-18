@@ -193,6 +193,7 @@ void fat32_superblock_init(uint32 dev, superblock_t *sb)
     struct buf *b = read_block(dev, 0);
 
     sb->extra = palloc();
+    printf("fat32: sb->extra%x\n",sb->extra);
     sb->dev = dev;
     sb->fs_type = FS_TYPE_FAT32;
 
@@ -217,6 +218,8 @@ void fat32_superblock_init(uint32 dev, superblock_t *sb)
         panic("fat32: fat size is larger than one page size");
     }
     info->fat = (uint32 *)palloc();
+    
+    printf("fat32: info->fat%x\n",info->fat);
     read_to_buffer(dev, info->fat_offset * info->blocks_per_sector, info->sectors_per_fat * info->blocks_per_sector, info->fat);
 
     sb->block_size = info->sectors_per_cluster * info->bytes_per_sector;

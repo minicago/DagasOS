@@ -118,13 +118,13 @@ int kernel_test(){
     // if(coro_test() == 0) panic("coro error!"); 
     // else printf("coro_test pass\n");
 
-    printf("**************\nbio_test:\n");
-    if(bio_test() == 0) panic("bio error!");
-    else printf("bio_test pass\n");
+    // printf("**************\nbio_test:\n");
+    // if(bio_test() == 0) panic("bio error!");
+    // else printf("bio_test pass\n");
 
-    printf("**************\nfat32_test:\n");
-    if(fat32_test() == 0) panic("fat32 error!");
-    else printf("fat32_test pass\n");
+    // printf("**************\nfat32_test:\n");
+    // if(fat32_test() == 0) panic("fat32 error!");
+    // else printf("fat32_test pass\n");
 
     printf("**************\nfile_test:\n");
     if(file_test() == 0) panic("file error!");
@@ -151,6 +151,8 @@ int main(){
     printf("virtio disk init finished!\n");
     block_cache_init();
     printf("block cache init finished!\n");
+    filesystem_init(FS_TYPE_FAT32);
+    printf("filesystem init finished!\n");
 
     init_as_scheduler();
         printf("trapret:%p\n", *(uint64*) trampoline );

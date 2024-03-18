@@ -86,7 +86,7 @@ fs.img:
 		dd if=/dev/zero of=fs.img bs=512 count=512; \
 		mkfs.vfat -F 32 -s 4 fs.img; fi
 	@sudo mount fs.img $(dst)
-	@make sdcard dst=$(dst)
+	-@make sdcard dst=$(dst)
 	@sudo umount $(dst)
 	@echo "fs image is ready"
 

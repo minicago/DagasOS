@@ -53,6 +53,7 @@ static inode_t* get_inode(uint32 dev, uint32 id) {
 }
 
 void filesystem_init(uint32 type) {
+    inode_cache_init();
     root.sb = &root_superblock;
     switch(type) {
         case FS_TYPE_NULL:
@@ -127,25 +128,22 @@ void print_inode(inode_t *node) {
 }
 
 int file_test() {
-    inode_cache_init();
-    filesystem_init(FS_TYPE_FAT32);
-    // printf("file: filesystem init\n");
-    // print_inode(&root);
-    // inode_t *node = look_up_path(&root, "test");
-    // print_inode(node);
-    // //printf("file: root txt's inode finished\n");
-    // char buffer[4096];
-    // //print_inode(node);
-    // int ss = node->size > 4096 ? 4096 : node->size;
-    // int size = read_inode(node, 1040, ss, buffer);
-    // //printf("file: read test.txt finished%d\n",size);
-    // buffer[size] = '\0';
-    // for(int i = 0; i < size; i++) {
-    //     if(buffer[i]<0x10) printf("0");
-    //     printf("%x ", buffer[i]);
-    // }
-    // printf("\n");
-    // release_inode(node);
+    print_inode(&root);
+    inode_t *node = look_up_path(&root, "test");
+    print_inode(node);
+    //printf("file: root txt's inode finished\n");
+    char buffer[4096];
+    //print_inode(node);
+    int ss = node->size > 4096 ? 4096 : node->size;
+    int size = read_inode(node, 1040, ss, buffer);
+    //printf("file: read test.txt finished%d\n",size);
+    buffer[size] = '\0';
+    for(int i = 0; i < size; i++) {
+        if(buffer[i]<0x10) printf("0");
+        printf("%x ", buffer[i]);
+    }
+    printf("\n");
+    release_inode(node);
     return 1;
 }
 
