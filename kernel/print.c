@@ -1,6 +1,12 @@
-# include "print.h"
+#include "print.h"
+#include "spinlock.h"
 
 const static char digits[] = "0123456789abcdef";
+
+// static struct {
+//     spinlock_t plock;
+//     int need_lock;
+// } print_info;
 
 void consputc(char ch) {
     uartputc_sync(ch);
