@@ -1,4 +1,4 @@
-.section .text
+.section .entry
 .global _entry
 _entry:
         # do nothing but add a0 by 1

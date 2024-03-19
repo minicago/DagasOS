@@ -4,6 +4,7 @@ ENTRY (_entry)
 SECTIONS {
     . = 0x80000000; /*QEMU entry is set at 0x80000000*/
     .text : {
+        *(.entry)
         *(.text)
         . = ALIGN(0x1000);
         trampoline_base = .;
