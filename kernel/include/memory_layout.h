@@ -16,6 +16,8 @@
 
 // physic layout
 
+#define PLIC 0x0c000000ull
+
 #define UART0 0x10000000ull
 
 // virtio mmio interface

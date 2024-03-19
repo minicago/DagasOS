@@ -10,6 +10,7 @@
 #include "coro.h"
 #include "fat32.h"
 #include "elf.h"
+#include "plic.h"
 
 int bio_test(){
     //Test for bio read and write
@@ -151,11 +152,19 @@ int main(){
     printf("virtio disk init finished!\n");
     block_cache_init();
     printf("block cache init finished!\n");
+    plic_init();
+    plic_init_hart();
+    printf("plic init finished!\n");
+
+    //TODO: just for debug. should be moved to position before enter scheduler
+    intr_on();
+
     filesystem_init(FS_TYPE_FAT32);
     printf("filesystem init finished!\n");
 
     init_as_scheduler();
         printf("trapret:%p\n", *(uint64*) trampoline );
+    
     kernel_test();
         printf("trapret:%p\n", *(uint64*) trampoline );
     process_pool_init();

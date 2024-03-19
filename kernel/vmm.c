@@ -133,7 +133,7 @@ void kvminit(){
     
     mappages(kernel_pagetable, VIRTIO0, VIRTIO0, PG_SIZE, PTE_R | PTE_W);
     mappages(kernel_pagetable, UART0, UART0, PG_SIZE, PTE_R | PTE_W);
-    mappages(kernel_pagetable, PLIC0, PLIC0, PG_SIZE, PTE_R | PTE_W);
+    mappages(kernel_pagetable, PLIC0, PLIC0, 0x400000, PTE_R | PTE_W);
     mappages(kernel_pagetable, KERNEL0, KERNEL0, PMEM0 - KERNEL0, PTE_R | PTE_W | PTE_X);
     mappages(kernel_pagetable, PMEM0, PMEM0, MAX_PA - PMEM0, PTE_R | PTE_W);
     mappages(kernel_pagetable, TRAMPOLINE, (uint64) trampoline, PG_SIZE, PTE_R | PTE_X );

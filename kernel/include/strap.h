@@ -34,4 +34,6 @@ void intr_pop();
 
 void usertrap();
 
+int dev_intr();
+
 #endif 

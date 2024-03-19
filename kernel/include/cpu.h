@@ -14,4 +14,8 @@ typedef struct cput_struct{
 
 cpu_t* get_cpu();
 
+
+//TODO: implement get_cpu_id
+int get_cpu_id();
+
 #endif
