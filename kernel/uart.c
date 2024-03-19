@@ -4,7 +4,7 @@
 
 void uartputc_sync(int c)
 {
-//   push_off();
+  intr_push();
 
 //   if(panicked){
 //     for(;;)
@@ -16,7 +16,7 @@ void uartputc_sync(int c)
      ;
   W_UART_REG(THR, c);
 
-//   pop_off();
+  intr_pop();
 }
 
 void uartinit(void)
