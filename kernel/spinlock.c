@@ -27,7 +27,7 @@ int try_acquire_spinlock(spinlock_t* spinlock){
         return 1;
     }else {
         __sync_synchronize();
-        intr_push();
+        intr_pop();
         return 0;
     }
 }
