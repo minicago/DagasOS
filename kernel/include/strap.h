@@ -34,4 +34,6 @@ void intr_push_off();
 
 void usertrap();
 
+int dev_intr();
+
 #endif 

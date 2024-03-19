@@ -41,6 +41,7 @@ void uartinit(void)
   W_UART_REG(FCR, FCR_FIFO_ENABLE | FCR_FIFO_CLEAR);
 
   // enable transmit and receive interrupts.
-  W_UART_REG(IER, IER_TX_ENABLE | IER_RX_ENABLE);
+  //TODO: open this
+  //W_UART_REG(IER, IER_TX_ENABLE | IER_RX_ENABLE);
 
 }

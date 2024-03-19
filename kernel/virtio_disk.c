@@ -214,6 +214,7 @@ static int alloc3_desc(int *idx)
 
 void virtio_disk_rw(struct buf *b, int write)
 {
+    //printf("virtio_rw: %d %d\n", b->block_id, write);
     uint64 sector = b->block_id * (BSIZE / 512);
 
     acquire_spinlock(&disk.lock);
@@ -280,24 +281,27 @@ void virtio_disk_rw(struct buf *b, int write)
     __sync_synchronize();
 
     *R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0; // value is queue number
-
+    //printf("virtio_rw: test_disk wait%p\n", b);
     // Wait for virtio_disk_intr() to say request has finished.
-    // while(b->disk == 1) {
-    // sleep(b, &disk.vdisk_lock);
-    // }
-    int cnt = 0;
-    int max_cnt = 400;
-    while(disk.info[idx[0]].status != 0 && cnt++<max_cnt)
-        for(int i=1;i<=10000;i++);
-    // printf("virtio_disk_rw: request%d status is %d\n", disk.avail->idx - 1, disk.info[idx[0]].status);
     
+    release_spinlock(&disk.lock);
+    while(b->disk==1) {
+        
+        continue;
+    //     TODO: sleep
+    //     sleep(b, &disk.vdisk_lock);
+    }
+    // int cnt = 0;
+    // int max_cnt = 400;
+    // while(disk.info[idx[0]].status != 0 && cnt++<max_cnt)
+    //     for(int i=1;i<=10000;i++) ;
+    // printf("virtio_rw: irq%d\n",plic_claim());
+    // printf("virtio_disk_rw: request%d status is %d\n", disk.avail->idx - 1, disk.info[idx[0]].status);
+    acquire_spinlock(&disk.lock);
     if(disk.info[idx[0]].status != 0){
         panic("virtio_disk_rw: request failed");
     }
-    b->disk = 0; // disk is done with buf
     // wakeup(b);
-
-    disk.used_idx += 1;
 
     disk.info[idx[0]].b = 0;
     free_chain(idx[0]);
@@ -321,7 +325,7 @@ void virtio_disk_intr()
 
     // the device increments disk.used->idx when it
     // adds an entry to the used ring.
-
+    //printf("virtio_disk_intr: disk.used_idx %d, disk.used->idx %d\n", disk.used_idx, disk.used->idx);
     while (disk.used_idx != disk.used->idx)
     {
         __sync_synchronize();
@@ -329,7 +333,7 @@ void virtio_disk_intr()
 
         if (disk.info[id].status != 0)
             panic("virtio_disk_intr: virtio_disk_intr status");
-
+        //printf("virtio_disk_intr: finish %p\n", disk.info[id].b);
         struct buf *b = disk.info[id].b;
         b->disk = 0; // disk is done with buf
         // wakeup(b);
