@@ -28,9 +28,9 @@ void intr_on();
 
 void intr_off();
 
-void intr_push_on();
+void intr_push();
 
-void intr_push_off();
+void intr_pop();
 
 void usertrap();
 

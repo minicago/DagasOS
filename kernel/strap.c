@@ -51,7 +51,7 @@ void intr_off(){
     C_CSR(sstatus, SSTATUS_SIE);
 }
 
-void intr_push_on(){
+void intr_push(){
     uint64 push_off_num = --get_cpu()->push_off_num;
     if (push_off_num == 0) {
         if(get_cpu()->intr_status != 0)
@@ -59,7 +59,7 @@ void intr_push_on(){
     }
 }
 
-void intr_push_off(){
+void intr_pop(){
     if (get_cpu()->push_off_num++ == 0){
         uint64 sstatus;
         R_CSR(sstatus, sstatus);
