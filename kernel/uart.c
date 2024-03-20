@@ -1,10 +1,11 @@
 #include "uart.h"
 #include "types.h"
+#include "strap.h"
 // qemu puts UART registers here in physical memory.
 
 void uartputc_sync(int c)
 {
-//   push_off();
+  intr_push();
 
 //   if(panicked){
 //     for(;;)
@@ -16,7 +17,7 @@ void uartputc_sync(int c)
      ;
   W_UART_REG(THR, c);
 
-//   pop_off();
+  intr_pop();
 }
 
 void uartinit(void)
@@ -41,6 +42,7 @@ void uartinit(void)
   W_UART_REG(FCR, FCR_FIFO_ENABLE | FCR_FIFO_CLEAR);
 
   // enable transmit and receive interrupts.
-  W_UART_REG(IER, IER_TX_ENABLE | IER_RX_ENABLE);
+  //TODO: open this
+  // W_UART_REG(IER, IER_TX_ENABLE | IER_RX_ENABLE);
 
 }
