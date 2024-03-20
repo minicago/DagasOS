@@ -40,6 +40,7 @@ user:
 clean :
 	rm -rf build/*
 	rm fs.img
+	rm .gdbinit
 
 dst=/mnt
 fs.img:
@@ -69,7 +70,7 @@ QEMUOPTS += -global virtio-mmio.force-legacy=false
 QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
-qemu: $(BUILD_DIR)/kernel/kernel fs.img
+qemu: $(BUILD_DIR)/$K/kernel fs.img
 	$(QEMU) $(QEMUOPTS)
 
 .gdbinit :
@@ -77,12 +78,12 @@ qemu: $(BUILD_DIR)/kernel/kernel fs.img
 	set confirm off\n \
 	set architecture riscv:rv64\n \
 	target remote 127.0.0.1:26000\n \
-	symbol-file kernel/kernel\n \
+	symbol-file $(BUILD_DIR)/$K/kernel\n \
 	set disassemble-next-line auto\n \
 	set riscv use-compressed-breakpoints yes\n \
 	" > .gdbinit
 
-qemu-gdb: /kernel fs.img 
+qemu-gdb: $(BUILD_DIR)/$K/kernel fs.img 
 	$(QEMU) $(QEMUOPTS) -S -gdb tcp::26000
 
 run-gdb : .gdbinit

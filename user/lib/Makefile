@@ -6,12 +6,6 @@ U_LIB_BUILD_DIR = ../../$(BUILD_DIR)/user/lib
 OBJS = $(patsubst %.S, $(U_LIB_BUILD_DIR)/%.o ,$(SRC_S) )
 OBJS += $(patsubst %.c, $(U_LIB_BUILD_DIR)/%.o ,$(SRC_C) )
 
-ULIBS = $(patsubst %.S, ../$(BUILD_DIR)/user/lib,$(SRC_S) )
-ULIBS += $(patsubst %.c, ../$(BUILD_DIR)/user/lib ,$(SRC_C) )
-
-
-export ULIBS
-
 CFLAGS += -I../include
 
 $(U_LIB_BUILD_DIR)/%.o : %.S
