@@ -61,7 +61,7 @@ void init_thread_manager_coro(uint64 tid){
     sfencevma(va, MAX_THREAD);
     sfencevma(va, thread_pool[tid].process->pid);
 
-    thread_pool[tid].trapframe = (trapframe_t*) (COROSTACK_BOTTOM(tid) - sizeof(trapframe_t));
+    thread_pool[tid].trapframe = (trapframe_t*) TRAPFRAME0(tid);
     set_sp(&thread_manager_coro[tid], (uint64) thread_pool[tid].trapframe);
  
     

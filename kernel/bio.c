@@ -90,9 +90,7 @@ struct buf *read_block(uint32 dev, uint32 block_id)
   
   if (!b->valid)
   {
-    printf("fin1!\n");
     virtio_disk_rw(b, 0);
-    printf("fin2!\n");
     b->valid = 1;
   }
   return b;

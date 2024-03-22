@@ -3,6 +3,8 @@
 
 #include "types.h"
 #include "process.h"
+#include "vmm.h"
+#include "spinlock.h"
 
 enum THREAD_STATE {
     T_RUNNING,

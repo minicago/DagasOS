@@ -34,6 +34,7 @@
 #define PMPCFG_L 0x20 //lock bit
 
 // INTR
+#define INTR_HEAD 0x8000000000000000ull
 #define INTR_MASK 0xaaa
 
 #define S_INTR_MASK 0x222

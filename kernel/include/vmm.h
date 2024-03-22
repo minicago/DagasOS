@@ -4,9 +4,12 @@
 #include "types.h"
 #include "defs.h"
 #include "memory_layout.h"
-
 typedef uint64 pte_t;
 typedef pte_t* pagetable_t;
+
+
+
+
 
 // The risc-v Sv39 scheme has three levels of page-table
 // pages. A page-table page contains 512 64-bit PTEs.

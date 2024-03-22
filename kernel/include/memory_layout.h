@@ -5,6 +5,8 @@
 
 #include "pmm.h"
 #include "defs.h"
+//#include "thread.h"
+#include "vmm.h"
 
 #define QEMU_MEMORY_SIZE 128 * 1024 * 1024
 
@@ -46,6 +48,8 @@
 #define COROSTACK0(tid) (THREAD_SPACE + THREAD_INTERVAL * tid + COROSTACK_OFFSET) 
 
 #define COROSTACK_BOTTOM(tid) (THREAD_SPACE + THREAD_INTERVAL * tid + COROSTACK_OFFSET + MAX_COROSTACK_SIZE) 
+
+#define TRAPFRAME0(tid) (COROSTACK_BOTTOM(tid) - sizeof(trapframe_t))
 
 #define TRAMPOLINE (MAX_VA - PG_SIZE)
 
