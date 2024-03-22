@@ -157,12 +157,15 @@ int main(){
     plic_init();
     plic_init_hart();
     printf("plic init finished!\n");
-    // filesystem_init(FS_TYPE_FAT32);
-    // printf("filesystem init finished!\n");
-    kernel_test();
     init_as_scheduler();
     process_pool_init();
-    thread_pool_init();    
+    thread_pool_init();        
+
+    intr_on();
+    filesystem_init(FS_TYPE_FAT32);
+    // printf("filesystem init finished!\n");
+    kernel_test();
+
 
     //TODO: just for debug. should be moved to position before enter scheduler
     intr_on();
@@ -174,15 +177,13 @@ int main(){
     
 
 
-    
-    printf("trapret: %p",*(uint64*)(0x0000003ffffff08c));
 
     process_t* p = alloc_process();
     printf("get process\n");
     init_process(p);
     printf("init process\n");
-    // load_elf(p, "test");
-    map_elf(p);
+    load_elf(p, "test");
+    // map_elf(p);
     //map_elf(p);
     printf("map process\n");
     
