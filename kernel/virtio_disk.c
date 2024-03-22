@@ -216,13 +216,12 @@ void virtio_disk_rw(struct buf *b, int write)
 {
     //printf("virtio_rw: %d %d\n", b->block_id, write);
     uint64 sector = b->block_id * (BSIZE / 512);
-
+    
     acquire_spinlock(&disk.lock);
-
+    
     // the spec's Section 5.2 says that legacy block operations use
     // three descriptors: one for type/reserved/sector, one for the
     // data, one for a 1-byte status result.
-
     // allocate the three descriptors.
     int idx[3];
     while (1)
@@ -285,12 +284,23 @@ void virtio_disk_rw(struct buf *b, int write)
     // Wait for virtio_disk_intr() to say request has finished.
     
     release_spinlock(&disk.lock);
+
+
+
+
     while(b->disk==1) {
+    /*
+    *******************************
+    *program dead here            *
+    *******************************
+    
+    */        
         
         continue;
     //     TODO: sleep
     //     sleep(b, &disk.vdisk_lock);
     }
+
     // int cnt = 0;
     // int max_cnt = 400;
     // while(disk.info[idx[0]].status != 0 && cnt++<max_cnt)

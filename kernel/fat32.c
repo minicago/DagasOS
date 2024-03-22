@@ -191,7 +191,6 @@ void fat32_superblock_init(uint32 dev, superblock_t *sb)
 {
     // read boot sector
     struct buf *b = read_block(dev, 0);
-
     sb->extra = palloc();
     printf("fat32: sb->extra%x\n",sb->extra);
     sb->dev = dev;

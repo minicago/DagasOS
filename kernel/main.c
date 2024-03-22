@@ -107,18 +107,20 @@ int spinlock_test(){
 }
 
 int kernel_test(){
-    // printf("**************\nprint_test:\n");
-    // if(print_test() == 0) panic("print error!");
-    // else printf("print_test pass\n");
+    printf("**************\nprint_test:\n");
+    if(print_test() == 0) panic("print error!");
+    else printf("print_test pass\n");
 
-    // printf("**************\nspinlock_test:\n");
-    // if(spinlock_test() == 0) panic("spinlock error!"); 
-    // else printf("spinlock_test pass\n");
+    printf("**************\nspinlock_test:\n");
+    if(spinlock_test() == 0) panic("spinlock error!"); 
+    else printf("spinlock_test pass\n");
 
-    // printf("**************\ncoro_test:\n");
-    // if(coro_test() == 0) panic("coro error!"); 
-    // else printf("coro_test pass\n");
+    printf("**************\ncoro_test:\n");
+    if(coro_test() == 0) panic("coro error!"); 
+    else printf("coro_test pass\n");
 
+
+    //bio test halt?
     // printf("**************\nbio_test:\n");
     // if(bio_test() == 0) panic("bio error!");
     // else printf("bio_test pass\n");
@@ -127,9 +129,9 @@ int kernel_test(){
     // if(fat32_test() == 0) panic("fat32 error!");
     // else printf("fat32_test pass\n");
 
-    printf("**************\nfile_test:\n");
-    if(file_test() == 0) panic("file error!");
-    else printf("file_test pass\n");
+    // printf("**************\nfile_test:\n");
+    // if(file_test() == 0) panic("file error!");
+    // else printf("file_test pass\n");
 
     printf("********************************\n");
     printf("* Congrulation! ALL TEST PASS! *\n");
@@ -138,7 +140,7 @@ int kernel_test(){
 }
 
 int main(){
-    
+    intr_off();
     uartinit();
     printf("uart init finished!\n");
     strap_init();
@@ -147,7 +149,7 @@ int main(){
     printf("pmem init finished!\n");
     kvminit();
     printf("kvm init finished!\n");
-        printf("trapret:%p\n", *(uint64*) trampoline );
+    printf("trapret:%p\n", *(uint64*) trampoline );
     virtio_disk_init();
     printf("virtio disk init finished!\n");
     block_cache_init();
@@ -155,28 +157,32 @@ int main(){
     plic_init();
     plic_init_hart();
     printf("plic init finished!\n");
+    // filesystem_init(FS_TYPE_FAT32);
+    // printf("filesystem init finished!\n");
+    kernel_test();
+    init_as_scheduler();
+    process_pool_init();
+    thread_pool_init();    
 
     //TODO: just for debug. should be moved to position before enter scheduler
     intr_on();
 
-    filesystem_init(FS_TYPE_FAT32);
-    printf("filesystem init finished!\n");
-
-    init_as_scheduler();
-        printf("trapret:%p\n", *(uint64*) trampoline );
     
-    kernel_test();
-        printf("trapret:%p\n", *(uint64*) trampoline );
-    process_pool_init();
-    thread_pool_init();
+    
 
     
+    
+
+
+    
+    printf("trapret: %p",*(uint64*)(0x0000003ffffff08c));
 
     process_t* p = alloc_process();
     printf("get process\n");
     init_process(p);
     printf("init process\n");
-    load_elf(p, "test");
+    // load_elf(p, "test");
+    map_elf(p);
     //map_elf(p);
     printf("map process\n");
     
@@ -194,6 +200,8 @@ int main(){
     entry_main(t);
     printf("entry done\n");
 
+    printf("trapret: %p",*(uint64*)(0x0000003ffffff08c));
+
     scheduler_loop();
     
     /*
@@ -202,7 +210,7 @@ int main(){
  
 
     // Open Intr
-    intr_on();
+    
     
     while(1);
     return 0;

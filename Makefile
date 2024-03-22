@@ -28,19 +28,18 @@ export LD
 export CFLAGS
 export LDFLAGS
 
+.PHONY: user sdcard kernel
 
-$(BUILD_DIR)/kernel/kernel: 
+kernel:  
 	make -C $K all
-
-.PHONY: user sdcard
 
 user: 
 	make -C $U all
 
 clean :
-	rm -rf build/*
-	rm fs.img
-	rm .gdbinit
+	rm -rf build/* \
+	fs.img \
+	.gdbinitg
 
 dst=/mnt
 fs.img:
@@ -70,7 +69,7 @@ QEMUOPTS += -global virtio-mmio.force-legacy=false
 QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
-qemu: $(BUILD_DIR)/$K/kernel fs.img
+qemu: fs.img kernel
 	$(QEMU) $(QEMUOPTS)
 
 .gdbinit :

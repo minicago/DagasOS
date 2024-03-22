@@ -7,7 +7,7 @@ OBJS = $(patsubst %.S, $(K_BUILD_DIR)/%.o ,$(SRC_S) )
 OBJS += $(patsubst %.c, $(K_BUILD_DIR)/%.o ,$(SRC_C) )
 
 
-$(K_BUILD_DIR)/kernel: $(OBJS) kernel.ld
+$(K_BUILD_DIR)/kernel: $(OBJS) kernel.ld $(SRC_C) $(SRC_S)
 	$(LD) $(LDFLAGS) -T kernel.ld -o $(K_BUILD_DIR)/kernel $(OBJS)
 
 $(K_BUILD_DIR)/%.o : %.S
