@@ -136,12 +136,12 @@ static int fat32_read_inode(inode_t *node, int offset, int size, void *buffer)
     if (sb->fs_type != FS_TYPE_FAT32)
     {
         printf("fat32: not a fat32 filesystem\n");
-        return 0;
+        return -1;
     }
     if (offset < 0 || offset > node->size)
     {
         printf("fat32: offset is invalid\n");
-        return 0;
+        return -1;
     }
     if (offset + size > node->size)
     {
@@ -154,7 +154,7 @@ static int fat32_read_inode(inode_t *node, int offset, int size, void *buffer)
         if (!FAT32_CID_IS_VALID(cid))
         {
             printf("fat32: cid is invalid\n");
-            return 0;
+            return -1;
         }
         offset -= CLUSTER_SIZE;
         
@@ -166,7 +166,7 @@ static int fat32_read_inode(inode_t *node, int offset, int size, void *buffer)
         if (!FAT32_CID_IS_VALID(cid))
         {
             printf("fat32: cid is invalid\n");
-            return 0;
+            return -1;
         }
         if (size >= CLUSTER_SIZE - offset)
         {
