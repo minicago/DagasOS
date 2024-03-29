@@ -27,12 +27,13 @@ void resolve_ecall(){
     uint64 stval = 0, sscratch = 0, sepc = 0;
     R_CSR(stval, stval);
     R_CSR(sscratch, sscratch);
-    R_CSR(sepc, sepc); 
+    R_CSR(sepc, sepc);
     int tid = get_tid();
     trapframe_t* trapframe = thread_pool[tid].trapframe;
     if (trapframe->a0 == SYS_PRINT){
         printf("USER: Hello, world!\n");
-        sepc += 4;
+        thread_pool[tid].trapframe->epc += 4;
+        printf("epc : %x\n",  thread_pool[tid].trapframe->epc);
     }else {
         printf("Unknown ecall!\nstval = %p, sscratch = %p, sepc = %p, ecall_id = %p\n", stval, sscratch, sepc, trapframe->a0);
         // while (1);
@@ -46,21 +47,26 @@ void usertrap()
     int tid = get_tid();
     uint64 stval = 0, sscratch = 0, sepc = 0, sip = 0, scause = 0;
     int which_dev;
+
     intr_push();
+    
+
     set_strap_stvec();
     
 
     R_CSR(stval, stval);
     R_CSR(sscratch, sscratch);
     R_CSR(sepc, sepc);
+    
     R_CSR(sip, sip);
     R_CSR(scause, scause);
+    thread_pool[tid].trapframe->epc = sepc;
     if (scause == BREAK_POINT_EXC && !(scause & INTR_HEAD) ){
         resolve_ecall();
         thread_pool[tid].state = T_READY;
         intr_pop();
         goto return_to_user;
-    } else    if((which_dev = dev_intr()) == 0) {
+    } else if((which_dev = dev_intr()) == 0) {
         printf("Unknown user trap:\nscause = %p, stval = %p, sscratch = %p, sepc = %p, sip = %p\n", scause, stval, sscratch, sepc, sip);
         thread_pool[tid].state = T_SLEEPING;
         intr_pop();
@@ -71,14 +77,7 @@ void usertrap()
 
     }
 
-
-
-    
-
-
-    
 switch_to:
-    
     release_spinlock(&thread_pool[tid].lock);
     switch_coro(&get_cpu()->scheduler_coro);
 return_to_user:
