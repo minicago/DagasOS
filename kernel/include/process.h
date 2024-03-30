@@ -4,11 +4,16 @@
 #include "dagaslib.h"
 #include "vmm.h"
 #include "spinlock.h"
+#include "fs.h"
+#include "file.h"
 
 #define MAX_PROCESS 256
 
 #define USER_ENTRY 0x00000000ull
 #define USER_EXIT 0x80000000ull
+
+#define MAX_FD 16
+#define NONE_FILE -1
 
 enum PROCESS_STATE {
     UNUSED,
@@ -29,6 +34,8 @@ typedef struct process_struct {
 
     // threads;
     int thread_count;
+    file_t *open_files[MAX_FD];  // Open files
+    inode_t *cwd;           // Current directory
 } process_t;
 
 extern process_t process_pool[];

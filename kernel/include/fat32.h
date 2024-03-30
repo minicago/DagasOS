@@ -11,7 +11,7 @@
 #define FAT32_T_SYSTEM  0x04
 #define FAT32_T_VOLUME  0x08
 #define FAT32_T_DIR  0x10
-#define FAT32_T_ARCHIVE  0x20
+#define FAT32_T_FILE  0x20
 #define FAT32_T_DEV 0x40
 #define FAT32_T_FREE 0x80
 #define FAT32_T_LFN 0x0f
@@ -47,7 +47,9 @@ typedef struct {
     uint32 root_cid;   // cluster id of root directory
     uint32 fat_offset; // offset of fat in sectors
     uint32 root_offset;
-    uint32 blocks_per_sector;
+    uint32 blocks_per_sector; // sector_size / block_size
+    uint32 blocks_per_cluster; // cluster_size / block_size
+    uint32 fat_items;
     uint32 *fat;
 } fat32_info_t;
 

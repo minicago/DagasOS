@@ -23,3 +23,13 @@ int strcmp(const char *s1, const char *s2) {
     }
     return *(unsigned char *)s1 - *(unsigned char *)s2;
 }
+
+int strlen(const char *str) {
+    const char *s;
+    for (s = str; *s; ++s);
+    return (s - str);
+}
+
+int ceil_div(int dividend, int divisor) {
+    return (dividend + divisor - 1) / divisor;
+}

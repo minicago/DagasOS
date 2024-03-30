@@ -4,6 +4,7 @@
 #include "fs.h"
 #include "print.h"
 #include "fat32.h"
+#include "bio.h"
 
 static spinlock_t cache_lock;
 static inode_t inode[MAX_INODE];
@@ -28,7 +29,7 @@ static void inode_cache_init(void){
     }
 }
 
-static inode_t* get_inode(uint32 dev, uint32 id) {
+inode_t* get_inode(uint32 dev, uint32 id) {
     acquire_spinlock(&cache_lock);
     for (int i = next[head]; i != head; i = next[i]){
         if (inode[i].dev == dev && inode[i].id == id){
@@ -67,6 +68,8 @@ void filesystem_init(uint32 type) {
             root.valid = 1;
             root.type = T_DIR;
             root.size = 0;
+            root.parent = (inode_t*)NULL;
+            root.index_in_parent = -1;
             break;
         default:
             panic("filesystem_init: unknown filesystem");
@@ -90,11 +93,8 @@ inode_t* lookup_inode(inode_t *dir, char *filename) {
     if(res->valid) {
         res->refcnt++;
     } else {
-        res->sb = node.sb;
-        res->type = node.type;
-        res->size = node.size;
-        res->valid = 1;
-        res->nlink = node.nlink;
+        *res = node;
+        res->refcnt = 1;
     }
     release_spinlock(&cache_lock);
     return res;
@@ -106,6 +106,9 @@ void release_inode(inode_t *node) {
         panic("release_inode: already released");
     }
     node->refcnt--;
+    if (node->refcnt == 0) {
+        update_inode(node);
+    }
     release_spinlock(&cache_lock);
 }
 
@@ -123,28 +126,82 @@ int read_inode(inode_t *node, int offset, int size, void *buffer) {
     return real_size;
 }
 
+void update_inode(inode_t *node) {
+    if (node->valid == 0) {
+        panic("update_inode: invalid inode");
+    }
+    node->sb->update_inode(node);
+}
+
+inode_t* create_inode(inode_t* dir, char* filename, uint8 major, uint8 type) {
+    inode_t node;
+    if (dir->type != T_DIR) {
+        panic("create_inode: not a directory");
+    }
+    if (dir->valid == 0) {
+        panic("create_inode: invalid inode");
+    }
+    if ((dir->sb->create_inode(dir, filename, type, major, &node)) == 0) {
+        panic("create_inode: create error");
+    }
+    inode_t* res = get_inode(node.dev, node.id);
+    acquire_spinlock(&cache_lock);
+    if(res->valid) {
+        res->refcnt++;
+    } else {
+        *res = node;
+        res->refcnt = 1;
+    }
+    release_spinlock(&cache_lock);
+    return res;
+}
+
 void print_inode(inode_t *node) {
     printf("inode: dev=%d, id=%d, refcnt=%d, valid=%d, type=%d, size=%d\n", node->dev, node->id, node->refcnt, node->valid, node->type, node->size);
 }
 
 int file_test() {
+    print_fs_info(&root);
     print_inode(&root);
     inode_t *node = look_up_path(&root, "test");
     print_inode(node);
     //printf("file: root txt's inode finished\n");
-    char buffer[4096];
+    //char buffer[4096];
+
+
     //print_inode(node);
-    int ss = node->size > 4096 ? 4096 : node->size;
-    int size = read_inode(node, 1040, ss, buffer);
-    //printf("file: read test.txt finished%d\n",size);
-    buffer[size] = '\0';
-    for(int i = 0; i < size; i++) {
-        if(buffer[i]<0x10) printf("0");
-        printf("%x ", buffer[i]);
-    }
-    printf("\n");
-    release_inode(node);
+
+
+    // {
+    // int ss = node->size > 4096 ? 4096 : node->size;
+    // int size = read_inode(node, 1040, ss, buffer);
+    // //printf("file: read test.txt finished%d\n",size);
+    // buffer[size] = '\0';
+    // for(int i = 0; i < size; i++) {
+    //     if(buffer[i]<0x10) printf("0");
+    //     printf("%x ", buffer[i]);
+    // }
+    // printf("\n");
+    // release_inode(node);}
+    
+    inode_t *ndir = create_inode(&root, "newdir", 0, T_DIR);
+    print_inode(ndir);
+    inode_t *ndev = create_inode(ndir, "newdev", 0, T_DEVICE);
+    print_inode(ndev);
+    release_inode(ndir);
+    release_inode(ndev);
+    printf("file_test: flush\n");
+    flush_cache_to_disk();
+    
+    printf("file_test: done\n");
     return 1;
+}
+
+void print_fs_info(inode_t *node) {
+    if (node->valid == 0) {
+        panic("print_fs_info: invalid inode");
+    }
+    node->sb->print_fs_info(node);
 }
 
 int load_from_inode_to_page(inode_t *inode, pagetable_t pagetable, uint64 va, int offset, int size){

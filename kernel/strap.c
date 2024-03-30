@@ -203,3 +203,10 @@ int dev_intr()
         return 0;
     }
 }
+
+void intr_print() {
+    uint64 sstatus;
+    R_CSR(sstatus, sstatus);
+    printf("intr = %p\n", sstatus & SSTATUS_SIE);
+
+}

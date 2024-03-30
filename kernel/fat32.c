@@ -5,6 +5,7 @@
 #include "print.h"
 #include "dagaslib.h"
 #include "fat32.h"
+#include "fs.h"
 
 #pragma pack(1)
 struct sfn_entry
@@ -13,7 +14,11 @@ struct sfn_entry
     char ex_name[3];
     uint8 type;
     uint8 r1;
-    uint8 tms;      // 10ms
+    union 
+    {
+        uint8 tms; // 10ms in normal file
+        uint8 major; // in device file
+    };
     uint16 sec : 5; // 2s
     uint16 min : 6;
     uint16 hour : 5;
@@ -47,18 +52,43 @@ struct lfn_entry
     uint16 name3[2];
 };
 
+static uint8 new_dir_date[BSIZE] = {
+    0x2e, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x10, 0x00, 0x90, 0xce, 0x50,
+    0x7e, 0x58, 0x7e, 0x58, 0x00, 0x00, 0xce, 0x50, 0x7e, 0x58, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x2e, 0x2e, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x10, 0x00, 0x90, 0xce, 0x50,
+    0x7e, 0x58, 0x7e, 0x58, 0x00, 0x00, 0xce, 0x50, 0x7e, 0x58, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+static uint8 lfn_checksum (const uint8 *pFcbName);
 static void utf16_to_ascii(const uint16 *utf16_str, char *ascii_str, uint32 len);
-static void lfn_cpy(const struct lfn_entry *lfn, char *name);
+static void lfn2name(const struct lfn_entry *lfn, char *name);
+static void name2lfn(const char *name, struct lfn_entry *lfn, uint8 checksum);
 static void print_sfn_entry(struct sfn_entry *entry);
 // static void print_lfn_entry(struct lfn_entry *entry);
 static int fat32_lookup_inode(inode_t *dir, char *filename, inode_t *node);
 static int fat32_read_inode(inode_t *node, int offset, int size, void *buffer);
-// static void print_fat_info(fat32_info_t *info);
+static void print_fat_info(inode_t* node);
 static int find_first_entry(void *buffer, uint32 size, struct sfn_entry *entry, char *name);
 static int get_cluster_offset(superblock_t *sb, uint32 cid);
 static int get_next_cid(superblock_t *sb, uint32 cid);
 static int lookup_entry(superblock_t *sb, uint32 cid, char *filename, struct sfn_entry *entry);
-static void sfn_entry2inode(superblock_t *sb, struct sfn_entry *entry, inode_t *node);
+static void sfn_entry2inode(superblock_t *sb, struct sfn_entry *entry,inode_t *parent,int index, inode_t *node);
+static void fat32_update_inode(inode_t *node);
+static void set_fat(superblock_t *sb, uint32 cid, uint32 value);
+static int fresh_fat(superblock_t *sb);
+static int get_free_cluster(superblock_t *sb);
+static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 major, inode_t* node);
+
+
+static uint8 lfn_checksum (const uint8 *pFcbName)
+{
+	int i;
+	uint8 sum=0;
+
+	for (i=11; i; i--)
+		sum = ((sum & 1) ? 0x80 : 0) + (sum >> 1) + *pFcbName++;
+	return sum;
+}
 
 static void utf16_to_ascii(const uint16 *utf16_str, char *ascii_str, uint32 len)
 {
@@ -69,11 +99,35 @@ static void utf16_to_ascii(const uint16 *utf16_str, char *ascii_str, uint32 len)
     *ascii_str = '\0';
 }
 
-static void lfn_cpy(const struct lfn_entry *lfn, char *name)
+static void lfn2name(const struct lfn_entry *lfn, char *name)
 {
     utf16_to_ascii(lfn->name1, name, 5);
     utf16_to_ascii(lfn->name2, name + 5, 6);
     utf16_to_ascii(lfn->name3, name + 11, 2);
+}
+
+static void name2lfn(const char *name, struct lfn_entry *lfn, uint8 checksum)
+{
+    lfn->check = checksum;
+    lfn->type = FAT32_T_LFN;
+    int len = 0;
+    while(*name && len<5) {
+        lfn->name1[len] = *name;
+        name++;
+        len++;
+    }
+    len = 0;
+    while(*name && len<6) {
+        lfn->name2[len] = *name;
+        name++;
+        len++;
+    }
+    len = 0;
+    while(*name && len<2) {
+        lfn->name3[len] = *name;
+        name++;
+        len++;
+    }
 }
 
 static void print_sfn_entry(struct sfn_entry *entry)
@@ -106,7 +160,7 @@ static void print_sfn_entry(struct sfn_entry *entry)
 //     printf("Type: %02x\n", entry->type);
 //     printf("Check: %02x\n", entry->check);
 //     char name[14];
-//     lfn_cpy(entry, name);
+//     lfn2name(entry, name);
 //     name[13] = '\0';
 //     printf("Name: %s\n", name);
 // }
@@ -120,9 +174,10 @@ static int fat32_lookup_inode(inode_t *dir, char *filename, inode_t *node)
         return 0;
     }
     struct sfn_entry entry;
-    if (lookup_entry(sb, dir->id, filename, &entry))
+    int index;
+    if ((index=lookup_entry(sb, dir->id, filename, &entry))!=-1)
     {
-        sfn_entry2inode(sb, &entry, node);
+        sfn_entry2inode(sb, &entry,dir,index, node);
         return 1;
     }
     return 0;
@@ -187,6 +242,28 @@ static int fat32_read_inode(inode_t *node, int offset, int size, void *buffer)
     return real_size;
 }
 
+// will not fresh immediately
+static void set_fat(superblock_t *sb, uint32 cid, uint32 value)
+{
+    ((fat32_info_t *)sb->extra)->fat[cid] = value;
+}
+
+static int fresh_fat(superblock_t *sb)
+{
+    if(sb->fs_type != FS_TYPE_FAT32)
+    {
+        printf("fat32: not a fat32 filesystem\n");
+        return 0;
+    }
+    fat32_info_t *info = (fat32_info_t *)sb->extra;
+    //fat1
+    write_to_disk(sb->dev, info->fat_offset * info->blocks_per_sector, info->sectors_per_fat * info->blocks_per_sector, info->fat);
+    //fat2
+    write_to_disk(sb->dev, info->fat_offset * info->blocks_per_sector + info->sectors_per_fat * info->blocks_per_sector,
+     info->sectors_per_fat * info->blocks_per_sector, info->fat);
+    return 1;
+}
+
 void fat32_superblock_init(uint32 dev, superblock_t *sb)
 {
     // read boot sector
@@ -212,6 +289,7 @@ void fat32_superblock_init(uint32 dev, superblock_t *sb)
 
     // read fat
     info->blocks_per_sector = info->bytes_per_sector / BSIZE;
+    info->blocks_per_cluster = info->sectors_per_cluster * info->blocks_per_sector;
     if (info->sectors_per_fat * info->bytes_per_sector > PG_SIZE)
     {
         panic("fat32: fat size is larger than one page size");
@@ -222,24 +300,37 @@ void fat32_superblock_init(uint32 dev, superblock_t *sb)
     read_to_buffer(dev, info->fat_offset * info->blocks_per_sector, info->sectors_per_fat * info->blocks_per_sector, info->fat);
 
     sb->block_size = info->sectors_per_cluster * info->bytes_per_sector;
+    info->fat_items = info->sectors_per_fat * info->bytes_per_sector / 4;
 
     // init ops
     sb->lookup_inode = fat32_lookup_inode;
     sb->read_inode = fat32_read_inode;
+    sb->update_inode = fat32_update_inode;
+    sb->create_inode = fat32_create_inode;
+    sb->print_fs_info = print_fat_info;
 }
 
-// static void print_fat_info(fat32_info_t *info)
-// {
-//     printf("Bytes per sector: %d\n", info->bytes_per_sector);
-//     printf("Sectors per cluster: %d\n", info->sectors_per_cluster);
-//     printf("Reserved sector count: %d\n", info->reserved_sectors);
-//     printf("Number of FATs: %d\n", info->fat_cnt);
-//     printf("Total sectors: %d\n", info->total_sectors);
-//     printf("Sectors per FAT: %d\n", info->sectors_per_fat);
-//     printf("Root begin cluster: %d\n", info->root_cid);
-// }
+static void print_fat_info(inode_t *node)
+{
+    if(node->sb->fs_type != FS_TYPE_FAT32)
+    {
+        printf("fat32: not a fat32 filesystem\n");
+        return;
+    }
+    fat32_info_t *info = node->sb->extra;
+    printf("This is FAT32 File System\n");
+    printf("Bytes per sector: %d\n", info->bytes_per_sector);
+    printf("Sectors per cluster: %d\n", info->sectors_per_cluster);
+    printf("Reserved sector count: %d\n", info->reserved_sectors);
+    printf("Number of FATs: %d\n", info->fat_cnt);
+    printf("Total sectors: %d\n", info->total_sectors);
+    printf("Sectors per FAT: %d\n", info->sectors_per_fat);
+    printf("Blocks per sector: %d\n", info->blocks_per_sector);
+    printf("Root begin cluster: %d\n", info->root_cid);
+}
 
 // return the end offset of this entry
+// TODO: add lfn checksum check
 static int find_first_entry(void *buffer, uint32 size, struct sfn_entry *entry, char *name)
 {
     int len = 32;
@@ -279,11 +370,11 @@ static int find_first_entry(void *buffer, uint32 size, struct sfn_entry *entry, 
     {
         while ((lentries->id & FAT32_E_LFN_END) == 0)
         {
-            lfn_cpy(lentries, name);
+            lfn2name(lentries, name);
             name += 13;
             lentries--;
         }
-        lfn_cpy(lentries, name);
+        lfn2name(lentries, name);
         name += 13;
     }
     name = '\0';
@@ -301,13 +392,15 @@ static int get_next_cid(superblock_t *sb, uint32 cid)
     return ((fat32_info_t *)sb->extra)->fat[cid];
 }
 
+// return index in dir, -1 is error
 static int lookup_entry(superblock_t *sb, uint32 cid, char *filename, struct sfn_entry *entry)
 {
     char name[256];
     char buffer[CLUSTER_SIZE * 2];
     int size = CLUSTER_SIZE;
     //printf("lookup_entry: %d %d %d\n",cid, get_cluster_offset(sb, cid), sb->block_size / BSIZE);
-    read_to_buffer(sb->dev, get_cluster_offset(sb, cid), sb->block_size / BSIZE, buffer);
+    read_to_buffer(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
+     sb->block_size / BSIZE, buffer);
 
     int offset = 0, tmp;
     while ((tmp = find_first_entry(buffer + offset, size - offset, entry, name)))
@@ -320,37 +413,245 @@ static int lookup_entry(superblock_t *sb, uint32 cid, char *filename, struct sfn
                 if (size >= CLUSTER_SIZE * 2)
                 {
                     printf("fat32: dir size is too large");
-                    return 0;
+                    return -1;
                 }
-                read_to_buffer(sb->dev, get_cluster_offset(sb, cid), sb->block_size / BSIZE, buffer + size);
+                read_to_buffer(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
+                 sb->block_size / BSIZE, buffer + size);
                 size += CLUSTER_SIZE;
                 continue;
             }
             else
             {
                 printf("fat32: can't find file\n");
-                return 0;
+                return -1;
             }
         }
+        offset += tmp;
         if (strcmp(name, filename) == 0)
         {
-            return 1;
+            return (offset / 32) - 1;
         }
-        offset += tmp;
     }
-    return 0;
+    return -1;
 }
 
-static void sfn_entry2inode(superblock_t *sb, struct sfn_entry *entry, inode_t *node)
+static void sfn_entry2inode(superblock_t *sb, struct sfn_entry *entry,inode_t *parent,int index, inode_t *node)
 {
     node->dev = sb->dev;
     node->sb = sb;
     node->id = FAT32_E_CID(entry);
-    node->type = entry->type == FAT32_T_DIR ? T_DIR : T_FILE;
     node->size = entry->size;
     node->refcnt = 0;
     node->valid = 1;
     node->nlink = 1;
+    node->parent = parent;
+    node->index_in_parent = index;
+    if(node->type==T_DEVICE) {
+        node->major = entry->major;
+    } else {
+        node->major = -1;
+    }
+    switch(entry->type) {
+        case FAT32_T_FILE:
+            node->type = T_FILE;
+            break;
+        case FAT32_T_DIR:
+            node->type = T_DIR;
+            break;
+        case FAT32_T_DEV:
+            node->type = T_DEVICE;
+            break;
+        default:
+            node->type = T_FILE;
+            printf("warning: unknown file type\n");
+            break;
+    }
+}
+
+//-1 is error
+static int get_free_cluster(superblock_t *sb)
+{
+    if(sb->fs_type != FS_TYPE_FAT32)
+    {
+        printf("fat32: not a fat32 filesystem\n");
+        return -1;
+    }
+    fat32_info_t *info = (fat32_info_t *)sb->extra;
+    for (int i = 2; i < info->fat_items; ++i)
+    {
+        if (info->fat[i] == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static void fat32_update_inode(inode_t *node)
+{
+    superblock_t *sb = node->sb;
+    if (sb->fs_type != FS_TYPE_FAT32)
+    {
+        printf("fat32: not a fat32 filesystem\n");
+        return;
+    }
+    char buffer[CLUSTER_SIZE];
+    int index = node->index_in_parent;
+    int cid = node->parent->id;
+    int max_cnt = sb->block_size / sizeof(struct sfn_entry);
+    while(index>=max_cnt) {
+        index -= max_cnt;
+        cid = get_next_cid(sb, cid);
+        if(FAT32_CID_IS_VALID(cid)==0) {
+            printf("fat32: index is invalid\n");
+            return;
+        }
+    }
+    read_to_buffer(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
+     sb->block_size / BSIZE, buffer);
+    struct sfn_entry *entries = (struct sfn_entry *)buffer;
+    entries += index;
+    entries->size = node->size;
+    write_to_disk(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
+     sb->block_size / BSIZE, buffer);
+}
+
+static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 major, inode_t* node)
+{
+    superblock_t *sb = dir->sb;
+    if (sb->fs_type != FS_TYPE_FAT32)
+    {
+        printf("fat32: not a fat32 filesystem\n");
+        return 0;
+    }
+    if (dir->type != T_DIR)
+    {
+        printf("fat32: not a directory\n");
+        return 0;
+    }
+    struct sfn_entry tmp;
+    if (lookup_entry(sb, dir->id, filename, &tmp)!=-1)
+    {
+        printf("fat32: file exists\n");
+        return 0;
+    }
+
+    // get free index, if dir is too small to add the file, will add cluster
+    int cid = dir->id;
+    char buffer[CLUSTER_SIZE];
+    struct sfn_entry* entry;
+    int max_cnt = sb->block_size / sizeof(struct sfn_entry);
+    int name_len = strlen(filename);
+    int need_cnt = 1+ceil_div(name_len,13);  //every lfn contains no more than 13 characters 
+    int index = 0;  
+    // -2 because dir . and ..
+    if(need_cnt>max_cnt-2) {
+        printf("fat32: file name is too long\n");
+        return 0;
+    }
+    while(1) {
+        read_to_buffer(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
+         sb->block_size / BSIZE, buffer);  
+        entry = (struct sfn_entry*)buffer;
+        int flag = 0;
+        for(int i=0;i<max_cnt;) {
+            if(entry->type == FAT32_T_FREE||entry->type == 0) {
+                int j = i;
+                while(j<max_cnt && (entry->type == FAT32_T_FREE||entry->type == 0) && j-i<need_cnt-1) {
+                    j++;
+                    index++;
+                    entry++;
+                }
+                if(j-i>=need_cnt-1) {
+                    flag = 1;
+                    break;
+                }
+                i = j;
+            } else {
+                i++;
+                entry++;
+                index++;
+            }
+        }
+        if(flag == 1) {
+            break;
+        } else {
+            int ori_cid = cid;
+            cid = get_next_cid(sb, cid);
+            if(cid==FAT32_END_CID) {
+                cid = get_free_cluster(sb);
+                if(cid==-1) {
+                    printf("fat32: no free cluster\n");
+                    return 0;
+                }
+                set_fat(sb, ori_cid, cid);
+                set_fat(sb, cid, FAT32_END_CID);
+                fresh_fat(sb);
+                dir->size += CLUSTER_SIZE;
+                fat32_update_inode(dir);
+            }
+        }
+    }
+
+    // write sfn entry
+    entry-=(need_cnt-1);
+    memset((void*)entry,0,sizeof(struct sfn_entry)*need_cnt);
+    entry+=(need_cnt-1);
+    int len = name_len < 8 ? name_len : 8;
+    for (int i = 0; i < len; ++i)
+    {
+        entry->name[i] = filename[i];
+    }
+    for (int i = 0; i < 3; ++i)
+    {
+        entry->ex_name[i] = ' ';
+    }    
+    int new_cid = get_free_cluster(sb);
+    if(new_cid==-1) {
+        printf("fat32: no free cluster\n");
+        return 0;
+    }
+    set_fat(sb, new_cid, FAT32_END_CID);
+    entry->high_cid = new_cid >> 16;
+    entry->low_cid = new_cid & 0xffff;
+    entry->size = 0;
+    if(type==T_DEVICE) {
+        entry->type = FAT32_T_DEV;
+        entry->major = major;
+    } else if(type==T_DIR) {
+        entry->type = FAT32_T_DIR;
+        struct sfn_entry *c_entry = (struct sfn_entry *)new_dir_date;
+        c_entry[0].high_cid = new_cid >> 16;
+        c_entry[0].low_cid = new_cid & 0xffff;
+        c_entry[1].high_cid = (dir->id) >> 16;
+        c_entry[1].low_cid = (dir->id) & 0xffff;
+        // please promise BSIZE >= 64bytes
+        write_to_disk(sb->dev, get_cluster_offset(sb, new_cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
+         BSIZE, new_dir_date);
+    } else {
+        entry->type = FAT32_T_FILE;
+    }
+    sfn_entry2inode(sb, entry, dir, index, node);
+
+    // write lfn entries
+    uint8 checksum = lfn_checksum((uint8 *)entry);
+    int lfn_id = 1;
+    while(name_len>0) {
+        entry--;
+        name2lfn(filename, (struct lfn_entry*)entry, checksum);
+        name_len -= 13;
+        filename += 13;
+        if(name_len<=0) lfn_id|=0x40;
+        ((struct lfn_entry*)entry)->id = lfn_id;
+        lfn_id++;
+    }
+
+    // write to disk
+    write_to_disk(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
+     sb->block_size / BSIZE, buffer);
+    // no need to fat32_update_inode(node), because write_to_disk is ok
+    fresh_fat(sb);
+    return 1;
 }
 
 int fat32_test()
@@ -362,7 +663,8 @@ int fat32_test()
     char buffer[CLUSTER_SIZE];
     root.high_cid = 0;
     root.low_cid = ((fat32_info_t *)sb.extra)->root_cid;
-    read_to_buffer(sb.dev, get_cluster_offset(&sb, FAT32_E_CID(&root)), sb.block_size / BSIZE, buffer);
+    read_to_buffer(sb.dev, get_cluster_offset(&sb, FAT32_E_CID(&root))*((fat32_info_t *)sb.extra)->blocks_per_sector, 
+     sb.block_size / BSIZE, buffer);
     int offset = 0, tmp;
     printf("fat32: test list root\n");
     while ((tmp = find_first_entry(buffer + offset, CLUSTER_SIZE - offset, &entry, name)))

@@ -38,4 +38,6 @@ void usertrap();
 
 int dev_intr();
 
+void intr_print();
+
 #endif 

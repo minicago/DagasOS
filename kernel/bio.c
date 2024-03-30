@@ -6,6 +6,7 @@
 #include "print.h"
 #include "virtio_disk.h"
 #include "dagaslib.h"
+#include "strap.h"
 
 struct
 {
@@ -66,7 +67,12 @@ static struct buf *get_block(uint32 dev, uint32 block_id)
   {
     if (b->refcnt == 0)
     {
-      flush_block(b);
+      release_spinlock(&block_cache.lock);
+      if(b->dirty == 1) {
+        flush_block(b);
+      }
+
+      acquire_spinlock(&block_cache.lock);
       b->dev = dev;
       b->block_id = block_id;
       b->valid = 0;
@@ -102,17 +108,15 @@ void write_block(struct buf *b)
   // if(!holdingsleep(&b->lock))
   //   panic("bwrite");
   b->dirty = 1;
+  //virtio_disk_rw(b,1);
 }
 
-// Write b's contents to disk.  Must be locked.
+// Write b's contents to disk.  Must be locked. Please call only when b->dirty == 1
 void flush_block(struct buf *b)
 {
   // if(!holdingsleep(&b->lock))
   //   panic("bwrite");
-  if(b->dirty) {
-    virtio_disk_rw(b, 1);
-    b->dirty = 0;
-  }
+  virtio_disk_rw(b, 1);
 }
 
 // Release a locked buffer.
@@ -165,6 +169,18 @@ void read_to_buffer(uint32 dev, uint32 block_id, uint32 cnt, void* buffer)
   }
 }
 
+// cnt is block's count, not byte's count
+void write_to_disk(uint32 dev, uint32 block_id, uint32 cnt, void* buffer)
+{
+  struct buf *b;
+  for(int i=0;i<cnt;i++){
+    b = read_block(dev, block_id+i);
+    memcpy(b->data, buffer+i*BSIZE, BSIZE);
+    write_block(b);
+    release_block(b);
+  }
+}
+
 void read_bytes_to_buffer(uint32 dev, uint32 block_id, int offset, int size, void* buffer)
 {
   struct buf *b;
@@ -191,9 +207,16 @@ void read_bytes_to_buffer(uint32 dev, uint32 block_id, int offset, int size, voi
 void flush_cache_to_disk() {
   struct buf *b;
   acquire_spinlock(&block_cache.lock);
+  
   for (b = block_cache.head.next; b != &block_cache.head; b = b->next)
   {
-    flush_block(b);
-  }
+    
+    if(b->dirty) {
+      release_spinlock(&block_cache.lock);
+      flush_block(b);
+      acquire_spinlock(&block_cache.lock);
+    }
+    //printf("flushed: b->block_id = %d, refcnt:%d\n", b->block_id, b->refcnt);
+  } 
   release_spinlock(&block_cache.lock);
 }

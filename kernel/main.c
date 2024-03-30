@@ -63,6 +63,7 @@ int bio_test(){
     }
     printf("\n");
     release_block(buf);
+    printf("flush all disk\n");
     flush_cache_to_disk();
     return 1;
 }
@@ -129,9 +130,9 @@ int kernel_test(){
     // if(fat32_test() == 0) panic("fat32 error!");
     // else printf("fat32_test pass\n");
 
-    // printf("**************\nfile_test:\n");
-    // if(file_test() == 0) panic("file error!");
-    // else printf("file_test pass\n");
+    printf("**************\nfile_test:\n");
+    if(file_test() == 0) panic("file error!");
+    else printf("file_test pass\n");
 
     printf("********************************\n");
     printf("* Congrulation! ALL TEST PASS! *\n");
@@ -162,8 +163,9 @@ int main(){
     thread_pool_init();        
 
     intr_on();
+    
     filesystem_init(FS_TYPE_FAT32);
-    // printf("filesystem init finished!\n");
+    printf("filesystem init finished!\n");
     kernel_test();
 
 

@@ -41,12 +41,13 @@ clean :
 	fs.img \
 	.gdbinitg
 
-dst=/mnt
+dst=/mnt/fs
 fs.img:
 	@if [ ! -f "fs.img" ]; then \
 		echo "making fs image..."; \
 		dd if=/dev/zero of=fs.img bs=512 count=4096; \
 		mkfs.vfat -F 32 -s 4 fs.img; fi
+	-@sudo mkdir $(dst)
 	@sudo mount fs.img $(dst)
 	-@make sdcard dst=$(dst)
 	@sudo umount $(dst)

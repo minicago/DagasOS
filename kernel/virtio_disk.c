@@ -12,6 +12,7 @@
 #include "fs.h"
 #include "virtio_disk.h"
 #include "spinlock.h"
+#include "strap.h"
 
 // the address of virtio mmio register r.
 #define R(r) ((volatile uint32 *)(VIRTIO0 + (r)))
@@ -287,7 +288,6 @@ void virtio_disk_rw(struct buf *b, int write)
 
 
 
-
     while(b->disk==1) {
     /*
     *******************************
@@ -321,6 +321,8 @@ void virtio_disk_rw(struct buf *b, int write)
 
 void virtio_disk_intr()
 {
+    
+    //printf("virtio_disk_intr: go in\n");
     acquire_spinlock(&disk.lock);
 
     // the device won't raise another interrupt until we tell it
@@ -332,7 +334,6 @@ void virtio_disk_intr()
     *R(VIRTIO_MMIO_INTERRUPT_ACK) = *R(VIRTIO_MMIO_INTERRUPT_STATUS) & 0x3;
 
     __sync_synchronize();
-
     // the device increments disk.used->idx when it
     // adds an entry to the used ring.
     //printf("virtio_disk_intr: disk.used_idx %d, disk.used->idx %d\n", disk.used_idx, disk.used->idx);
@@ -343,7 +344,7 @@ void virtio_disk_intr()
 
         if (disk.info[id].status != 0)
             panic("virtio_disk_intr: virtio_disk_intr status");
-        //printf("virtio_disk_intr: finish %p\n", disk.info[id].b);
+        //printf("virtio_disk_intr: finish %p disk-%d\n", disk.info[id].b,disk.info[id].b->block_id);
         struct buf *b = disk.info[id].b;
         b->disk = 0; // disk is done with buf
         // wakeup(b);

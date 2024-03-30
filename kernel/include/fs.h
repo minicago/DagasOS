@@ -24,11 +24,18 @@ typedef struct superblock_struct
   uint32 fs_type;
   void *extra;
 
-  //ops
+  //ops, node.refcnt = 0 but others is proper
   int (*lookup_inode)(inode_t *dir, char *filename, inode_t *node);
 
   // return the real size. return -1 is error
   int (*read_inode)(inode_t *node, int offset, int size, void *buffer);
+
+  void (*update_inode)(inode_t *node);
+
+  // return 0 is error
+  int (*create_inode)(inode_t* dir, char* filename, uint8 type, uint8 major, inode_t* inode);
+
+  void (*print_fs_info)(inode_t *node);
 } superblock_t;
 
 struct inode_struct{
@@ -40,12 +47,15 @@ struct inode_struct{
   int valid;   // inode has been read from disk?
   uint16 type; // copy of disk inode
   uint32 size;
+  uint8 major;
   superblock_t *sb;
+  inode_t *parent;
+  int index_in_parent;
 };
 
 // root(/) inode, can only be used after filesystem_init called
 extern inode_t root;
-
+inode_t* get_inode(uint32 dev, uint32 id);
 // will init inode cache, root inode's superblock and root inode
 void filesystem_init(uint32 type);
 // will lookup inode in dir, and return inode
@@ -55,7 +65,13 @@ void release_inode(inode_t *node);
 // read inode's data to buffer, the unit of offset is byte
 int read_inode(inode_t *node, int offset, int size, void *buffer);
 
+void update_inode(inode_t *node);
+
+inode_t* create_inode(inode_t* dir, char* filename, uint8 major, uint8 type);
+
 void print_inode(inode_t *node);
+
+void print_fs_info(inode_t *node);
 
 int file_test();
 
