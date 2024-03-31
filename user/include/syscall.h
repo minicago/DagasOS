@@ -25,5 +25,6 @@ uint64 do_user_syscall(uint64 sysnum, uint64 a0, uint64 a1, uint64 a2, uint64 a3
 
 
 #define SYS_PRINT 0x0
+#define SYS_WRITE 0x1
 
 #endif

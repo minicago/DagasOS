@@ -446,11 +446,7 @@ static void sfn_entry2inode(superblock_t *sb, struct sfn_entry *entry,inode_t *p
     node->nlink = 1;
     node->parent = parent;
     node->index_in_parent = index;
-    if(node->type==T_DEVICE) {
-        node->major = entry->major;
-    } else {
-        node->major = -1;
-    }
+    node->major = -1;
     switch(entry->type) {
         case FAT32_T_FILE:
             node->type = T_FILE;
@@ -460,6 +456,7 @@ static void sfn_entry2inode(superblock_t *sb, struct sfn_entry *entry,inode_t *p
             break;
         case FAT32_T_DEV:
             node->type = T_DEVICE;
+            node->major = entry->major;
             break;
         default:
             node->type = T_FILE;

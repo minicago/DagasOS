@@ -13,7 +13,10 @@
 #define USER_EXIT 0x80000000ull
 
 #define MAX_FD 16
-#define NONE_FILE -1
+
+#define FD_STDIN 0
+#define FD_STDOUT 1
+#define FD_STDERR 2
 
 enum PROCESS_STATE {
     UNUSED,
@@ -45,5 +48,6 @@ void init_process(process_t* process);
 process_t* alloc_process();
 void free_process(process_t* process);
 void map_elf(process_t* process);
+process_t* get_current_proc(void);
 
 #endif

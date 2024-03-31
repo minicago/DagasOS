@@ -26,7 +26,7 @@ typedef struct coro_struct{
 
 // extern coro_t* current;
 
-void switch_coro(coro_t* );
+void switch_coro(coro_t* dest, thread_t* thread);
 
 int get_tid();
 

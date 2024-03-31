@@ -10,9 +10,11 @@
 #define MAX_DEV 16
 #define RESERVED_FILE_CNT 10
 
+#define T_NONE 0   // None
 #define T_DIR 1    // Directory
 #define T_FILE 2   // File
 #define T_DEVICE 3 // Device
+#define T_PIPE 4   // Pipe
 
 #define CONSOLE_DEV 1
 
@@ -24,13 +26,7 @@ typedef struct dev_struct dev_t;
 
 struct file_struct
 {
-    enum
-    {
-        FD_NONE,
-        FD_PIPE,
-        FD_INODE,
-        FD_DEVICE
-    } type;
+    uint8 type;
     uint32 refcnt; // reference count
     uint8 readable;
     uint8 writable;
@@ -46,5 +42,12 @@ struct dev_struct {
 };
 
 extern dev_t devices[];
+
+void files_init();
+void file_close(file_t *file);
+int file_read(file_t *file, uint64 va, int size);
+int file_write(file_t *file, uint64 va, int size);
+file_t* file_create_by_inode(inode_t *node);
+int file_dup(file_t *file);
 
 #endif

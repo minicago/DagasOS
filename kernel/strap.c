@@ -6,6 +6,7 @@
 #include "virtio_disk.h"
 #include "plic.h"
 #include "memory_layout.h"
+#include "syscall.h"
 
 void set_strap_stvec()
 {
@@ -30,15 +31,16 @@ void resolve_ecall(){
     R_CSR(sepc, sepc);
     int tid = get_tid();
     trapframe_t* trapframe = thread_pool[tid].trapframe;
-    if (trapframe->a0 == SYS_PRINT){
-        printf("USER: Hello, world!\n");
-        thread_pool[tid].trapframe->epc += 4;
-        printf("epc : %x\n",  thread_pool[tid].trapframe->epc);
-    }else {
-        printf("Unknown ecall!\nstval = %p, sscratch = %p, sepc = %p, ecall_id = %p\n", stval, sscratch, sepc, trapframe->a0);
-        // while (1);
+    syscall_handler(trapframe);
+    // if (trapframe->a0 == SYS_PRINT){
+    //     printf("USER: Hello, world!\n");
+    //     thread_pool[tid].trapframe->epc += 4;
+    //     printf("epc : %x\n",  thread_pool[tid].trapframe->epc);
+    // }else {
+    //     printf("Unknown ecall!\nstval = %p, sscratch = %p, sepc = %p, ecall_id = %p\n", stval, sscratch, sepc, trapframe->a0);
+    //     // while (1);
         
-    }
+    // }
     
 }
 

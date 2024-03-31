@@ -11,9 +11,10 @@ coro_t thread_manager_coro[MAX_THREAD];
 
 coro_t* current;
 
-void switch_coro(coro_t* dest){
+void switch_coro(coro_t* dest, thread_t* thread){
     if(coro_setjmp(&get_cpu()->current_coro->env) == 0){
         get_cpu()->current_coro = dest;
+        get_cpu()->thread = thread;
         coro_longjmp(&dest->env, 1);
     }
 }
@@ -26,7 +27,7 @@ void scheduler_loop(){
             if (try_acquire_spinlock(&thread_pool[i].lock) != 0){
                 if(thread_pool[i].state == T_READY){
                     thread_pool[i].state = T_RUNNING;
-                    switch_coro(&thread_manager_coro[i]);
+                    switch_coro(&thread_manager_coro[i], &thread_pool[i]);
                 }
                 
                 // release_spinlock(&thread_pool[i].lock);

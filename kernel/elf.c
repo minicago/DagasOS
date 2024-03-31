@@ -1,6 +1,7 @@
 #include "elf.h"
 #include "process.h"
 #include "file.h"
+#include "fs.h"
 #include "vmm.h"
 
 int load_elf_from_inode(process_t* process, inode_t* elf){
@@ -33,7 +34,7 @@ prog_hdr_err:
 }
 
 int load_elf(process_t* process, char* path){
-    inode_t* elf = look_up_path(&root, path);
+    inode_t* elf = look_up_path(get_root(), path);
     print_inode(elf);
     printf("inode:%p\n", elf);
     return load_elf_from_inode(process, elf);

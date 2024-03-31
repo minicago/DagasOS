@@ -12,6 +12,8 @@ void consputc(char ch) {
     uartputc_sync(ch);
 }
 
+
+
 /*
 val: the integer which should be print.
 base: should between binary to hex.

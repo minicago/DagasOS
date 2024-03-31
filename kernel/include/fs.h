@@ -24,7 +24,7 @@ typedef struct superblock_struct
   uint32 fs_type;
   void *extra;
 
-  //ops, node.refcnt = 0 but others is proper
+  //ops, node.refcnt = 0 but others is proper. return 0 if can't find
   int (*lookup_inode)(inode_t *dir, char *filename, inode_t *node);
 
   // return the real size. return -1 is error
@@ -54,7 +54,7 @@ struct inode_struct{
 };
 
 // root(/) inode, can only be used after filesystem_init called
-extern inode_t root;
+inode_t* get_root();
 inode_t* get_inode(uint32 dev, uint32 id);
 // will init inode cache, root inode's superblock and root inode
 void filesystem_init(uint32 type);

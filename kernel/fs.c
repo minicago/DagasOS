@@ -11,7 +11,7 @@ static inode_t inode[MAX_INODE];
 static uint32 next[MAX_INODE];
 static uint32 prev[MAX_INODE];
 static uint32 head;
-inode_t root;
+static inode_t root = {.dev = NULL_DEV};
 superblock_t root_superblock;
 
 static void inode_cache_init(void){
@@ -27,6 +27,11 @@ static void inode_cache_init(void){
         prev[next[head]] = i;
         next[head] = i;
     }
+}
+
+inode_t* get_root() {
+    if(root.dev==NULL_DEV) panic("get_root: root not initialized");
+    return &root;
 }
 
 inode_t* get_inode(uint32 dev, uint32 id) {
@@ -86,7 +91,8 @@ inode_t* lookup_inode(inode_t *dir, char *filename) {
         panic("lookup_inode: invalid inode");
     }
     if (dir->sb->lookup_inode(dir, filename, &node) == 0) {
-        panic("lookup_inode: can't find file");
+        printf("lookup_inode: can't find file %s\n",filename);
+        return NULL;
     }
     inode_t* res = get_inode(node.dev, node.id);
     acquire_spinlock(&cache_lock);
@@ -101,6 +107,10 @@ inode_t* lookup_inode(inode_t *dir, char *filename) {
 }
 
 void release_inode(inode_t *node) {
+    if(node==&root) {
+        panic("release_inode: root can't be released\n");
+        return;
+    }
     acquire_spinlock(&cache_lock);
     if (node->refcnt == 0) {
         panic("release_inode: already released");
@@ -161,9 +171,10 @@ void print_inode(inode_t *node) {
 }
 
 int file_test() {
-    print_fs_info(&root);
-    print_inode(&root);
-    inode_t *node = look_up_path(&root, "test");
+    inode_t* root = get_root();
+    print_fs_info(root);
+    print_inode(root);
+    inode_t *node = look_up_path(root, "test");
     print_inode(node);
     //printf("file: root txt's inode finished\n");
     //char buffer[4096];
@@ -184,7 +195,7 @@ int file_test() {
     // printf("\n");
     // release_inode(node);}
     
-    inode_t *ndir = create_inode(&root, "newdir", 0, T_DIR);
+    inode_t *ndir = create_inode(root, "newdir", 0, T_DIR);
     print_inode(ndir);
     inode_t *ndev = create_inode(ndir, "newdev", 0, T_DEVICE);
     print_inode(ndev);
@@ -240,6 +251,7 @@ int load_from_inode_to_page(inode_t *inode, pagetable_t pagetable, uint64 va, in
     return sum_size;
 }
 
+//TODO: relative path
 inode_t* look_up_path(inode_t* root, char *path){
     inode_t* res = root;
     char* filename = path;
@@ -249,6 +261,7 @@ inode_t* look_up_path(inode_t* root, char *path){
             if(path[i] == '\0') end = 1;
             path[i] = '\0';
             res = lookup_inode(res, filename);
+            if(res==NULL) return res;
             filename = path + i + 1;
             if(end != 0) break;
             path[i] = '/';

@@ -81,4 +81,6 @@ pagetable_t alloc_user_pagetable();
 
 void free_user_pagetable(pagetable_t pagetable);
 
+int copy_to_pa(void *dst, uint64 src, uint64 len, uint8 from_user);
+
 #endif

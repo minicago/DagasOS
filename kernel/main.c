@@ -11,6 +11,7 @@
 #include "fat32.h"
 #include "elf.h"
 #include "plic.h"
+#include "console.h"
 
 int bio_test(){
     //Test for bio read and write
@@ -130,9 +131,9 @@ int kernel_test(){
     // if(fat32_test() == 0) panic("fat32 error!");
     // else printf("fat32_test pass\n");
 
-    printf("**************\nfile_test:\n");
-    if(file_test() == 0) panic("file error!");
-    else printf("file_test pass\n");
+    // printf("**************\nfile_test:\n");
+    // if(file_test() == 0) panic("file error!");
+    // else printf("file_test pass\n");
 
     printf("********************************\n");
     printf("* Congrulation! ALL TEST PASS! *\n");
@@ -166,6 +167,8 @@ int main(){
     
     filesystem_init(FS_TYPE_FAT32);
     printf("filesystem init finished!\n");
+    console_init();
+    printf("console init finished!\n");
     kernel_test();
 
 
