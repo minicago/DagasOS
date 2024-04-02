@@ -42,7 +42,7 @@ clean :
 	.gdbinitg
 
 dst=/mnt/fs
-fs.img:
+fs.img: sdcard
 	@if [ ! -f "fs.img" ]; then \
 		echo "making fs image..."; \
 		dd if=/dev/zero of=fs.img bs=512 count=4096; \
