@@ -19,4 +19,5 @@ void syscall_handler(trapframe_t* trapframe) {
             break;
     }
     trapframe->epc+=4;
+    printf("trapframe->epc : %p\n",trapframe->epc);
 }

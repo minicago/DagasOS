@@ -5,7 +5,7 @@
 #include "coro.h"
 
 typedef struct cput_struct{
-    thread_t* thread;
+    // thread_t* thread;
     uint64 push_off_num;
     int intr_status;
     coro_t* current_coro;

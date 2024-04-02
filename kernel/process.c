@@ -78,10 +78,10 @@ void map_elf(process_t* process){
 process_t* get_current_proc(void)
 {
     intr_push();
-    cpu_t *c = get_cpu();
+    // cpu_t *c = get_cpu();
     
     //printf("get_current_proc: %p %p\n", c, c->thread);
-    process_t *proc = c->thread->process;
+    process_t *proc = process_pool + get_tid();
     intr_pop();
     return proc;
 }
