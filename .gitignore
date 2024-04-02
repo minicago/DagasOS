@@ -66,3 +66,7 @@ user/*.d
 
 #vscode
 .vscode/
+
+#build
+
+build/
