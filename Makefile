@@ -29,22 +29,17 @@ export LD
 export CFLAGS
 export LDFLAGS
 
-.PHONY: user sdcard kernel testsuit test qemu
+.PHONY: user sdcard testsuit test qemu
 
-kernel:  
+kernel-qemu:  
 	make -C $K all
+	ln -s $(BUILD_DIR)/$K/kernel kernel-qemu
 
 user: 
 	make -C $U all
 
 $(TEST)/$U/riscv64:
 	make -C $(TEST)/$U all CHAPTER=7
-
-clean :
-	@make -C $(TEST)/$U clean
-	rm -rf build/* \
-	sdcard.img \
-	.gdbinitg
 
 dst=/mnt/sdcard
 sdcard.img:
@@ -74,16 +69,15 @@ QEMU = qemu-system-riscv64
 CPUS := 1
 
 QEMUBIOS = none
-# QEMUBIOS = /home/smokey-days/Desktop/Courses/os/DagasOS/sbi-qemu
-QEMUOPTS = -machine virt -bios ${QEMUBIOS} -kernel $(BUILD_DIR)/$K/kernel -m 128M -smp $(CPUS) -nographic
+QEMUOPTS = -machine virt -bios ${QEMUBIOS} -kernel kernel-qemu -m 128M -smp $(CPUS) -nographic
 QEMUOPTS += -global virtio-mmio.force-legacy=false
 QEMUOPTS += -drive file=sdcard.img,if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
-qemu: sdcard.img kernel
+qemu: sdcard.img kernel-qemu
 	$(QEMU) $(QEMUOPTS)
 
-all : sdcard.img kernel
+all : sdcard.img kernel-qemu
 
 .gdbinit :
 	echo "\
@@ -100,3 +94,10 @@ qemu-gdb: $(BUILD_DIR)/$K/kernel sdcard.img
 
 run-gdb : .gdbinit
 	$(GDB) -command=.gdbinit
+
+clean :
+	@make -C $(TEST)/$U clean
+	rm -rf build/* \
+	sdcard.img \
+	.gdbinit \
+	kernel-qemu
