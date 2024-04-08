@@ -172,17 +172,6 @@ int main(){
     kernel_test();
 
 
-    //TODO: just for debug. should be moved to position before enter scheduler
-    intr_on();
-
-    
-    
-
-    
-    
-
-
-
     process_t* p = alloc_process();
     printf("get process\n");
     init_process(p);
