@@ -339,11 +339,11 @@ static int find_first_entry(void *buffer, uint32 size, struct sfn_entry *entry, 
     {
         return FAT32_OVER_SIZE;
     }
-    if (*((uint8 *)entries) == FAT32_E_FREE)
-    {
-        printf("can't find a file\n");
-        return 0;
-    }
+    // if (*((uint8 *)entries) == FAT32_E_FREE)
+    // {
+    //     printf("can't find a file\n");
+    //     return 0;
+    // }
     while (entries->type == FAT32_T_LFN || entries->type == FAT32_T_FREE)
     {
         entries++;
@@ -352,11 +352,11 @@ static int find_first_entry(void *buffer, uint32 size, struct sfn_entry *entry, 
         {
             return FAT32_OVER_SIZE;
         }
-        if (*((uint8 *)entries) == FAT32_E_FREE)
-        {
-            printf("can't find a file\n");
-            return 0;
-        }
+        // if (*((uint8 *)entries) == FAT32_E_FREE)
+        // {
+        //     printf("can't find a file\n");
+        //     return 0;
+        // }
     }
     *entry = *entries;
     entries--;
