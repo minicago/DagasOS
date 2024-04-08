@@ -83,4 +83,6 @@ void free_user_pagetable(pagetable_t pagetable);
 
 int copy_to_pa(void *dst, uint64 src, uint64 len, uint8 from_user);
 
+uint64 va2pa(pagetable_t pagetable, uint64 va);
+
 #endif

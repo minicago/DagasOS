@@ -7,6 +7,8 @@
 #include "fat32.h"
 #include "fs.h"
 
+#define MAX_CLUSTER_SIZE 512*8 // means don't support cluster size larger than 4KB
+
 #pragma pack(1)
 struct sfn_entry
 {
@@ -186,6 +188,7 @@ static int fat32_lookup_inode(inode_t *dir, char *filename, inode_t *node)
 static int fat32_read_inode(inode_t *node, int offset, int size, void *buffer)
 {
     superblock_t *sb = node->sb;
+    int cluster_size = sb->block_size;
     int real_size = size;
     //printf("fat32_read_inode: begin read file\n");
     if (sb->fs_type != FS_TYPE_FAT32)
@@ -203,7 +206,7 @@ static int fat32_read_inode(inode_t *node, int offset, int size, void *buffer)
         real_size = size = (node->size - offset);
     }
     uint32 cid = node->id;
-    while (offset >= CLUSTER_SIZE)
+    while (offset >= cluster_size)
     {
         cid = get_next_cid(sb, cid);
         if (!FAT32_CID_IS_VALID(cid))
@@ -211,7 +214,7 @@ static int fat32_read_inode(inode_t *node, int offset, int size, void *buffer)
             printf("fat32: cid is invalid\n");
             return -1;
         }
-        offset -= CLUSTER_SIZE;
+        offset -= cluster_size;
         
         //printf("fat32_read_inode: cid%d\n",cid);
     }
@@ -223,11 +226,11 @@ static int fat32_read_inode(inode_t *node, int offset, int size, void *buffer)
             printf("fat32: cid is invalid\n");
             return -1;
         }
-        if (size >= CLUSTER_SIZE - offset)
+        if (size >= cluster_size - offset)
         {
-            read_bytes_to_buffer(sb->dev, get_cluster_offset(sb, cid), offset, CLUSTER_SIZE - offset, buffer);
-            buffer += CLUSTER_SIZE - offset;
-            size -= CLUSTER_SIZE - offset;
+            read_bytes_to_buffer(sb->dev, get_cluster_offset(sb, cid), offset, cluster_size - offset, buffer);
+            buffer += cluster_size - offset;
+            size -= cluster_size - offset;
         }
         else
         {
@@ -257,10 +260,10 @@ static int fresh_fat(superblock_t *sb)
     }
     fat32_info_t *info = (fat32_info_t *)sb->extra;
     //fat1
-    write_to_disk(sb->dev, info->fat_offset * info->blocks_per_sector, info->sectors_per_fat * info->blocks_per_sector, info->fat);
+    write_to_disk(sb->dev, info->fat_offset * info->blocks_per_sector, info->fat_blocks, info->fat);
     //fat2
     write_to_disk(sb->dev, info->fat_offset * info->blocks_per_sector + info->sectors_per_fat * info->blocks_per_sector,
-     info->sectors_per_fat * info->blocks_per_sector, info->fat);
+     info->fat_blocks, info->fat);
     return 1;
 }
 
@@ -290,14 +293,30 @@ void fat32_superblock_init(uint32 dev, superblock_t *sb)
     // read fat
     info->blocks_per_sector = info->bytes_per_sector / BSIZE;
     info->blocks_per_cluster = info->sectors_per_cluster * info->blocks_per_sector;
-    if (info->sectors_per_fat * info->bytes_per_sector > PG_SIZE)
+    uint32 fat_blocks = info->sectors_per_fat * info->blocks_per_sector;
+    if (fat_blocks * BSIZE > PG_SIZE)
     {
-        panic("fat32: fat size is larger than one page size");
+        printf("fat32: fat size is %d B %d %d\n", fat_blocks * BSIZE, info->bytes_per_sector,info->sectors_per_cluster );
+        // fat_blocks = PG_SIZE / BSIZE;
+        printf("fat32: warning: fat size is larger than one page size\n");
     }
-    info->fat = (uint32 *)palloc();
-    
-    printf("fat32: info->fat%x\n",info->fat);
-    read_to_buffer(dev, info->fat_offset * info->blocks_per_sector, info->sectors_per_fat * info->blocks_per_sector, info->fat);
+
+    //TODO: make the memory alloced to fat is continuous by more official function
+    info->fat_blocks = fat_blocks;
+    int fat_size = fat_blocks*BSIZE;
+    fat_size -= PG_SIZE;
+    uint64 tmp = (uint64)palloc();
+    while(fat_size > 0) {
+        uint64 tmp2 = (uint64)palloc();
+        if(tmp2+PG_SIZE != tmp) {
+            panic("fat32: fat memory is not continuous\n");
+        }
+        fat_size -= PG_SIZE;
+        tmp = tmp2;
+    }
+    info->fat = (uint32 *)tmp;
+    printf("fat32: info->fat%p\n",info->fat);
+    read_to_buffer(dev, info->fat_offset * info->blocks_per_sector, fat_blocks, info->fat);
 
     sb->block_size = info->sectors_per_cluster * info->bytes_per_sector;
     info->fat_items = info->sectors_per_fat * info->bytes_per_sector / 4;
@@ -395,12 +414,13 @@ static int get_next_cid(superblock_t *sb, uint32 cid)
 // return index in dir, -1 is error
 static int lookup_entry(superblock_t *sb, uint32 cid, char *filename, struct sfn_entry *entry)
 {
+    int cluster_size = sb->block_size;
     char name[256];
-    char buffer[CLUSTER_SIZE * 2];
-    int size = CLUSTER_SIZE;
+    char buffer[MAX_CLUSTER_SIZE * 2];
+    int size = cluster_size;
     //printf("lookup_entry: %d %d %d\n",cid, get_cluster_offset(sb, cid), sb->block_size / BSIZE);
     read_to_buffer(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
-     sb->block_size / BSIZE, buffer);
+     cluster_size / BSIZE, buffer);
 
     int offset = 0, tmp;
     while ((tmp = find_first_entry(buffer + offset, size - offset, entry, name)))
@@ -410,14 +430,14 @@ static int lookup_entry(superblock_t *sb, uint32 cid, char *filename, struct sfn
             cid = get_next_cid(sb, cid);
             if (FAT32_CID_IS_VALID(cid))
             {
-                if (size >= CLUSTER_SIZE * 2)
+                if (size >= cluster_size * 2)
                 {
                     printf("fat32: dir size is too large");
                     return -1;
                 }
                 read_to_buffer(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
-                 sb->block_size / BSIZE, buffer + size);
-                size += CLUSTER_SIZE;
+                 cluster_size / BSIZE, buffer + size);
+                size += cluster_size;
                 continue;
             }
             else
@@ -487,15 +507,16 @@ static int get_free_cluster(superblock_t *sb)
 static void fat32_update_inode(inode_t *node)
 {
     superblock_t *sb = node->sb;
+    int cluster_size = sb->block_size;
     if (sb->fs_type != FS_TYPE_FAT32)
     {
         printf("fat32: not a fat32 filesystem\n");
         return;
     }
-    char buffer[CLUSTER_SIZE];
+    char buffer[MAX_CLUSTER_SIZE];
     int index = node->index_in_parent;
     int cid = node->parent->id;
-    int max_cnt = sb->block_size / sizeof(struct sfn_entry);
+    int max_cnt = cluster_size / sizeof(struct sfn_entry);
     while(index>=max_cnt) {
         index -= max_cnt;
         cid = get_next_cid(sb, cid);
@@ -505,17 +526,18 @@ static void fat32_update_inode(inode_t *node)
         }
     }
     read_to_buffer(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
-     sb->block_size / BSIZE, buffer);
+     cluster_size / BSIZE, buffer);
     struct sfn_entry *entries = (struct sfn_entry *)buffer;
     entries += index;
     entries->size = node->size;
     write_to_disk(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
-     sb->block_size / BSIZE, buffer);
+     cluster_size / BSIZE, buffer);
 }
 
 static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 major, inode_t* node)
 {
     superblock_t *sb = dir->sb;
+    int cluster_size = sb->block_size;
     if (sb->fs_type != FS_TYPE_FAT32)
     {
         printf("fat32: not a fat32 filesystem\n");
@@ -535,9 +557,9 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
 
     // get free index, if dir is too small to add the file, will add cluster
     int cid = dir->id;
-    char buffer[CLUSTER_SIZE];
+    char buffer[MAX_CLUSTER_SIZE];
     struct sfn_entry* entry;
-    int max_cnt = sb->block_size / sizeof(struct sfn_entry);
+    int max_cnt = cluster_size / sizeof(struct sfn_entry);
     int name_len = strlen(filename);
     int need_cnt = 1+ceil_div(name_len,13);  //every lfn contains no more than 13 characters 
     int index = 0;  
@@ -548,7 +570,7 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
     }
     while(1) {
         read_to_buffer(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
-         sb->block_size / BSIZE, buffer);  
+         cluster_size / BSIZE, buffer);  
         entry = (struct sfn_entry*)buffer;
         int flag = 0;
         for(int i=0;i<max_cnt;) {
@@ -584,7 +606,7 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
                 set_fat(sb, ori_cid, cid);
                 set_fat(sb, cid, FAT32_END_CID);
                 fresh_fat(sb);
-                dir->size += CLUSTER_SIZE;
+                dir->size += cluster_size;
                 fat32_update_inode(dir);
             }
         }
@@ -645,7 +667,7 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
 
     // write to disk
     write_to_disk(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
-     sb->block_size / BSIZE, buffer);
+     cluster_size / BSIZE, buffer);
     // no need to fat32_update_inode(node), because write_to_disk is ok
     fresh_fat(sb);
     return 1;
@@ -655,16 +677,17 @@ int fat32_test()
 {
     superblock_t sb;
     fat32_superblock_init(VIRTIO_DISK_DEV, &sb);
+    int cluster_size = sb.block_size;
     struct sfn_entry root, entry;
     char name[256];
-    char buffer[CLUSTER_SIZE];
+    char buffer[MAX_CLUSTER_SIZE];
     root.high_cid = 0;
     root.low_cid = ((fat32_info_t *)sb.extra)->root_cid;
     read_to_buffer(sb.dev, get_cluster_offset(&sb, FAT32_E_CID(&root))*((fat32_info_t *)sb.extra)->blocks_per_sector, 
-     sb.block_size / BSIZE, buffer);
+     cluster_size / BSIZE, buffer);
     int offset = 0, tmp;
     printf("fat32: test list root\n");
-    while ((tmp = find_first_entry(buffer + offset, CLUSTER_SIZE - offset, &entry, name)))
+    while ((tmp = find_first_entry(buffer + offset, cluster_size - offset, &entry, name)))
     {
         print_sfn_entry(&entry);
         printf("%s\n", name);

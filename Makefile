@@ -44,9 +44,10 @@ clean :
 dst=/mnt/fs
 fs.img: sdcard
 	@if [ ! -f "fs.img" ]; then \
+		sudo umount /mnt/fs; > /dev/null \
 		echo "making fs image..."; \
-		dd if=/dev/zero of=fs.img bs=512 count=4096; \
-		mkfs.vfat -F 32 -s 4 fs.img; fi
+		dd if=/dev/zero of=fs.img bs=512k count=128; \
+		mkfs.vfat -F 32 fs.img; fi
 	-@sudo mkdir $(dst)
 	@sudo mount fs.img $(dst)
 	-@make sdcard dst=$(dst)

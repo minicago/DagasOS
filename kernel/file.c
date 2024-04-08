@@ -51,6 +51,11 @@ void file_close(file_t *file)
     file->refcnt--;
     if (file->refcnt == 0)
     {
+        //TODO: what should do when T_DEVICE
+        if(file->type == T_FILE)
+        {
+            release_inode(file->node);
+        }
         file->type = T_NONE;
     }
     release_spinlock(&files_lock);

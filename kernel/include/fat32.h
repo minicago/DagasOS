@@ -4,7 +4,6 @@
 #include "file.h"
 
 #define DBS_SIZE 512
-#define CLUSTER_SIZE 512*4
 
 #define FAT32_T_READONLY 0x01
 #define FAT32_T_HIDDEN  0x02
@@ -50,6 +49,7 @@ typedef struct {
     uint32 blocks_per_sector; // sector_size / block_size
     uint32 blocks_per_cluster; // cluster_size / block_size
     uint32 fat_items;
+    uint32 fat_blocks;
     uint32 *fat;
 } fat32_info_t;
 
