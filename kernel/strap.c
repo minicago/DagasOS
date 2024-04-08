@@ -63,6 +63,7 @@ void usertrap()
     R_CSR(sip, sip);
     R_CSR(scause, scause);
     thread_pool[tid].trapframe->epc = sepc;
+    
     if (scause == BREAK_POINT_EXC && !(scause & INTR_HEAD) ){
         resolve_ecall();
         thread_pool[tid].state = T_READY;
