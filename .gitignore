@@ -70,3 +70,6 @@ user/*.d
 #build
 
 build/
+
+#link： riscv64
+riscv-syscalls-testing/user/riscv64
