@@ -46,7 +46,7 @@ clean :
 	sdcard.img \
 	.gdbinitg
 
-dst=/mnt/fs
+dst=/mnt/sdcard
 sdcard.img: sdcard
 	@if [ ! -f "sdcard.img" ]; then \
 		echo "making fs image..."; \
