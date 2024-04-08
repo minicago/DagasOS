@@ -47,7 +47,7 @@ clean :
 	.gdbinitg
 
 dst=/mnt/sdcard
-sdcard.img: sdcard
+sdcard.img:
 	@if [ ! -f "sdcard.img" ]; then \
 		echo "making fs image..."; \
 		dd if=/dev/zero of=sdcard.img bs=512 count=4096; \
@@ -56,7 +56,7 @@ sdcard.img: sdcard
 	@sudo mount sdcard.img $(dst)
 	-@make sdcard dst=$(dst)
 	@sudo umount $(dst)
-	@echo "fs image is ready"
+	@echo "sdcard image is ready"
 
 # Write sdcard mounted at $(dst)
 sdcard: user $(TEST)/$U/riscv64
