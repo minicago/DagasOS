@@ -113,4 +113,5 @@ clean :
 	rm -rf build/* \
 	sdcard.img \
 	.gdbinit \
-	kernel-qemu
+	kernel-qemu \
+	sbi-qemu 
