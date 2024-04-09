@@ -1,6 +1,8 @@
 BUILD_DIR = build
 K = kernel
 U = user
+SBI = sbi
+UTILS = utils
 TEST = riscv-syscalls-testing
 
 TOOLPREFIX = riscv64-unknown-elf-
@@ -29,14 +31,24 @@ export LD
 export CFLAGS
 export LDFLAGS
 
-.PHONY: user sdcard testsuit test qemu
+.PHONY: user sdcard testsuit test qemu sbi kernel utils
 
-kernel-qemu:  
+kernel:  
+	-rm kernel-qemu
 	make -C $K all
-	ln -s $(BUILD_DIR)/$K/kernel kernel-qemu
+	cp $(BUILD_DIR)/$K/kernel kernel-qemu
+
+sbi: utils
+	-rm sbi-qemu
+	make -C $(SBI) all
+	cp $(BUILD_DIR)/$(SBI)/sbi sbi-qemu
 
 user: 
 	make -C $U all
+
+utils:
+	make -C $(UTILS) all
+
 
 $(TEST)/$U/riscv64:
 	make -C $(TEST)/$U all CHAPTER=7
@@ -68,28 +80,29 @@ QEMU = qemu-system-riscv64
 
 CPUS := 1
 
-QEMUBIOS = none
-QEMUOPTS = -machine virt -bios ${QEMUBIOS} -kernel kernel-qemu -m 128M -smp $(CPUS) -nographic
+QEMUBIOS = sbi-qemu
+QEMUOPTS = -machine virt -bios $(QEMUBIOS) -kernel kernel-qemu -m 128M -smp $(CPUS) -nographic
 QEMUOPTS += -global virtio-mmio.force-legacy=false
 QEMUOPTS += -drive file=sdcard.img,if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
-qemu: sdcard.img kernel-qemu
+qemu: sdcard.img kernel sbi
 	$(QEMU) $(QEMUOPTS)
 
-all : sdcard.img kernel-qemu
+all : sdcard.img kernel sbi
 
 .gdbinit :
 	echo "\
 	set confirm off\n \
 	set architecture riscv:rv64\n \
 	target remote 127.0.0.1:26000\n \
-	symbol-file $(BUILD_DIR)/$K/kernel\n \
+	symbol-file kernel-qemu \n \
+	symbol-file sbi-qemu\n \
 	set disassemble-next-line auto\n \
 	set riscv use-compressed-breakpoints yes\n \
 	" > .gdbinit
 
-qemu-gdb: $(BUILD_DIR)/$K/kernel sdcard.img 
+qemu-gdb: kernel sdcard.img 
 	$(QEMU) $(QEMUOPTS) -S -gdb tcp::26000
 
 run-gdb : .gdbinit
