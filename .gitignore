@@ -73,3 +73,8 @@ build/
 
 #link： riscv64
 riscv-syscalls-testing/user/riscv64
+
+kernel-qemu
+sbi-qemu
+
+!user/lib/libulib.a

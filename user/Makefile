@@ -39,4 +39,4 @@ all :
 		then mkdir $(U_BUILD_DIR); \
 		fi;
 	riscv64-unknown-elf-gcc -Iinclude -march=rv64imac -mabi=lp64 -mcmodel=medany -fno-builtin -nostdinc -fno-stack-protector -ggdb -Wall -O3 -DNDEBUG  -nostdlib -T lib/arch/riscv/user.ld -Ttext 0x1000 test.c -o $(U_BUILD_DIR)/_test \
-build/libulib.a
+lib/libulib.a
