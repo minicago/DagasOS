@@ -14,7 +14,7 @@
 
 #define PG_OFFSET_SHIFT 12
 
-#define PG_OFFSET_MASK 0xfff
+#define PG_OFFSET_MASK 0xfffull
 
 // physic layout
 
@@ -60,6 +60,12 @@
 #define TSTACK_OFFSET 0x0ull
 
 #define MAX_TSTACK_SIZE (THREAD_INTERVAL - MAX_COROSTACK_SIZE)
+
+#define FAKE_STACK0 TSTACK0(-1)
+
+#define FAKE_STACK_BOTTOM TSTACK_BOTTOM(-1)
+
+#define ARG_PAGE TSTACK_BOTTOM(-1)
 
 #define TSTACK0(tid) (THREAD_SPACE + THREAD_INTERVAL * tid + TSTACK_OFFSET) 
 

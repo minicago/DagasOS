@@ -32,22 +32,58 @@ void resolve_ecall(){
     int tid = get_tid();
     trapframe_t* trapframe = thread_pool[tid].trapframe;
     syscall_handler(trapframe);
-    // if (trapframe->a0 == SYS_PRINT){
-    //     printf("USER: Hello, world!\n");
-    //     thread_pool[tid].trapframe->epc += 4;
-    //     printf("epc : %x\n",  thread_pool[tid].trapframe->epc);
-    // }else {
-    //     printf("Unknown ecall!\nstval = %p, sscratch = %p, sepc = %p, ecall_id = %p\n", stval, sscratch, sepc, trapframe->a0);
-    //     // while (1);
-        
-    // }
     
+}
+
+void resolve_unknown_trap(){
+    uint64 scause = 0, stval = 0, sscratch = 0, sepc = 0, sip = 0;
+    R_CSR(stval, stval);
+    R_CSR(sscratch, sscratch);
+    R_CSR(sepc, sepc);
+    
+    R_CSR(sip, sip);
+    R_CSR(scause, scause);
+    printf("Unknown user trap:\nscause = %p, stval = %p, sscratch = %p, sepc = %p, sip = %p\n", scause, stval, sscratch, sepc, sip);
+}
+
+int resolve_page_fault(){
+    int tid = get_tid();
+    uint64 scause = 0, stval = 0;
+    R_CSR(scause, scause);
+    R_CSR(stval, stval);
+
+    // fake stack
+    if(thread_pool[tid].trapframe->sp >= FAKE_STACK0
+    && thread_pool[tid].trapframe->sp < FAKE_STACK_BOTTOM
+    && stval > thread_pool[tid].trapframe->sp
+    && stval < FAKE_STACK_BOTTOM) {
+        thread_pool[tid].trapframe->sp += TSTACK0(tid) - FAKE_STACK0;
+        uint64 pa = (uint64) palloc();
+        uint64 va = (stval + TSTACK0(tid) - FAKE_STACK0) & ~PG_OFFSET_MASK;
+        mappages(thread_pool[tid].process->pagetable , va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
+        sfencevma(va, thread_pool[tid].process->pid);
+        return 1;
+    }
+
+    // stack
+    if(thread_pool[tid].trapframe->sp >= TSTACK0(tid)
+    && thread_pool[tid].trapframe->sp < TSTACK_BOTTOM(tid)
+    && stval > thread_pool[tid].trapframe->sp
+    && stval < FAKE_STACK_BOTTOM) {
+        uint64 pa = (uint64) palloc();
+        uint64 va = stval & ~PG_OFFSET_MASK;
+        mappages(thread_pool[tid].process->pagetable ,va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
+        sfencevma(va, thread_pool[tid].process->pid);
+        return 1;
+    }    
+
+    return 0;
 }
 
 void usertrap()
 {
     int tid = get_tid();
-    uint64 stval = 0, sscratch = 0, sepc = 0, sip = 0, scause = 0;
+    uint64 scause = 0, sepc = 0;
     int which_dev;
 
     intr_push();
@@ -55,35 +91,47 @@ void usertrap()
 
     set_strap_stvec();
     
-
-    R_CSR(stval, stval);
-    R_CSR(sscratch, sscratch);
-    R_CSR(sepc, sepc);
-    
-    R_CSR(sip, sip);
     R_CSR(scause, scause);
+    R_CSR(sepc, sepc);
+
     thread_pool[tid].trapframe->epc = sepc;
     
-    if (scause == BREAK_POINT_EXC && !(scause & INTR_HEAD) ){
+    switch (scause)
+    {
+    case SCAUSE_ECALL:
         resolve_ecall();
-        thread_pool[tid].state = T_READY;
-        intr_pop();
         goto return_to_user;
-    } else if((which_dev = dev_intr()) == 0) {
-        printf("Unknown user trap:\nscause = %p, stval = %p, sscratch = %p, sepc = %p, sip = %p\n", scause, stval, sscratch, sepc, sip);
-        thread_pool[tid].state = T_SLEEPING;
-        intr_pop();
-        goto switch_to;
-    } else {
-        intr_pop();
-        goto return_to_user;
+        break;
 
+    case SCAUSE_LOAD_PAGE_FAULT:
+    case SCAUSE_STORE_AMO_PAGE_FAULT:
+        if (resolve_page_fault()) {
+            goto return_to_user;
+        } else {
+            thread_pool[tid].state = T_SLEEPING;
+            goto switch_to;
+        }
+        break;
+    
+    default:
+        if((which_dev = dev_intr()) == 0) {
+            resolve_unknown_trap();
+            thread_pool[tid].state = T_SLEEPING;
+            goto switch_to;
+        } else {
+            thread_pool[tid].state = T_READY;
+            goto switch_to;
+        }
+        break;
     }
 
+return_to_user:
+    intr_pop();
+    entry_to_user();
 switch_to:
+    intr_pop();
     release_spinlock(&thread_pool[tid].lock);
     switch_coro(&get_cpu()->scheduler_coro);
-return_to_user:
     entry_to_user();
 }
 

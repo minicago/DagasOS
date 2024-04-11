@@ -38,9 +38,8 @@ void entry_main(thread_t* thread){
     thread->trapframe->kernel_trap = (uint64 )usertrap;
     thread->trapframe->epc = USER_ENTRY;
     thread->trapframe->ra = USER_EXIT;
-    thread->trapframe->sp = thread->user_stack_bottom;
+    thread->trapframe->sp = ARG_PAGE;
     // TIP: to satisfy the requirement of the main.c in testcases
-    thread->trapframe->sp -= 4;
     thread->state = T_READY;
     release_spinlock(&thread->lock);
 }
@@ -50,10 +49,10 @@ void attach_to_process(thread_t* thread, process_t* process){
     thread -> process = process;
     process -> thread_count ++;
 
-    uint64 pa = (uint64)palloc();
-    uint64 va = thread->user_stack_bottom - PG_SIZE;
-    mappages(process->pagetable, va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
-    sfencevma(va, process->pid);
+    // uint64 pa = (uint64)palloc();
+    // uint64 va = thread->user_stack_bottom - PG_SIZE;
+    // mappages(process->pagetable, va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
+    // sfencevma(va, process->pid);
     process->thread_count ++;
     release_spinlock(&thread->lock);
 }

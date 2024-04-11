@@ -53,5 +53,6 @@ void free_process(process_t* process);
 void map_elf(process_t* process);
 process_t* get_current_proc(void);
 int create_fd(process_t* process, file_t* file);
+void set_arg(process_t* process, int argc, char** argv);
 
 #endif

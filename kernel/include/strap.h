@@ -13,6 +13,12 @@ typedef typeof(userret) userret_t;
 #define USER_VEC_OFFSET ((uint64) ((void*) uservec - (void*)trampoline))
 #define USER_RET_OFFSET ((uint64) ((void*) userret - (void*)trampoline))
 
+#define SCAUSE_ECALL 0x8
+
+#define SCAUSE_LOAD_PAGE_FAULT 0xd
+
+#define SCAUSE_STORE_AMO_PAGE_FAULT 0xf
+
 void set_strap_uservec();
 
 void set_strap_stvec();

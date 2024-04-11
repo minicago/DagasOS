@@ -190,8 +190,13 @@ int main(){
     load_elf(p, "test");
     // map_elf(p);
     //map_elf(p);
-    printf("map process\n");
+    printf("load process\n");
+
     
+    set_arg(p, 0, NULL);
+    // map_elf(p);
+    //map_elf(p);
+    printf("set arg\n");   
 
     thread_t* t = alloc_thread();
     printf("get thread\n");

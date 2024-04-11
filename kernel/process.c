@@ -91,6 +91,7 @@ process_t* get_current_proc(void)
 }
 
 int create_fd(process_t* process, file_t* file){
+    acquire_spinlock(&process->lock);
     if(file == NULL){
         return -1;
     }
@@ -101,5 +102,17 @@ int create_fd(process_t* process, file_t* file){
             return i;
         }
     }
+    release_spinlock(&process->lock);
     return -1;
+}
+
+void set_arg(process_t* process, int argc, char** argv){
+    acquire_spinlock(&process->lock);
+    uint64 pa = (uint64) palloc();
+    mappages(process->pagetable, ARG_PAGE, pa, PG_SIZE, PTE_W | PTE_U | PTE_R);
+    *(int*) pa = argc;
+    for(int i = 0; i < argc; i++){
+        *(char**) (pa + 4 + i * 8) = argv[i];
+    }
+    release_spinlock(&process->lock);
 }
