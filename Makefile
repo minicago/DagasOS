@@ -59,7 +59,7 @@ sdcard.img:
 		echo "making fs image..."; \
 		sudo umount /mnt/sdcard > /dev/null; \
 		dd if=/dev/zero of=sdcard.img bs=512k count=128; \
-		mkfs.vfat -F 32 sdcard.img; fi
+		mkfs.vfat -F 32 -s 4 sdcard.img; fi
 	-@sudo mkdir $(dst)
 	@sudo mount sdcard.img $(dst)
 	-@make sdcard dst=$(dst)

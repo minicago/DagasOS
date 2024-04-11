@@ -235,3 +235,39 @@ int copy_to_pa(void *dst, uint64 src, uint64 len, uint8 from_user)
     }
     return len;
 }
+
+// copy from pa to va
+int copy_to_va(uint64 va, void *src, uint64 len)
+{
+    uint64 n, va0, pa0;
+    uint64 tmp = len;
+    while (len > 0)
+    {
+        va0 = PG_FLOOR(va);
+        pa0 = va2pa(get_current_proc()->pagetable, va0);
+        if (pa0 == 0)
+            return -1;
+        n = PG_SIZE - (va - va0);
+        if (n > len)
+            n = len;
+        memcpy((void *)(pa0 + (va - va0)), src, n);
+        len -= n;
+        src += n;
+        va = va0 + PG_SIZE;
+    }
+    return tmp;
+}
+
+int copy_string_from_user(uint64 va, char *buf, int size)
+{
+    int n = 0;
+    for (int i = 0; i < size; i++)
+    {
+        if (copy_to_pa(buf + i, va + i, 1, 1) < 0)
+            return -1;
+        if (buf[i] == '\0')
+            return i;
+        n++;
+    }
+    return -1;
+}

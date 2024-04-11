@@ -4,6 +4,8 @@
 #include "process.h"
 #include "cpu.h"
 #include "memory_layout.h"
+#include "dagaslib.h"
+#include "fs.h"
 
 static file_t files[MAX_FILE];
 static spinlock_t files_lock;
@@ -161,6 +163,7 @@ file_t* file_create_by_inode(inode_t *node)
         file->major = -1;
     }
     release_spinlock(&files_lock);
+    pin_inode(node);
     return file;
 }
 
@@ -176,4 +179,31 @@ int file_dup(file_t *file)
     file->refcnt++;
     release_spinlock(&files_lock);
     return 0;
+}
+
+file_t* file_openat(inode_t *dir_node, const char *path, int flags, int mode)
+{
+    if(dir_node==NULL) return NULL;
+    if(dir_node->type!=T_DIR) return NULL;
+    int depth;
+    inode_t *res =  look_up_path(dir_node, path, &depth);
+    if(res==NULL) {
+        if(flags &  O_CREATE) {
+            int all_depth = get_file_depth(path);
+            if(all_depth!=depth+1) return NULL;
+            char npath[MAX_PATH];
+            char filename[MAX_PATH];
+            strcpy(npath, path);
+            remove_last_file(npath);
+            get_last_file(path, filename);
+            dir_node = look_up_path(dir_node, npath, NULL);
+            res = create_inode(dir_node, filename, 0, T_FILE);
+            if(res==NULL) return NULL;
+        } else {
+            return NULL;
+        }
+    }
+    file_t* file = file_create_by_inode(res);
+    release_inode(res);
+    return file;
 }

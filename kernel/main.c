@@ -12,6 +12,7 @@
 #include "elf.h"
 #include "plic.h"
 #include "console.h"
+#include "file.h"
 
 int bio_test(){
     //Test for bio read and write
@@ -108,6 +109,12 @@ int spinlock_test(){
     else return 0;      
 }
 
+int syscall_test() {
+    file_t* file = file_openat(get_root(), "test", 0,0);
+    print_inode(file->node);
+    return 1;
+}
+
 int kernel_test(){
     printf("**************\nprint_test:\n");
     if(print_test() == 0) panic("print error!");
@@ -134,6 +141,10 @@ int kernel_test(){
     // printf("**************\nfile_test:\n");
     // if(file_test() == 0) panic("file error!");
     // else printf("file_test pass\n");
+
+    printf("**************\nsyscall_test:\n");
+    if(syscall_test() == 0) panic("syscall error!");
+    else printf("syscall_test pass\n");
 
     printf("********************************\n");
     printf("* Congrulation! ALL TEST PASS! *\n");

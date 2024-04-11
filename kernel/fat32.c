@@ -177,8 +177,13 @@ static int fat32_lookup_inode(inode_t *dir, char *filename, inode_t *node)
     }
     struct sfn_entry entry;
     int index;
+    printf("fat32: lookup inode\n");
+    printf("fat32: sb%p id%d %s &ent%p\n",sb, dir->id, filename, &entry);
+    uint64* test_look = (uint64*)lookup_entry;
+    printf("fat32: %p %p %p %p %p\n",lookup_entry, test_look[0], test_look[1], test_look[2], test_look[3]);
     if ((index=lookup_entry(sb, dir->id, filename, &entry))!=-1)
     {
+        printf("fat32: find file\n");
         sfn_entry2inode(sb, &entry,dir,index, node);
         return 1;
     }
@@ -414,6 +419,8 @@ static int get_next_cid(superblock_t *sb, uint32 cid)
 // return index in dir, -1 is error
 static int lookup_entry(superblock_t *sb, uint32 cid, char *filename, struct sfn_entry *entry)
 {
+    printf("lookup_entry: hhh");
+    printf("lookup_entry: %s\n",filename);
     int cluster_size = sb->block_size;
     char name[256];
     char buffer[MAX_CLUSTER_SIZE * 2];
@@ -465,6 +472,7 @@ static void sfn_entry2inode(superblock_t *sb, struct sfn_entry *entry,inode_t *p
     node->valid = 1;
     node->nlink = 1;
     node->parent = parent;
+    if(parent!=NULL) pin_inode(parent);
     node->index_in_parent = index;
     node->major = -1;
     switch(entry->type) {
