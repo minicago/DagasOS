@@ -57,7 +57,7 @@ dst=/mnt/sdcard
 sdcard.img:
 	@if [ ! -f "sdcard.img" ]; then \
 		echo "making fs image..."; \
-		sudo umount /mnt/fs > /dev/null; \
+		sudo umount /mnt/sdcard > /dev/null; \
 		dd if=/dev/zero of=sdcard.img bs=512k count=128; \
 		mkfs.vfat -F 32 sdcard.img; fi
 	-@sudo mkdir $(dst)
@@ -97,12 +97,11 @@ all : sdcard.img kernel sbi
 	set architecture riscv:rv64\n \
 	target remote 127.0.0.1:26000\n \
 	symbol-file kernel-qemu \n \
-	symbol-file sbi-qemu\n \
 	set disassemble-next-line auto\n \
 	set riscv use-compressed-breakpoints yes\n \
 	" > .gdbinit
 
-qemu-gdb: kernel sdcard.img 
+qemu-gdb: kernel sdcard.img sbi
 	$(QEMU) $(QEMUOPTS) -S -gdb tcp::26000
 
 run-gdb : .gdbinit
