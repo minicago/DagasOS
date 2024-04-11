@@ -5,6 +5,9 @@ SBI = sbi
 UTILS = utils
 TEST = riscv-syscalls-testing
 
+CPUS = 1
+KMEMORY = 128*1024*1024
+
 TOOLPREFIX = riscv64-unknown-elf-
 OBJDUMP	= $(TOOLPREFIX)objdump
 
@@ -19,6 +22,7 @@ CFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax
 CFLAGS += -Iinclude
 CFLAGS += -fno-stack-protector
 CFLAGS += -fno-pie -no-pie
+CFLAGS += -DKMEMORY=$(KMEMORY) -DCPUS=$(CPUS)
 
 LDFLAGS = -z max-page-size=4096
 
@@ -30,6 +34,8 @@ export LD
 
 export CFLAGS
 export LDFLAGS
+export CPUS
+export MEMORY_MB
 
 .PHONY: user sdcard testsuit test qemu sbi kernel utils
 

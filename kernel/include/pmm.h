@@ -8,7 +8,7 @@
 #include "print.h"
 #include "defs.h"
 
-#define PMEM_END ((void *)(MAX_PA))
+#define PMEM_END ((void *)(MAX_PA) - KSTACK_SIZE * CPUS)
 
 extern char pmem_base[];
 

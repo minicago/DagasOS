@@ -8,7 +8,7 @@
 //#include "thread.h"
 #include "vmm.h"
 
-#define QEMU_MEMORY_SIZE 128 * 1024 * 1024
+#define KSTACK_SIZE 0x40 * PG_SIZE
 
 #define PG_SIZE 4096
 
@@ -33,7 +33,7 @@
 
 #define PMEM0 (uint64) pmem_base
 
-#define MAX_PA (KERNEL0 + QEMU_MEMORY_SIZE)
+#define MAX_PA (KERNEL0 + KMEMORY)
 
 // kernel virtual layout
 
