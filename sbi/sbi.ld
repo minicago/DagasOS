@@ -4,7 +4,7 @@ ENTRY( _entry )
 
 SECTIONS
 {
- . = 0x0;
+ . = 0x80000000;
  
   .text : {
     *(.entry)
