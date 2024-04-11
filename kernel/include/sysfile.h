@@ -3,6 +3,9 @@
 
 #include "types.h"
 
-int sys_write(int fd, uint64 va, int size);
+int sys_write(int fd, uint64 va, uint64 size);
+int sys_read(int fd, uint64 va, uint64 size);
+int sys_getcwd(uint64 va, uint64 size);
+int sys_openat(int dirfd, uint64 va, int flags, int mode);
 
 #endif

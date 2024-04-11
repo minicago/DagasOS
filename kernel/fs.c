@@ -14,6 +14,8 @@ static uint32 head;
 static inode_t root = {.dev = NULL_DEV};
 superblock_t root_superblock;
 
+//TIP: can only get inode by lookup_inode or create_inode or look_up_path, and must release_inode after using
+
 static void inode_cache_init(void){
     init_spinlock(&cache_lock);
     head = 0;
@@ -94,11 +96,10 @@ inode_t* lookup_inode(inode_t *dir, char *filename) {
         printf("lookup_inode: can't find file %s\n",filename);
         return NULL;
     }
+    printf("lookup_inode: find file %s\n",filename);
     inode_t* res = get_inode(node.dev, node.id);
     acquire_spinlock(&cache_lock);
-    if(res->valid) {
-        res->refcnt++;
-    } else {
+    if(!(res->valid)) {
         *res = node;
         res->refcnt = 1;
     }
@@ -108,7 +109,8 @@ inode_t* lookup_inode(inode_t *dir, char *filename) {
 
 void release_inode(inode_t *node) {
     if(node==&root) {
-        panic("release_inode: root can't be released\n");
+        //panic("release_inode: root can't be released\n");
+        printf("warning: release_inode: root can't be released\n");
         return;
     }
     acquire_spinlock(&cache_lock);
@@ -116,10 +118,11 @@ void release_inode(inode_t *node) {
         panic("release_inode: already released");
     }
     node->refcnt--;
+    release_spinlock(&cache_lock);
     if (node->refcnt == 0) {
+        if(node->parent!=NULL) release_inode(node->parent);
         update_inode(node);
     }
-    release_spinlock(&cache_lock);
 }
 
 int read_inode(inode_t *node, int offset, int size, void *buffer) {
@@ -156,9 +159,7 @@ inode_t* create_inode(inode_t* dir, char* filename, uint8 major, uint8 type) {
     }
     inode_t* res = get_inode(node.dev, node.id);
     acquire_spinlock(&cache_lock);
-    if(res->valid) {
-        res->refcnt++;
-    } else {
+    if(!res->valid) {
         *res = node;
         res->refcnt = 1;
     }
@@ -174,7 +175,7 @@ int file_test() {
     inode_t* root = get_root();
     print_fs_info(root);
     print_inode(root);
-    inode_t *node = look_up_path(root, "test");
+    inode_t *node = look_up_path(root, "test", NULL);
     print_inode(node);
     //printf("file: root txt's inode finished\n");
     //char buffer[4096];
@@ -252,16 +253,25 @@ int load_from_inode_to_page(inode_t *inode, pagetable_t pagetable, uint64 va, in
 }
 
 //TODO: relative path
-inode_t* look_up_path(inode_t* root, char *path){
+//depth is the last success dir's index in path
+//the first char of path can't be '/'
+inode_t* look_up_path(inode_t* root,const char *ori_path, int* depth){
     inode_t* res = root;
+    char path_arr[256];
+    strcpy(path_arr, ori_path);
+    char* path = path_arr;
     char* filename = path;
+    if(depth!=NULL) *depth = 0;
     int end = 0;
     for(int i = 0; ; i++){
         if(path[i] == '/' || path[i] == '\0'){
             if(path[i] == '\0') end = 1;
             path[i] = '\0';
+            inode_t* tmp = res;
             res = lookup_inode(res, filename);
+            if(tmp!=root) release_inode(tmp);
             if(res==NULL) return res;
+            if(depth!=NULL) (*depth)++;
             filename = path + i + 1;
             if(end != 0) break;
             path[i] = '/';
@@ -269,3 +279,17 @@ inode_t* look_up_path(inode_t* root, char *path){
     }
     return res;
 } 
+
+void pin_inode(inode_t* node) {
+    if(node==&root) {
+        //panic("pin_inode: root can't be pinned\n");
+        printf("warning: pin_inode: root can't be pinned\n");
+        return;
+    }
+    acquire_spinlock(&cache_lock);
+    if (node->refcnt == 0) {
+        panic("pin_inode: already released");
+    }
+    node->refcnt++;
+    release_spinlock(&cache_lock);
+}

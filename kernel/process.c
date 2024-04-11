@@ -5,6 +5,7 @@
 #include "cpu.h"
 #include "file.h"
 #include "console.h"
+#include "dagaslib.h"
 
 spinlock_t process_pool_lock;
 
@@ -48,6 +49,9 @@ void init_process(process_t* process){
     tmp = process->open_files[FD_STDERR] = file_create_by_inode(get_stderr());
     tmp->writable = 1;
     tmp->readable = 0;
+
+    process->cwd = get_root();
+    strcpy(process->cwd_name, "/");
     release_spinlock(&process->lock);
 }
 
@@ -84,4 +88,18 @@ process_t* get_current_proc(void)
     process_t *proc = process_pool + get_tid();
     intr_pop();
     return proc;
+}
+
+int create_fd(process_t* process, file_t* file){
+    if(file == NULL){
+        return -1;
+    }
+    for(int i=0;i<MAX_FD;i++){
+        if(process->open_files[i] == NULL){
+            process->open_files[i] = file;
+            file->refcnt++;
+            return i;
+        }
+    }
+    return -1;
 }

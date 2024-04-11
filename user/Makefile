@@ -33,9 +33,10 @@ $(U_BUILD_DIR)/_%: $(U_BUILD_DIR)/%.o $(ULIBS)
 
 all_prog : $(UPROGS)
 
+# O0=>O3
 all : 
 	@if [ ! -d  "$(U_BUILD_DIR)" ]; \
 		then mkdir $(U_BUILD_DIR); \
 		fi;
-	make -C lib all
-	make all_prog
+	riscv64-unknown-elf-gcc -Iinclude -march=rv64imac -mabi=lp64 -mcmodel=medany -fno-builtin -nostdinc -fno-stack-protector -ggdb -Wall -O3 -DNDEBUG  -nostdlib -T lib/arch/riscv/user.ld -Ttext 0x1000 test.c -o $(U_BUILD_DIR)/_test \
+build/libulib.a

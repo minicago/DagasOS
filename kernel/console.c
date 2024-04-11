@@ -16,32 +16,38 @@ void console_init()
     if (root == NULL)
         panic("console_init: root is NULL");
     inode_t *dev;
-    if ((dev = look_up_path(root, "dev")) == NULL)
+    if ((dev = look_up_path(root, "dev", NULL)) == NULL)
     {
         dev = create_inode(root, "dev", 0, T_DIR);
     }
     if (dev == NULL)
         panic("console_init: dev is NULL");
-    if ((stdin = look_up_path(dev, "stdin")) == NULL)
+    if ((stdin = look_up_path(dev, "stdin", NULL)) == NULL)
     {
         printf("console_init: stdin is NULL, create\n");
         stdin = create_inode(dev, "stdin", CONSOLE_DEV, T_DEVICE);
     }
     if (stdin == NULL)
         panic("console_init: stdin is NULL");
-    if ((stdout = look_up_path(dev, "stdout")) == NULL)
+    if ((stdout = look_up_path(dev, "stdout", NULL)) == NULL)
     {
         stdout = create_inode(dev, "stdout", CONSOLE_DEV, T_DEVICE);
     }
     if (stdout == NULL)
         panic("console_init: stdout is NULL");
-    if ((stderr = look_up_path(dev, "stderr")) == NULL)
+    if ((stderr = look_up_path(dev, "stderr", NULL)) == NULL)
     {
         stderr = create_inode(dev, "stderr", CONSOLE_DEV, T_DEVICE);
     }
     if (stderr == NULL)
         panic("console_init: stderr is NULL");
+    
+    printf("console_init: begin dev\n");
+    release_inode(dev);
+    
+    printf("console_init: release dev\n");
     devices[CONSOLE_DEV].write = console_write;
+    printf("console_init: finish\n");
     flush_cache_to_disk();
 }
 

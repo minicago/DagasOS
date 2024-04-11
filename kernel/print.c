@@ -75,7 +75,7 @@ void printf(char *fmt, ...) {
     char ch;
     char *str;
     int i;
-
+    //return;
     if(fmt == NULL) {
         // panic
     }

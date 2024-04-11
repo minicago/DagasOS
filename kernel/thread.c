@@ -39,6 +39,8 @@ void entry_main(thread_t* thread){
     thread->trapframe->epc = USER_ENTRY;
     thread->trapframe->ra = USER_EXIT;
     thread->trapframe->sp = thread->user_stack_bottom;
+    // TIP: to satisfy the requirement of the main.c in testcases
+    thread->trapframe->sp -= 4;
     thread->state = T_READY;
     release_spinlock(&thread->lock);
 }
@@ -103,6 +105,7 @@ void entry_to_user(){
     printf("go to user\n");
     set_strap_uservec();
     printf("%p\n", PTE2PA( * walk( thread_pool[tid].process->pagetable ,0, 0)) );
+    printf("%p\n", PTE2PA( * walk( thread_pool[tid].process->pagetable ,0x1000, 0)) );
     ((userret_t*) (TRAMPOLINE + USER_RET_OFFSET) )(
     thread_pool[tid].trapframe, 
     ATP(thread_pool[tid].process->pid, thread_pool[tid].process->pagetable) );

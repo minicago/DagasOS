@@ -18,6 +18,15 @@
 
 #define CONSOLE_DEV 1
 
+#define O_RDONLY 0x000
+#define O_WRONLY 0x001
+#define O_RDWR 0x002 // 可读可写
+//#define O_CREATE 0x200
+#define O_CREATE 0x40
+#define O_DIRECTORY 0x0200000
+
+#define AT_FDCWD -100
+
 struct file_struct;
 typedef struct file_struct file_t;
 
@@ -49,5 +58,6 @@ int file_read(file_t *file, uint64 va, int size);
 int file_write(file_t *file, uint64 va, int size);
 file_t* file_create_by_inode(inode_t *node);
 int file_dup(file_t *file);
+file_t* file_openat(inode_t *dir_node, const char *path, int flags, int mode);
 
 #endif

@@ -8,8 +8,10 @@
 #include "file.h"
 
 #define MAX_PROCESS 256
+#define MAX_PATH 256
 
-#define USER_ENTRY 0x00000000ull
+// TIP: To satisfy the requirement of test's entry
+#define USER_ENTRY 0x00001000ull
 #define USER_EXIT 0x80000000ull
 
 #define MAX_FD 16
@@ -39,6 +41,7 @@ typedef struct process_struct {
     int thread_count;
     file_t *open_files[MAX_FD];  // Open files
     inode_t *cwd;           // Current directory
+    char cwd_name[MAX_PATH]; // Current directory name
 } process_t;
 
 extern process_t process_pool[];
@@ -49,5 +52,6 @@ process_t* alloc_process();
 void free_process(process_t* process);
 void map_elf(process_t* process);
 process_t* get_current_proc(void);
+int create_fd(process_t* process, file_t* file);
 
 #endif

@@ -34,7 +34,7 @@ prog_hdr_err:
 }
 
 int load_elf(process_t* process, char* path){
-    inode_t* elf = look_up_path(get_root(), path);
+    inode_t* elf = look_up_path(get_root(), path, NULL);
     print_inode(elf);
     printf("inode:%p\n", elf);
     return load_elf_from_inode(process, elf);

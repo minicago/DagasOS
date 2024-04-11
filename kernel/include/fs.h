@@ -77,6 +77,8 @@ int file_test();
 
 int load_from_inode_to_page(inode_t *inode, pagetable_t pagetable, uint64 va, int offset, int size);
 
-inode_t* look_up_path(inode_t* root, char *path);
+inode_t* look_up_path(inode_t* root, const char *path, int *depth);
+
+void pin_inode(inode_t* node);
 
 #endif
