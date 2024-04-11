@@ -97,6 +97,7 @@ all : sdcard.img kernel sbi
 	set architecture riscv:rv64\n \
 	target remote 127.0.0.1:26000\n \
 	symbol-file kernel-qemu \n \
+	symbol-file build/sbi/sbi-elf \n \
 	set disassemble-next-line auto\n \
 	set riscv use-compressed-breakpoints yes\n \
 	" > .gdbinit
