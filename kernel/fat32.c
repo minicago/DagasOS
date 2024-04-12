@@ -309,17 +309,18 @@ void fat32_superblock_init(uint32 dev, superblock_t *sb)
     //TODO: make the memory alloced to fat is continuous by more official function
     info->fat_blocks = fat_blocks;
     int fat_size = fat_blocks*BSIZE;
-    fat_size -= PG_SIZE;
-    uint64 tmp = (uint64)palloc();
-    while(fat_size > 0) {
-        uint64 tmp2 = (uint64)palloc();
-        if(tmp2+PG_SIZE != tmp) {
-            panic("fat32: fat memory is not continuous\n");
-        }
-        fat_size -= PG_SIZE;
-        tmp = tmp2;
-    }
-    info->fat = (uint32 *)tmp;
+    // fat_size -= PG_SIZE;
+    // uint64 tmp = (uint64)palloc();
+    // while(fat_size > 0) {
+    //     uint64 tmp2 = (uint64)palloc();
+    //     if(tmp2+PG_SIZE != tmp) {
+    //         panic("fat32: fat memory is not continuous\n");
+    //     }
+    //     fat_size -= PG_SIZE;
+    //     tmp = tmp2;
+    // }
+    int fat_pg_num = PG_CEIL(fat_size) / PG_SIZE;
+    info->fat = (uint32 *)palloc_n(fat_pg_num);
     printf("fat32: info->fat%p\n",info->fat);
     read_to_buffer(dev, info->fat_offset * info->blocks_per_sector, fat_blocks, info->fat);
 

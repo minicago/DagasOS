@@ -1,6 +1,15 @@
 #ifndef __DAGASLIB__H__
 #define __DAGASLIB__H__
 
+#define MAX(X, Y) ((X) > (Y)? (X): (Y))
+#define MIN(X, Y) ((X) < (Y)? (X): (Y))
+
+#ifndef assert
+#define assert(f) \
+    if (!(f))     \
+	panic("\n --- Assert Fatal ! ---\n")
+#endif
+
 void* memcpy(void *dest, const void *src, unsigned int n);
 void* memset(void* dest, int c, unsigned long n);
 int strcmp(const char *s1, const char *s2);

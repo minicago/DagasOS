@@ -8,6 +8,14 @@
 //#include "thread.h"
 #include "vmm.h"
 
+#ifndef KMEMORY
+#define KMEMORY 128 * 1024 * 1024
+#endif
+
+#ifndef CPUS
+#define CPUS 1
+#endif
+
 #define KSTACK_SIZE 0x40 * PG_SIZE
 
 #define PG_SIZE 4096

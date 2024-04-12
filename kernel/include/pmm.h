@@ -15,6 +15,10 @@ extern char pmem_base[];
 void pmem_init();
 void pfree(void *pa);
 void *palloc();
-void p_range_free(void *start, void *end);
+void *palloc_n(int alloc_num);
+
+void buddy_init();
+int buddy_alloc(int size);
+int buddy_free(int offset);
 
 #endif

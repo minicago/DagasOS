@@ -170,7 +170,7 @@ void kvminit()
     if (kernel_pagetable == NULL)
         panic("kvminit : alloc kernel pagetable");
     memset(kernel_pagetable, 0, PG_SIZE);
-
+    
     mappages(kernel_pagetable, VIRTIO0, VIRTIO0, PG_SIZE, PTE_R | PTE_W);
     mappages(kernel_pagetable, UART0, UART0, PG_SIZE, PTE_R | PTE_W);
     mappages(kernel_pagetable, PLIC0, PLIC0, 0x400000, PTE_R | PTE_W);
