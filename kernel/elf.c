@@ -24,6 +24,8 @@ int load_elf_from_inode(process_t* process, inode_t* elf){
         addpages(process->pagetable, prog_hdr.vaddr, prog_hdr.memsz, FLAGS2PERM(prog_hdr.flags));
         load_from_inode_to_page(elf, process->pagetable, prog_hdr.vaddr, prog_hdr.off, prog_hdr.filesz);
     } 
+    
+    printf("load_elf_from_inode: pagetable:%p\n", process->pagetable);
     return 1;
 
 elf_hdr_err:

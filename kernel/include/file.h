@@ -59,5 +59,6 @@ int file_write(file_t *file, uint64 va, int size);
 file_t* file_create_by_inode(inode_t *node);
 int file_dup(file_t *file);
 file_t* file_openat(inode_t *dir_node, const char *path, int flags, int mode);
+int file_mkdirat(inode_t *dir_node, const char *path, int mode);
 
 #endif

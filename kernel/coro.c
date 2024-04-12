@@ -56,15 +56,15 @@ void init_thread_manager_coro(uint64 tid){
 
     uint64 pa = (uint64)palloc();
     uint64 va = thread_manager_coro[tid].coro_stack_bottom - PG_SIZE;
-
+    
     mappages(thread_pool[tid].process->pagetable, va, pa, PG_SIZE, PTE_W | PTE_R);
     mappages(kernel_pagetable, va, pa, PG_SIZE, PTE_W | PTE_R) ;
     sfencevma(va, MAX_THREAD);
     sfencevma(va, thread_pool[tid].process->pid);
-
     thread_pool[tid].trapframe = (trapframe_t*) TRAPFRAME0(tid);
+    thread_pool[tid].trapframe->kernel_sp = thread_manager_coro[tid].coro_stack_bottom;
     set_sp(&thread_manager_coro[tid], (uint64) thread_pool[tid].trapframe);
- 
+
     
     set_entry(&thread_manager_coro[tid] ,(uint64) entry_to_user);
 

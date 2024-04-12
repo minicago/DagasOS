@@ -256,6 +256,12 @@ int dev_intr()
 void intr_print() {
     uint64 sstatus;
     R_CSR(sstatus, sstatus);
-    printf("intr = %p\n", sstatus & SSTATUS_SIE);
+    printf("intr = %p cpu_push_nums%d\n", sstatus & SSTATUS_SIE, get_cpu()->push_off_num);
 
+}
+
+int intr_get() {
+    uint64 sstatus;
+    R_CSR(sstatus, sstatus);
+    return (sstatus & SSTATUS_SIE) != 0;
 }

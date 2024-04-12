@@ -65,24 +65,32 @@ static struct buf *get_block(uint32 dev, uint32 block_id)
   // Recycle the least recently used (LRU) unused buffer.
   for (b = block_cache.head.prev; b != &block_cache.head; b = b->prev)
   {
+    
     if (b->refcnt == 0)
     {
+      
       release_spinlock(&block_cache.lock);
       if(b->dirty == 1) {
+        
         flush_block(b);
       }
+      
+
 
       acquire_spinlock(&block_cache.lock);
+      
       b->dev = dev;
       b->block_id = block_id;
       b->valid = 0;
       b->refcnt = 1;
       b->disk = 0;
       release_spinlock(&block_cache.lock);
+      
       // acquiresleep(&b->lock);
       return b;
     }
   }
+  
   panic("get_block: no buffers");
   return NULL;
 }
@@ -188,6 +196,7 @@ void read_bytes_to_buffer(uint32 dev, uint32 block_id, int offset, int size, voi
   offset %= BSIZE;
   while(size>0) {
     b = read_block(dev, block_id);
+    
     if(size>=BSIZE-offset) {
       memcpy(buffer, b->data+offset, BSIZE-offset);
       buffer+=BSIZE-offset;
@@ -199,6 +208,7 @@ void read_bytes_to_buffer(uint32 dev, uint32 block_id, int offset, int size, voi
       size-=size;
     }
     offset=0;
+    
     release_block(b);
     block_id++;
   }

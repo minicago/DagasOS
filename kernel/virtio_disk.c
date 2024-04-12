@@ -286,8 +286,16 @@ void virtio_disk_rw(struct buf *b, int write)
     
     release_spinlock(&disk.lock);
 
-
-
+    //TODO: after sleep thread is ok, must delete intr_on and intr_off this.
+    // this just for get int in user syscall without sleep.
+    int int_on = 0;
+    intr_pop();
+    if(!intr_get()) {
+        // intr_print();
+        // panic("virtio_disk_rw: not in interrupt");
+        intr_on();
+        int_on = 1;
+    }
     while(b->disk==1) {
     /*
     *******************************
@@ -299,6 +307,9 @@ void virtio_disk_rw(struct buf *b, int write)
         continue;
     //     TODO: sleep
     //     sleep(b, &disk.vdisk_lock);
+    }
+    if(int_on) {
+        intr_off();
     }
 
     // int cnt = 0;

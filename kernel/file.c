@@ -83,22 +83,21 @@ int file_read(file_t *file, uint64 va, int size)
     else if (file->type == T_FILE)
     {
         pagetable_t pagetable = get_current_proc()->pagetable;
-        uint64 va0 = PG_FLOOR(va);
-        uint64 pa0 = PTE2PA(walk(pagetable, va, 0));
-        if(pa0==0) return -1;
-        int offset = va - va0;
-        int n = PG_SIZE - offset;
-        uint64 pa = pa0 + offset;
         int real_size = 0;
         while (size > 0)
         {
+            uint64 va0 = PG_FLOOR(va);
+            uint64 pa0 = va2pa(pagetable,va0);
+            if(pa0==0) return -1;
+            int offset = va - va0;
+            int n = PG_SIZE - offset;
+            uint64 pa = pa0 + offset;
             if(size<n) n = size;
+            printf("file_read: file->off = %d %d\n", file->off,n);
             real_size += read_inode(file->node, file->off, n, (void *)pa);
-            pa += n;
             file->off+=n;
-            offset = 0;
             size-=n;
-            n = PG_SIZE;
+            va = va0 + PG_SIZE;
         }
         return real_size;
     } else if(file->type == T_PIPE)
@@ -191,19 +190,60 @@ file_t* file_openat(inode_t *dir_node, const char *path, int flags, int mode)
         if(flags &  O_CREATE) {
             int all_depth = get_file_depth(path);
             if(all_depth!=depth+1) return NULL;
-            char npath[MAX_PATH];
-            char filename[MAX_PATH];
+            char *mem = palloc();
+            char *npath = mem;
+            char *filename = mem+MAX_PATH;
             strcpy(npath, path);
             remove_last_file(npath);
             get_last_file(path, filename);
             dir_node = look_up_path(dir_node, npath, NULL);
             res = create_inode(dir_node, filename, 0, T_FILE);
+            release_inode(dir_node);
+            pfree(mem);
             if(res==NULL) return NULL;
         } else {
             return NULL;
         }
     }
     file_t* file = file_create_by_inode(res);
+    if(mode & O_RDONLY) {
+        file->readable = 1;
+        file->writable = 0;
+    }
+    if(mode & O_WRONLY) {
+        file->readable = 0;
+        file->writable = 1;
+    }
+    if(mode & O_RDWR) {
+        file->readable = 1;
+        file->writable = 1;
+    }
     release_inode(res);
     return file;
+}
+
+int file_mkdirat(inode_t *dir_node, const char *path, int mode)
+{
+    if(dir_node==NULL) return -1;
+    if(dir_node->type!=T_DIR) return -1;
+    char *mem = palloc();
+    char *npath = mem;
+    char *filename = mem+MAX_PATH;
+    strcpy(npath, path);
+    remove_last_file(npath);
+    get_last_file(path, filename);
+    int len = strlen(filename);
+    if(filename[len-1]=='/') filename[len-1] = '\0';
+    dir_node = look_up_path(dir_node, npath, NULL);
+    if(dir_node==NULL) goto file_mkdirat_error;
+    inode_t *res = create_inode(dir_node, filename, 0, T_DIR);
+    release_inode(res);
+    release_inode(dir_node);
+    if(res==NULL) goto file_mkdirat_error;
+    pfree(mem);
+    return 0;
+
+file_mkdirat_error:
+    pfree(mem);
+    return -1;
 }
