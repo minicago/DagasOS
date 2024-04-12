@@ -14,12 +14,12 @@ UPROGS += $(patsubst %.c, $(U_BUILD_DIR)/_% ,$(SRC_C) )
 
 $(U_BUILD_DIR)/%.o : %.S
 	@echo $@ $^
-	$(CC) -M $(CFLAGS) -o $(patsubst %.o, %.d ,$@) $^   
+	$(CC) -M $(CFLAGS) -march=rv64imac -mabi=lp64 -o $(patsubst %.o, %.d ,$@) $^   
 	$(CC) -c $(CFLAGS) -o $@ $^
 
 $(U_BUILD_DIR)/%.o : %.c
 	@echo $@ $^
-	$(CC) -M $(CFLAGS) -o $(patsubst %.o, %.d ,$@) $^ 
+	$(CC) -M $(CFLAGS) -march=rv64imac -mabi=lp64 -o $(patsubst %.o, %.d ,$@) $^ 
 	$(CC) -c $(CFLAGS) -o $@ $^
 
 .PHONY:all_prog
