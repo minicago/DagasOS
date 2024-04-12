@@ -78,5 +78,5 @@ riscv-syscalls-testing/user/riscv64
 kernel-qemu
 sbi-qemu
 
-#libulib.a
-!user/lib/libulib.a
+#link
+!user/build

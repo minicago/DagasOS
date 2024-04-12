@@ -49,7 +49,7 @@ sbi: utils
 	make -C $(SBI) all
 	cp $(BUILD_DIR)/$(SBI)/sbi sbi-qemu
 
-user: 
+user: $(TEST)/$U/riscv64
 	make -C $U all
 
 utils:
@@ -73,7 +73,7 @@ sdcard.img:
 	@echo "sdcard image is ready"
 
 # Write sdcard mounted at $(dst)
-sdcard: user $(TEST)/$U/riscv64
+sdcard: user
 
 	for file in $$( ls $(BUILD_DIR)/$U/_* ); do \
 		sudo cp $$file $(dst)/$${file#$(BUILD_DIR)/$U/_}; done
