@@ -62,7 +62,8 @@ void init_thread_manager_coro(uint64 tid){
     sfencevma(va, MAX_THREAD);
     sfencevma(va, thread_pool[tid].process->pid);
     thread_pool[tid].trapframe = (trapframe_t*) TRAPFRAME0(tid);
-    thread_pool[tid].trapframe->kernel_sp = thread_manager_coro[tid].coro_stack_bottom;
+    thread_pool[tid].trapframe->kernel_sp = (uint64) thread_pool[tid].trapframe;
+    printf("init_thread_manager_coro: kernel_sp= %p\n",&(thread_pool[tid].trapframe->kernel_sp));
     set_sp(&thread_manager_coro[tid], (uint64) thread_pool[tid].trapframe);
 
     

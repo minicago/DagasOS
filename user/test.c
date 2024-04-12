@@ -26,21 +26,20 @@ void test_open_and_read(){
     }
     ssize_t size = read(fd, buf, SIZE);
     buf[size-1] = 0;
-    for(int i = 0; i < size; i++){
-        printf("%x", i);
-    }
     printf("read: %d bytes\n", size);
-    // if(size == -1){
-    //     printf("read failed\n");
-    //     return;
-    // }
-    // for(int i = 0; i < size; i++){
-    //     printf("%x", buf[i]);
-    // }
+    if(size == -1){
+        printf("read failed\n");
+        return;
+    }
+    size = size >10? 10:size;
+    for(int i = 0; i < size; i++){
+        printf("%x", buf[i]);
+    }
 }
 int main() {
     test_printf();
     test_getcwd();
     test_open_and_read();
+    printf("user: exit");
     return 0;
 }
