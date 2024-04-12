@@ -23,6 +23,7 @@ CFLAGS += -Iinclude
 CFLAGS += -fno-stack-protector
 CFLAGS += -fno-pie -no-pie
 CFLAGS += -DKMEMORY=$(KMEMORY) -DCPUS=$(CPUS)
+CFLAGS += -march=rv64imac_zicsr -mabi=lp64
 
 LDFLAGS = -z max-page-size=4096
 
