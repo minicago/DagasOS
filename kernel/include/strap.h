@@ -43,4 +43,6 @@ int dev_intr();
 
 void intr_print();
 
+int intr_get();
+
 #endif 

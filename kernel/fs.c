@@ -257,9 +257,9 @@ int load_from_inode_to_page(inode_t *inode, pagetable_t pagetable, uint64 va, in
 //the first char of path can't be '/'
 inode_t* look_up_path(inode_t* root,const char *ori_path, int* depth){
     inode_t* res = root;
-    char path_arr[256];
-    strcpy(path_arr, ori_path);
-    char* path = path_arr;
+    char *mem = palloc();
+    strcpy(mem, ori_path);
+    char* path = mem;
     char* filename = path;
     if(depth!=NULL) *depth = 0;
     int end = 0;
@@ -270,14 +270,19 @@ inode_t* look_up_path(inode_t* root,const char *ori_path, int* depth){
             inode_t* tmp = res;
             res = lookup_inode(res, filename);
             if(tmp!=root) release_inode(tmp);
-            if(res==NULL) return res;
+            if(res==NULL) goto look_up_path_error;
             if(depth!=NULL) (*depth)++;
             filename = path + i + 1;
             if(end != 0) break;
             path[i] = '/';
         }
     }
+    pfree(mem);
     return res;
+
+look_up_path_error:
+    pfree(mem);
+    return NULL;
 } 
 
 void pin_inode(inode_t* node) {

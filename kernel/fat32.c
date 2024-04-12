@@ -7,7 +7,7 @@
 #include "fat32.h"
 #include "fs.h"
 
-#define MAX_CLUSTER_SIZE 512*8 // means don't support cluster size larger than 4KB
+#define MAX_CLUSTER_SIZE 512*4 // means don't support cluster size larger than 2KB
 
 #pragma pack(1)
 struct sfn_entry
@@ -178,9 +178,6 @@ static int fat32_lookup_inode(inode_t *dir, char *filename, inode_t *node)
     struct sfn_entry entry;
     int index;
     printf("fat32: lookup inode\n");
-    printf("fat32: sb%p id%d %s &ent%p\n",sb, dir->id, filename, &entry);
-    uint64* test_look = (uint64*)lookup_entry;
-    printf("fat32: %p %p %p %p %p\n",lookup_entry, test_look[0], test_look[1], test_look[2], test_look[3]);
     if ((index=lookup_entry(sb, dir->id, filename, &entry))!=-1)
     {
         printf("fat32: find file\n");
@@ -418,13 +415,13 @@ static int get_next_cid(superblock_t *sb, uint32 cid)
 }
 
 // return index in dir, -1 is error
+// TODO: loop buffer! and buffer is small than max_cluster_size*2
 static int lookup_entry(superblock_t *sb, uint32 cid, char *filename, struct sfn_entry *entry)
 {
-    printf("lookup_entry: hhh");
-    printf("lookup_entry: %s\n",filename);
     int cluster_size = sb->block_size;
-    char name[256];
-    char buffer[MAX_CLUSTER_SIZE * 2];
+    char *mem = palloc();
+    char *name = mem;
+    char *buffer = mem + 256;
     int size = cluster_size;
     //printf("lookup_entry: %d %d %d\n",cid, get_cluster_offset(sb, cid), sb->block_size / BSIZE);
     read_to_buffer(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
@@ -441,7 +438,7 @@ static int lookup_entry(superblock_t *sb, uint32 cid, char *filename, struct sfn
                 if (size >= cluster_size * 2)
                 {
                     printf("fat32: dir size is too large");
-                    return -1;
+                    goto lookup_entry_error;
                 }
                 read_to_buffer(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
                  cluster_size / BSIZE, buffer + size);
@@ -451,15 +448,19 @@ static int lookup_entry(superblock_t *sb, uint32 cid, char *filename, struct sfn
             else
             {
                 printf("fat32: can't find file\n");
-                return -1;
+                goto lookup_entry_error;
             }
         }
         offset += tmp;
         if (strcmp(name, filename) == 0)
         {
+            pfree(mem);
             return (offset / 32) - 1;
         }
     }
+
+lookup_entry_error:
+    pfree(mem);
     return -1;
 }
 
@@ -522,7 +523,8 @@ static void fat32_update_inode(inode_t *node)
         printf("fat32: not a fat32 filesystem\n");
         return;
     }
-    char buffer[MAX_CLUSTER_SIZE];
+    char *mem = palloc();
+    char *buffer = mem;
     int index = node->index_in_parent;
     int cid = node->parent->id;
     int max_cnt = cluster_size / sizeof(struct sfn_entry);
@@ -531,7 +533,7 @@ static void fat32_update_inode(inode_t *node)
         cid = get_next_cid(sb, cid);
         if(FAT32_CID_IS_VALID(cid)==0) {
             printf("fat32: index is invalid\n");
-            return;
+            goto fat32_update_inode_end;
         }
     }
     read_to_buffer(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
@@ -541,6 +543,9 @@ static void fat32_update_inode(inode_t *node)
     entries->size = node->size;
     write_to_disk(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
      cluster_size / BSIZE, buffer);
+
+fat32_update_inode_end:
+    pfree(mem);
 }
 
 static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 major, inode_t* node)
@@ -566,7 +571,8 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
 
     // get free index, if dir is too small to add the file, will add cluster
     int cid = dir->id;
-    char buffer[MAX_CLUSTER_SIZE];
+    char *mem = palloc();
+    char *buffer = mem;
     struct sfn_entry* entry;
     int max_cnt = cluster_size / sizeof(struct sfn_entry);
     int name_len = strlen(filename);
@@ -575,7 +581,7 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
     // -2 because dir . and ..
     if(need_cnt>max_cnt-2) {
         printf("fat32: file name is too long\n");
-        return 0;
+        goto fat32_create_inode_error;
     }
     while(1) {
         read_to_buffer(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
@@ -610,7 +616,7 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
                 cid = get_free_cluster(sb);
                 if(cid==-1) {
                     printf("fat32: no free cluster\n");
-                    return 0;
+                    goto fat32_create_inode_error;
                 }
                 set_fat(sb, ori_cid, cid);
                 set_fat(sb, cid, FAT32_END_CID);
@@ -637,7 +643,7 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
     int new_cid = get_free_cluster(sb);
     if(new_cid==-1) {
         printf("fat32: no free cluster\n");
-        return 0;
+        goto fat32_create_inode_error;
     }
     set_fat(sb, new_cid, FAT32_END_CID);
     entry->high_cid = new_cid >> 16;
@@ -679,7 +685,13 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
      cluster_size / BSIZE, buffer);
     // no need to fat32_update_inode(node), because write_to_disk is ok
     fresh_fat(sb);
+
+    pfree(mem);
     return 1;
+
+fat32_create_inode_error:
+    pfree(mem);
+    return 0;
 }
 
 int fat32_test()

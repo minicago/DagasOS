@@ -41,6 +41,26 @@ void syscall_handler(trapframe_t *trapframe)
         trapframe->a0 = sys_read(fd, va, size);
         break;
     }
+    case SYS_mkdirat:
+    {
+        int dirfd = trapframe->a0;
+        uint64 va = trapframe->a1;
+        int mode = trapframe->a2;
+        trapframe->a0 = sys_mkdirat(dirfd, va, mode);
+        break;
+    }
+    case SYS_close:
+    {
+        int fd = trapframe->a0;
+        trapframe->a0 = sys_close(fd);
+        break;
+    }
+    case SYS_dup:
+    {
+        int fd = trapframe->a0;
+        trapframe->a0 = sys_dup(fd);
+        break;
+    }
     case SYS_exit:
     {
         printf("syscall_handler: SYS_exit, code is %d\n", trapframe->a0);

@@ -1,6 +1,9 @@
 #include "stdio.h"
 #include "unistd.h"
 #define NULL ((void *)0)
+#define SIZE 4096+10
+
+char buf[SIZE];
 void test_printf(){
     printf("user: test printf\n");
     int a = 1;
@@ -21,17 +24,22 @@ void test_open_and_read(){
         printf("open failed\n");
         return;
     }
-    char buf[256];
-    ssize_t size = read(fd, buf, 256);
+    ssize_t size = read(fd, buf, SIZE);
+    buf[size-1] = 0;
+    printf("read: %d bytes\n", size);
     if(size == -1){
         printf("read failed\n");
         return;
     }
-    printf("read: %s\n", buf);
+    size = size >10? 10:size;
+    for(int i = 0; i < size; i++){
+        printf("%x", buf[i]);
+    }
 }
 int main() {
     test_printf();
     test_getcwd();
     test_open_and_read();
+    printf("user: exit");
     return 0;
 }

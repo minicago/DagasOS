@@ -38,8 +38,9 @@ void entry_main(thread_t* thread){
     thread->trapframe->kernel_trap = (uint64 )usertrap;
     thread->trapframe->epc = USER_ENTRY;
     thread->trapframe->ra = USER_EXIT;
-    thread->trapframe->sp = ARG_PAGE;
+    thread->trapframe->sp = thread->user_stack_bottom;
     // TIP: to satisfy the requirement of the main.c in testcases
+    thread->trapframe->sp -= 4;
     thread->state = T_READY;
     release_spinlock(&thread->lock);
 }
@@ -49,10 +50,10 @@ void attach_to_process(thread_t* thread, process_t* process){
     thread -> process = process;
     process -> thread_count ++;
 
-    // uint64 pa = (uint64)palloc();
-    // uint64 va = thread->user_stack_bottom - PG_SIZE;
-    // mappages(process->pagetable, va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
-    // sfencevma(va, process->pid);
+    uint64 pa = (uint64)palloc();
+    uint64 va = thread->user_stack_bottom - PG_SIZE;
+    mappages(process->pagetable, va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
+    sfencevma(va, process->pid);
     process->thread_count ++;
     release_spinlock(&thread->lock);
 }
@@ -98,7 +99,6 @@ void entry_to_user(){
     if(tid == -1) panic("wrong coro");
     W_CSR(sepc, thread_pool[tid].trapframe->epc);
     C_CSR(sstatus, SSTATUS_SPP);
-    R_REG(sp, thread_pool[tid].trapframe->kernel_sp); 
     W_CSR(sscratch, thread_pool[tid].trapframe);
     printf("trapframe:%p\n",thread_pool[tid].trapframe);
     printf("go to user\n");
@@ -109,4 +109,15 @@ void entry_to_user(){
     thread_pool[tid].trapframe, 
     ATP(thread_pool[tid].process->pid, thread_pool[tid].process->pagetable) );
     
+}
+
+void sched(){
+    intr_pop();
+    release_spinlock(&thread_pool[get_tid()].lock);
+    switch_coro(&get_cpu()->scheduler_coro);    
+}
+
+void sleep(){
+    thread_pool[get_tid()].state = T_SLEEPING;
+    sched();
 }

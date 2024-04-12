@@ -1,0 +1,1 @@
+int kernel_test();

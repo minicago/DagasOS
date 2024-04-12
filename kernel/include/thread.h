@@ -86,4 +86,8 @@ void free_thread(thread_t* thread);
 
 void entry_to_user();
 
+void sched();
+
+void sleep();
+
 #endif

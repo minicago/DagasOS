@@ -65,7 +65,7 @@ uservec:
         jr t0
 
 .globl userret
-# userret (trapframe)
+# userret (trapframe, satp)
 userret:
         csrw satp, a1
         srli    a1,a1,44
