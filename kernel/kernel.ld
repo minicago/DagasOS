@@ -1,10 +1,10 @@
 OUTPUT_ARCH( "riscv" ) 
-ENTRY (start)
+ENTRY (main)
 
 SECTIONS {
     . = 0x80200000; /*QEMU entry is set at 0x80000000*/
     .text : {
-        *start.o(.text)
+        *main.o(.text)
         *(.text)
         . = ALIGN(0x1000);
         trampoline_base = .;

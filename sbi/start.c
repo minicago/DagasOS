@@ -11,7 +11,7 @@ int start(){
     S_CSR(mstatus, MSTATUS_MPP_S);
 
     // set mepc = main
-    W_CSR(mepc, (uint64) main);
+    W_CSR(mepc, (uint64) 0x80200000);
 
     W_CSR(satp, 0);
 
