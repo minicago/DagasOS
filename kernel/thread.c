@@ -110,3 +110,14 @@ void entry_to_user(){
     ATP(thread_pool[tid].process->pid, thread_pool[tid].process->pagetable) );
     
 }
+
+void sched(){
+    intr_pop();
+    release_spinlock(&thread_pool[get_tid()].lock);
+    switch_coro(&get_cpu()->scheduler_coro);    
+}
+
+void sleep(){
+    thread_pool[get_tid()].state = T_SLEEPING;
+    sched();
+}

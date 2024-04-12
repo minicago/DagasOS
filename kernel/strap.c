@@ -129,9 +129,7 @@ return_to_user:
     intr_pop();
     entry_to_user();
 switch_to:
-    intr_pop();
-    release_spinlock(&thread_pool[tid].lock);
-    switch_coro(&get_cpu()->scheduler_coro);
+    sched();
     entry_to_user();
 }
 
