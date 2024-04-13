@@ -41,7 +41,7 @@ export MEMORY_MB
 
 kernel:  
 	-rm kernel-qemu
-	make -C $K all
+	make -C $K all DDEBUG=$(DDEBUG)
 	cp $(BUILD_DIR)/$K/kernel kernel-qemu
 
 sbi: utils

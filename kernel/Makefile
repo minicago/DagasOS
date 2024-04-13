@@ -6,10 +6,11 @@ K_BUILD_DIR = ../$(BUILD_DIR)/kernel
 OBJS = $(patsubst %.S, $(K_BUILD_DIR)/%.o ,$(SRC_S) )
 OBJS += $(patsubst %.c, $(K_BUILD_DIR)/%.o ,$(SRC_C) )
 
-
-$(K_BUILD_DIR)/kernel: $(OBJS) kernel.ld $(SRC_C) $(SRC_S)
+$(K_BUILD_DIR)/kernel: $(OBJS) kernel.ld $(SRC_C) $(SRC_S) print
 	$(LD) $(LDFLAGS) -T kernel.ld -o $(K_BUILD_DIR)/kernel $(OBJS)
 
+print:
+	$(CC) -c $(CFLAGS) $(DDEBUG) -o $(K_BUILD_DIR)/print.o print.c
 $(K_BUILD_DIR)/%.o : %.S
 	@echo $@ $^
 	$(CC) -M $(CFLAGS) -o $(patsubst %.o, %.d ,$@) $^   

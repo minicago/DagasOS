@@ -7,7 +7,7 @@
 #include "fat32.h"
 #include "fs.h"
 
-#define MAX_CLUSTER_SIZE 512*4 // means don't support cluster size larger than 2KB
+#define MAX_CLUSTER_SIZE 512*8 // means don't support cluster size larger than 2KB
 
 #pragma pack(1)
 struct sfn_entry
@@ -415,14 +415,16 @@ static int get_next_cid(superblock_t *sb, uint32 cid)
 }
 
 // return index in dir, -1 is error
-// TODO: loop buffer! and buffer is small than max_cluster_size*2
 static int lookup_entry(superblock_t *sb, uint32 cid, char *filename, struct sfn_entry *entry)
 {
     int cluster_size = sb->block_size;
-    char *mem = palloc();
-    char *name = mem;
-    char *buffer = mem + 256;
+    int p_num = 1;
+    char *mem = (char*)palloc_n(p_num);
+    char *name_mem = palloc();
+    char *name = name_mem;
+    char *buffer = mem;
     int size = cluster_size;
+    int max_size = PG_SIZE * p_num;
     //printf("lookup_entry: %d %d %d\n",cid, get_cluster_offset(sb, cid), sb->block_size / BSIZE);
     read_to_buffer(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
      cluster_size / BSIZE, buffer);
@@ -435,10 +437,18 @@ static int lookup_entry(superblock_t *sb, uint32 cid, char *filename, struct sfn
             cid = get_next_cid(sb, cid);
             if (FAT32_CID_IS_VALID(cid))
             {
-                if (size >= cluster_size * 2)
+                if (size >= max_size)
                 {
-                    printf("fat32: dir size is too large");
-                    goto lookup_entry_error;
+                    // printf("fat32: dir size is too large");
+                    // goto lookup_entry_error;
+                    // to larger buffer
+                    char* tmp = mem;
+                    p_num*=2;
+                    mem = (char*)palloc_n(p_num);
+                    memcpy(mem, buffer, max_size);
+                    pfree(tmp);
+                    max_size = PG_SIZE * p_num;
+                    buffer = mem;
                 }
                 read_to_buffer(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
                  cluster_size / BSIZE, buffer + size);
@@ -455,12 +465,14 @@ static int lookup_entry(superblock_t *sb, uint32 cid, char *filename, struct sfn
         if (strcmp(name, filename) == 0)
         {
             pfree(mem);
+            pfree(name_mem);
             return (offset / 32) - 1;
         }
     }
 
 lookup_entry_error:
     pfree(mem);
+    pfree(name_mem);
     return -1;
 }
 
