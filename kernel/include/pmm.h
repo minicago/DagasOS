@@ -21,4 +21,7 @@ void buddy_init();
 int buddy_alloc(int size);
 int buddy_free(int offset);
 
+void* kmalloc(int size);
+void kfree(void* ptr);
+
 #endif

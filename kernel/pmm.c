@@ -15,11 +15,13 @@ struct {
     struct ppage* free_pg_list;
 } pmem;
 
-void pmem_init() {
-    init_spinlock(&pmm_lock);
-    buddy_init();
-    memset((char*) pmem_base, 'U', (char*)PMEM_END - pmem_base - 1);
-}
+void pfree(void *pa);
+void *palloc();
+void *palloc_n(int alloc_num);
+
+void buddy_init();
+int buddy_alloc(int size);
+int buddy_free(int offset);
 
 /*
     After we free a page, a page should be full
@@ -157,4 +159,109 @@ int buddy_free(int offset) {
     }
     
     return free_num;
+}
+
+// lightest slab
+
+typedef struct object_struct object_t;
+typedef struct kmem_cache_struct kmem_cache_t;
+typedef struct slab_struct slab_t;
+
+struct object_struct
+{
+    object_t* next;
+};
+
+
+struct slab_struct{
+    int empty;
+    int size;
+    slab_t* next;
+    object_t* freelist;
+};
+
+#define MIN_SLAB_OBJECT_SIZE 8
+#define MAX_SLAB_OBJECT_SIZE PG_SIZE / 2
+#define SLAB_SIZE_MULTIPLY 4
+
+#define MAX_KMEM_CACHE 9
+
+struct kmem_cache_struct{
+    int object_size;
+    int object_num;
+    int offset;
+    slab_t* slab_list;
+} kmem_cache_list[MAX_KMEM_CACHE];
+
+int get_kmem_cache_index(int size){
+    for(int i = 0; i <= MAX_KMEM_CACHE; i++){
+        if(size <= (MIN_SLAB_OBJECT_SIZE << i)) return i; 
+    }
+    return -1;
+}
+
+
+void init_kmem_cache(){
+    for(int i = 0, size = MIN_SLAB_OBJECT_SIZE; i < MAX_KMEM_CACHE ; i++, size = size * 2){
+        if (size > MAX_SLAB_OBJECT_SIZE) panic("init_kmem_cache: MAX_SLAB_OBJECT_SIZE is too small\n");
+        kmem_cache_list[i].object_size = size;
+        kmem_cache_list[i].object_num = (PG_SIZE - sizeof(slab_t)) / size;
+        kmem_cache_list[i].offset = PG_SIZE - kmem_cache_list[i].object_num * size;
+        kmem_cache_list[i].slab_list = NULL;
+    }
+}
+
+slab_t* alloc_slab(int size, int offset, int num){
+    slab_t* slab = palloc_n(1);
+    if(slab == NULL) panic("alloc slab: No page for alloc slab");
+    slab->freelist = ((void*) (slab)) + offset;
+    for(int i = 0; i < num; i++){
+        if (i == num - 1) ((object_t*) (((void*) slab->freelist )+ i * size))->next = NULL;
+        else ((object_t*) (((void*) slab->freelist )+ i * size))->next = (((void*) slab->freelist )+ (i + 1) * size) ;
+    } 
+    slab->empty = 0;
+    slab->size = size;
+    return slab;
+}
+
+void* kmalloc_object(kmem_cache_t* kmem_cache){
+    void* ptr = NULL;
+    if(kmem_cache->slab_list == NULL){
+        kmem_cache->slab_list = alloc_slab(kmem_cache->object_size, kmem_cache->offset, kmem_cache->object_num);
+    }
+    assert(kmem_cache->slab_list != NULL);
+    ptr = kmem_cache->slab_list->freelist;
+    kmem_cache->slab_list->freelist = ((object_t*)(kmem_cache->slab_list->freelist))->next;
+    if(kmem_cache->slab_list->freelist == NULL) kmem_cache->slab_list = kmem_cache->slab_list->next;  
+    return ptr;
+}
+
+void kfree_object(void* ptr){
+    slab_t* slab = (slab_t*) PG_FLOOR((uint64) ptr);
+    ((object_t*) ptr)->next = slab->freelist;
+    slab->freelist = ptr;
+    if(slab->empty){
+        slab->empty = 0;
+        slab->next = kmem_cache_list[get_kmem_cache_index(slab->size)].slab_list;
+        kmem_cache_list[get_kmem_cache_index(slab->size)].slab_list = slab;
+    }
+}
+
+void* kmalloc(int size){
+    if(size > MAX_SLAB_OBJECT_SIZE) {
+        return palloc_n(PG_CEIL(size) >> PG_OFFSET_SHIFT);
+    }
+    else return kmalloc_object(kmem_cache_list + get_kmem_cache_index(size));
+}
+
+void kfree(void* ptr){
+    if((((uint64) ptr) & PG_SIZE) == 0) pfree(ptr);
+    else kfree_object(ptr);
+}
+
+void pmem_init() {
+    init_spinlock(&pmm_lock);
+    buddy_init();
+    memset((char*) pmem_base, 'U', (char*)PMEM_END - pmem_base - 1);
+    init_kmem_cache();
 }
