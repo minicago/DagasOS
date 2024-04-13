@@ -139,6 +139,18 @@ int read_inode(inode_t *node, int offset, int size, void *buffer) {
     return real_size;
 }
 
+// if cover is 1, will change size even so not write to the last
+int write_inode(inode_t *node, int offset, int size,int cover, void *buffer) {
+    int real_size = size;
+    if (node->valid == 0) {
+        panic("write_inode: invalid inode");
+    }
+    if ((real_size = node->sb->write_inode(node, offset, size,cover, buffer)) == -1) {
+        panic("write_inode: write error");
+    }
+    return real_size;
+}
+
 void update_inode(inode_t *node) {
     if (node->valid == 0) {
         panic("update_inode: invalid inode");

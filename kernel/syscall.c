@@ -3,6 +3,7 @@
 #include "sysfile.h"
 #include "vmm.h"
 #include "dagaslib.h"
+#include "bio.h"
 
 void syscall_handler(trapframe_t *trapframe)
 {
@@ -64,7 +65,8 @@ void syscall_handler(trapframe_t *trapframe)
     case SYS_exit:
     {
         printf("syscall_handler: SYS_exit, code is %d\n", trapframe->a0);
-        panic("syscall_handler: SYS_exit\n");
+        //TODO: maybe should not flush here
+        flush_cache_to_disk();
         break;
     }
     default:

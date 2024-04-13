@@ -20,6 +20,7 @@
 
 #define O_RDONLY 0x000
 #define O_WRONLY 0x001
+#define O_APPEND 1024
 #define O_RDWR 0x002 // 可读可写
 //#define O_CREATE 0x200
 #define O_CREATE 0x40
@@ -39,6 +40,7 @@ struct file_struct
     uint32 refcnt; // reference count
     uint8 readable;
     uint8 writable;
+    uint32 flags;
     // struct pipe *pipe; // FD_PIPE
     inode_t *node;   // FD_INODE and FD_DEVICE
     uint32 off;    // FD_INODE

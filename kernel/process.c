@@ -99,9 +99,11 @@ int create_fd(process_t* process, file_t* file){
         if(process->open_files[i] == NULL){
             process->open_files[i] = file;
             file->refcnt++;
+            release_spinlock(&process->lock);
             return i;
         }
     }
+    printf("create_fd: no free fd\n");
     release_spinlock(&process->lock);
     return -1;
 }

@@ -53,7 +53,7 @@ int get_file_depth(const char* path) {
 
 int remove_last_file(char* path) {
     int i = strlen(path) - 1;
-    while (path[i] != '/' && i >= 0) {
+    while (path[i] != '/' && i > 0) {
         i--;
     }
     path[i] = '\0';

@@ -214,6 +214,31 @@ void read_bytes_to_buffer(uint32 dev, uint32 block_id, int offset, int size, voi
   }
 }
 
+void write_bytes_to_disk(uint32 dev, uint32 block_id, int offset, int size, void* buffer)
+{
+  struct buf *b;
+  block_id += offset/BSIZE;
+  offset %= BSIZE;
+  while(size>0) {
+    b = read_block(dev, block_id);
+    
+    if(size>=BSIZE-offset) {
+      memcpy(b->data+offset, buffer, BSIZE-offset);
+      buffer+=BSIZE-offset;
+      size-=BSIZE-offset;
+    }
+    else {
+      memcpy(b->data+offset, buffer, size);
+      buffer+=size;
+      size-=size;
+    }
+    offset=0;
+    write_block(b);
+    release_block(b);
+    block_id++;
+  }
+}
+
 void flush_cache_to_disk() {
   struct buf *b;
   acquire_spinlock(&block_cache.lock);

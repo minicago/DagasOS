@@ -30,6 +30,8 @@ typedef struct superblock_struct
   // return the real size. return -1 is error
   int (*read_inode)(inode_t *node, int offset, int size, void *buffer);
 
+  int (*write_inode)(inode_t *node, int offset, int size,int cover, void *buffer);
+
   void (*update_inode)(inode_t *node);
 
   // return 0 is error
@@ -64,6 +66,8 @@ inode_t* lookup_inode(inode_t *dir, char *filename);
 void release_inode(inode_t *node);
 // read inode's data to buffer, the unit of offset is byte
 int read_inode(inode_t *node, int offset, int size, void *buffer);
+
+int write_inode(inode_t *node, int offset, int size,int cover, void *buffer);
 
 void update_inode(inode_t *node);
 

@@ -77,10 +77,11 @@ static int lookup_entry(superblock_t *sb, uint32 cid, char *filename, struct sfn
 static void sfn_entry2inode(superblock_t *sb, struct sfn_entry *entry,inode_t *parent,int index, inode_t *node);
 static void fat32_update_inode(inode_t *node);
 static void set_fat(superblock_t *sb, uint32 cid, uint32 value);
-static int fresh_fat(superblock_t *sb);
+static int fresh_fat(superblock_t *sb, uint32 cid);
 static int get_free_cluster(superblock_t *sb);
 static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 major, inode_t* node);
-
+static int add_cluster(superblock_t *sb, uint32 cid);
+static int fat32_write_inode(inode_t *node, int offset, int size, int cover, void *buffer);
 
 static uint8 lfn_checksum (const uint8 *pFcbName)
 {
@@ -247,13 +248,81 @@ static int fat32_read_inode(inode_t *node, int offset, int size, void *buffer)
     return real_size;
 }
 
-// will not fresh immediately
+// if cover is 1, will change size even so not write to the last
+static int fat32_write_inode(inode_t *node, int offset, int size, int cover, void *buffer)
+{
+    superblock_t *sb = node->sb;
+    int cluster_size = sb->block_size;
+    int real_size = 0;
+    if (sb->fs_type != FS_TYPE_FAT32)
+    {
+        printf("fat32: not a fat32 filesystem\n");
+        return -1;
+    }
+    if (offset < 0 || offset > node->size)
+    {
+        printf("fat32: offset is invalid\n");
+        return -1;
+    }
+    uint32 cid = node->id;
+    uint32 ori_cid = -1;
+    int tmp_off = offset;
+    while (offset >= cluster_size)
+    {
+        ori_cid = cid;
+        cid = get_next_cid(sb, cid);
+        if (!FAT32_CID_IS_VALID(cid) && offset != cluster_size)
+        {
+            printf("write_inode: can't begin writing at the pos over size\n");
+            return -1;
+        }
+        offset -= cluster_size;
+    }
+    while (size > 0)
+    {
+        if (!FAT32_CID_IS_VALID(cid))
+        {
+            cid = add_cluster(sb, ori_cid);
+            if(cid==-1) {
+                printf("fat32_write_inode: add cluster error\n");
+                return -1;
+            }
+        }
+        if (size >= cluster_size - offset)
+        {
+            write_bytes_to_disk(sb->dev, get_cluster_offset(sb, cid), offset, cluster_size - offset, buffer);
+            buffer += cluster_size - offset;
+            real_size += cluster_size - offset;
+            size -= cluster_size - offset;
+        }
+        else
+        {
+            write_bytes_to_disk(sb->dev, get_cluster_offset(sb, cid), offset, size, buffer);
+            buffer += size;
+            real_size += size;
+            size = 0;
+        }
+        offset = 0;
+        ori_cid = cid;
+        cid = get_next_cid(sb, cid);
+    }
+    if(cover) {
+        node->size = tmp_off + real_size;
+    } else {
+        node->size = MAX(node->size, tmp_off + real_size);
+    }
+    fat32_update_inode(node);
+    return real_size;
+}
+
+// will fresh immediately
 static void set_fat(superblock_t *sb, uint32 cid, uint32 value)
 {
     ((fat32_info_t *)sb->extra)->fat[cid] = value;
+    fresh_fat(sb, cid);
 }
 
-static int fresh_fat(superblock_t *sb)
+static int fresh_fat(superblock_t *sb, uint32 cid)
 {
     if(sb->fs_type != FS_TYPE_FAT32)
     {
@@ -261,11 +330,13 @@ static int fresh_fat(superblock_t *sb)
         return 0;
     }
     fat32_info_t *info = (fat32_info_t *)sb->extra;
+    uint32 bid = info->fat_offset * info->blocks_per_sector + (cid / (BSIZE / 4));
+    void* data = (void*)info->fat + (cid / (BSIZE / 4)) * BSIZE;
     //fat1
-    write_to_disk(sb->dev, info->fat_offset * info->blocks_per_sector, info->fat_blocks, info->fat);
+    write_to_disk(sb->dev, bid, 1, data);
     //fat2
-    write_to_disk(sb->dev, info->fat_offset * info->blocks_per_sector + info->sectors_per_fat * info->blocks_per_sector,
-     info->fat_blocks, info->fat);
+    write_to_disk(sb->dev, info->fat_offset * info->blocks_per_sector + bid,
+     1, data);
     return 1;
 }
 
@@ -327,6 +398,7 @@ void fat32_superblock_init(uint32 dev, superblock_t *sb)
     // init ops
     sb->lookup_inode = fat32_lookup_inode;
     sb->read_inode = fat32_read_inode;
+    sb->write_inode = fat32_write_inode;
     sb->update_inode = fat32_update_inode;
     sb->create_inode = fat32_create_inode;
     sb->print_fs_info = print_fat_info;
@@ -464,6 +536,7 @@ static int lookup_entry(superblock_t *sb, uint32 cid, char *filename, struct sfn
         offset += tmp;
         if (strcmp(name, filename) == 0)
         {
+            //printf("lookup_entry: %s is %s\n", name, filename);
             pfree(mem);
             pfree(name_mem);
             return (offset / 32) - 1;
@@ -560,6 +633,19 @@ fat32_update_inode_end:
     pfree(mem);
 }
 
+// return the new cid, -1 is error
+static int add_cluster(superblock_t *sb,uint32 cid)
+{
+    int new_cid = get_free_cluster(sb);
+    if(new_cid==-1) {
+        printf("fat32: no free cluster\n");
+        return -1;
+    }
+    set_fat(sb, cid, new_cid);
+    set_fat(sb, new_cid, FAT32_END_CID);
+    return new_cid;
+}
+
 static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 major, inode_t* node)
 {
     superblock_t *sb = dir->sb;
@@ -625,16 +711,13 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
             int ori_cid = cid;
             cid = get_next_cid(sb, cid);
             if(cid==FAT32_END_CID) {
-                cid = get_free_cluster(sb);
+                cid = add_cluster(sb, ori_cid);
                 if(cid==-1) {
-                    printf("fat32: no free cluster\n");
+                    printf("fat32: add cluster error\n");
+                    dir->size += cluster_size;
+                    fat32_update_inode(dir);
                     goto fat32_create_inode_error;
                 }
-                set_fat(sb, ori_cid, cid);
-                set_fat(sb, cid, FAT32_END_CID);
-                fresh_fat(sb);
-                dir->size += cluster_size;
-                fat32_update_inode(dir);
             }
         }
     }
@@ -696,7 +779,6 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
     write_to_disk(sb->dev, get_cluster_offset(sb, cid) * ((fat32_info_t *)sb->extra)->blocks_per_sector,
      cluster_size / BSIZE, buffer);
     // no need to fat32_update_inode(node), because write_to_disk is ok
-    fresh_fat(sb);
 
     pfree(mem);
     return 1;

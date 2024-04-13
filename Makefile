@@ -60,17 +60,24 @@ $(TEST)/$U/riscv64:
 	make -C $(TEST)/$U all CHAPTER=7
 
 dst=/mnt/sdcard
+mount:
+	@sudo mount sdcard.img $(dst)
+
+umount:
+	-@sudo umount $(dst)
+
 sdcard.img:
 	@if [ ! -f "sdcard.img" ]; then \
 		echo "making fs image..."; \
-		sudo umount /mnt/sdcard > /dev/null; \
+		sudo umount $(dst) > /dev/null; \
 		dd if=/dev/zero of=sdcard.img bs=512k count=128; \
-		mkfs.vfat -F 32 -s 4 sdcard.img; fi
+		mkfs.vfat -F 32 sdcard.img; fi
 	-@sudo mkdir $(dst)
-	@sudo mount sdcard.img $(dst)
+	@make mount
 	-@make sdcard dst=$(dst)
 	@sudo umount $(dst)
 	@echo "sdcard image is ready"
+
 
 # Write sdcard mounted at $(dst)
 sdcard: user
@@ -92,7 +99,7 @@ QEMUOPTS += -global virtio-mmio.force-legacy=false
 QEMUOPTS += -drive file=sdcard.img,if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
-qemu: sdcard.img kernel sbi
+qemu: sdcard.img kernel sbi umount
 	$(QEMU) $(QEMUOPTS)
 
 all : sdcard.img kernel sbi

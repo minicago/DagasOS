@@ -51,6 +51,7 @@ void file_close(file_t *file)
         panic("file_close: file->refcnt == 0");
     }
     file->refcnt--;
+    printf("file_close: file->refcnt = %d\n", file->refcnt);
     if (file->refcnt == 0)
     {
         //TODO: what should do when T_DEVICE
@@ -84,6 +85,12 @@ int file_read(file_t *file, uint64 va, int size)
     {
         pagetable_t pagetable = get_current_proc()->pagetable;
         int real_size = 0;
+        
+        if (file->off + size > file->node->size)
+        {
+            size = (file->node->size - file->off);
+        }
+        
         while (size > 0)
         {
             uint64 va0 = PG_FLOOR(va);
@@ -119,26 +126,25 @@ int file_write(file_t *file, uint64 va, int size) {
     if (file->type == T_DEVICE) {
         return devices[file->major].write(1, va, size);
     } else if (file->type == T_FILE) {
-        panic("file_write: T_FILE not implemented");
-        return -1;
-        // pagetable_t pagetable = get_current_proc()->pagetable;
-        // uint64 va0 = PG_FLOOR(va);
-        // uint64 pa0 = PTE2PA(walk(pagetable, va, 0));
-        // if(pa0==0) return -1;
-        // int offset = va - va0;
-        // int n = PG_SIZE - offset;
-        // uint64 pa = pa0 + offset;
-        // int real_size = 0;
-        // while (size > 0) {
-        //     if(size<n) n = size;
-        //     real_size += write_inode(file->node, file->off, n, (void *)pa);
-        //     pa += n;
-        //     file->off+=n;
-        //     offset = 0;
-        //     size-=n;
-        //     n = PG_SIZE;
-        // }
-        // return real_size;
+        pagetable_t pagetable = get_current_proc()->pagetable;
+        int real_size = 0;
+        int cover = 1;
+        while (size > 0)
+        {
+            uint64 va0 = PG_FLOOR(va);
+            uint64 pa0 = va2pa(pagetable,va0);
+            if(pa0==0) return -1;
+            int offset = va - va0;
+            int n = PG_SIZE - offset;
+            uint64 pa = pa0 + offset;
+            if(size<n) n = size;
+            printf("file_write: file->off = %d %d\n", file->off,n);
+            real_size += write_inode(file->node, file->off, n,cover, (void *)pa);
+            file->off+=n;
+            size-=n;
+            va = va0 + PG_SIZE;
+        }
+        return real_size;
     } else if(file->type == T_PIPE) {
         panic("file_write: T_PIPE not implemented");
         return -1;
@@ -196,8 +202,12 @@ file_t* file_openat(inode_t *dir_node, const char *path, int flags, int mode)
             strcpy(npath, path);
             remove_last_file(npath);
             get_last_file(path, filename);
-            dir_node = look_up_path(dir_node, npath, NULL);
-            res = create_inode(dir_node, filename, 0, T_FILE);
+            if(npath[0]!='\0') dir_node = look_up_path(dir_node, npath, NULL);
+            if(flags & O_DIRECTORY) {
+                res = create_inode(dir_node, filename, 0, T_DIR);
+            } else {
+                res = create_inode(dir_node, filename, 0, T_FILE);
+            }
             release_inode(dir_node);
             pfree(mem);
             if(res==NULL) return NULL;
@@ -206,6 +216,12 @@ file_t* file_openat(inode_t *dir_node, const char *path, int flags, int mode)
         }
     }
     file_t* file = file_create_by_inode(res);
+    file->flags = flags;
+    if(flags & O_APPEND) {
+        file->off = res->size;
+    } else {
+        file->off = 0;
+    }
     if(mode & O_RDONLY) {
         file->readable = 1;
         file->writable = 0;
@@ -234,7 +250,7 @@ int file_mkdirat(inode_t *dir_node, const char *path, int mode)
     get_last_file(path, filename);
     int len = strlen(filename);
     if(filename[len-1]=='/') filename[len-1] = '\0';
-    dir_node = look_up_path(dir_node, npath, NULL);
+    if(npath[0]!='\0') dir_node = look_up_path(dir_node, npath, NULL);
     if(dir_node==NULL) goto file_mkdirat_error;
     inode_t *res = create_inode(dir_node, filename, 0, T_DIR);
     release_inode(res);
