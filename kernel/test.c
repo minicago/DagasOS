@@ -115,10 +115,24 @@ int syscall_test() {
     return 1;
 }
 
+int kmalloc_test(){
+    int* ptr = kmalloc(100);
+    printf("ptr: %p\n",ptr);
+    kfree(ptr);
+    ptr = kmalloc(100);
+    printf("ptr: %p\n",ptr);
+    kfree(ptr);
+    return 1;
+}
+
 int kernel_test(){
     printf("**************\nprint_test:\n");
     if(print_test() == 0) panic("print error!");
     else printf("print_test pass\n");
+
+    printf("**************\nkmalloc_test:\n");
+    if(kmalloc_test() == 0) panic("kmalloc error!"); 
+    else printf("kmalloc_test pass\n");
 
     printf("**************\nspinlock_test:\n");
     if(spinlock_test() == 0) panic("spinlock error!"); 

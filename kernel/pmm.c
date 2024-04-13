@@ -255,7 +255,7 @@ void* kmalloc(int size){
 }
 
 void kfree(void* ptr){
-    if((((uint64) ptr) & PG_SIZE) == 0) pfree(ptr);
+    if((((uint64) ptr) & PG_OFFSET_MASK) == 0) pfree(ptr);
     else kfree_object(ptr);
 }
 
