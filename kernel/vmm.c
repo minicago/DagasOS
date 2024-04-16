@@ -5,13 +5,12 @@
 #include "csr.h"
 #include "process.h"
 #include "strap.h"
+#include "coro.h"
 
 pagetable_t kernel_pagetable;
 
-/*
- *walk in pagetable to find pte
- *alloc : alloc a physical page for pagetable on route.
- */
+void heap_init(pagetable_t pagetable, int user);
+
 void print_pte(pte_t *pte)
 {
     printf("pa : %p\n", PTE2PA(*pte));
@@ -177,6 +176,7 @@ void kvminit()
     mappages(kernel_pagetable, KERNEL0, KERNEL0, PMEM0 - KERNEL0, PTE_R | PTE_W | PTE_X);
     mappages(kernel_pagetable, PMEM0, PMEM0, MAX_PA - PMEM0, PTE_R | PTE_W);
     mappages(kernel_pagetable, TRAMPOLINE, (uint64)trampoline, PG_SIZE, PTE_R | PTE_X);
+    heap_init(kernel_pagetable, 0);
 
     sfencevma_all(MAX_PROCESS);
 
@@ -190,6 +190,7 @@ pagetable_t alloc_user_pagetable()
     pagetable_t u_pagetable = palloc();
     memset(u_pagetable, 0, PG_SIZE);
     mappages(u_pagetable, TRAMPOLINE, (uint64)trampoline, PG_SIZE, PTE_R | PTE_X);
+    heap_init(u_pagetable, 1);
     return u_pagetable;
 }
 
@@ -237,14 +238,16 @@ int copy_to_pa(void *dst, uint64 src, uint64 len, uint8 from_user)
 }
 
 // copy from pa to va
-int copy_to_va(uint64 va, void *src, uint64 len)
+int copy_to_va(pagetable_t pagetable, uint64 va, void *src, uint64 len)
 {
+    
     uint64 n, va0, pa0;
     uint64 tmp = len;
     while (len > 0)
     {
         va0 = PG_FLOOR(va);
-        pa0 = va2pa(get_current_proc()->pagetable, va0);
+        pa0 = va2pa(pagetable, va0);
+        // printf("copy_to_va: voff:%p pa:%p src:%p\n",va - va0, pa0, src);
         if (pa0 == 0)
             return -1;
         n = PG_SIZE - (va - va0);
@@ -270,4 +273,87 @@ int copy_string_from_user(uint64 va, char *buf, int size)
         n++;
     }
     return -1;
+}
+
+typedef struct brk_struct brk_t;
+
+struct brk_struct{
+    brk_t* next;
+    uint64 size;
+    int used;
+};
+
+void heap_init(pagetable_t pagetable, int user){
+    printf("!init heap\n");
+    uint64 pa = (uint64) palloc();
+    mappages(pagetable, HEAP_SPACE, pa, PG_SIZE,(user?PTE_U:0) | PTE_W | PTE_R );
+    brk_t* brk_first = (brk_t*) pa;
+    brk_first->next = NULL;
+    brk_first->size = PG_SIZE - sizeof(brk_t);;
+    brk_first->used = 0;
+}
+
+void* vmalloc_r(pagetable_t pagetable, int size, int user, int pid){
+    printf("vmalloc_r(%d,%d,%d)\n",size,user,pid);
+    uint64 va;
+    brk_t *brk,*next_brk;
+    for(va = HEAP_SPACE; ; va = (uint64)brk->next){
+        // printf("%p\n",va);
+        brk = (brk_t*) va2pa(pagetable, va);
+        
+        if(brk->used) continue;
+        if(brk->next == NULL) break;
+        
+        next_brk = (brk_t*) va2pa(pagetable, (uint64) brk->next);
+        
+
+        while(!next_brk->used) {
+            brk->size += next_brk->size + sizeof(brk_t);
+            brk->next = next_brk->next;
+            next_brk = (brk_t*) va2pa(pagetable, (uint64) brk->next);
+        }
+        if(brk->size >= sizeof(brk_t) + size ) break;
+        
+    }
+    
+    while(brk->size < sizeof(brk_t) + size ){
+        uint64 pa = (uint64) palloc();
+        mappages(pagetable, (uint64) brk + sizeof(brk_t) + brk->size, pa, PG_SIZE,(user?PTE_U:0) | PTE_W | PTE_R );
+        if(size <= MIN_ALL_SFENCE_PG * PG_SIZE) sfencevma((uint64) brk + sizeof(brk_t) + brk->size, pid);
+        brk->size += PG_SIZE;
+    }
+    
+    if(size > MIN_ALL_SFENCE_PG * PG_SIZE) sfencevma_all(pid);
+
+    
+
+    brk->next = (brk_t*) (va + size + sizeof(brk_t));
+    // printf("%p!\n",brk->next);
+    next_brk = (brk_t*) va2pa(pagetable, (uint64) brk->next);
+    next_brk->size = brk->size - size - sizeof(brk_t);
+    next_brk->next = NULL;
+    brk->used = 1;
+    brk->size = size;
+    return (void*) va + sizeof(brk_t);
+}
+
+void vfree_r(pagetable_t pagetable, void* ptr) {
+    brk_t* brk = (brk_t*) va2pa(pagetable, (uint64) ptr - sizeof(brk_t));
+    brk->used = 0;
+}
+
+void* kvmalloc(int size){
+    return vmalloc_r(kernel_pagetable, ((size - 1) & (~7)) + 8, 0, MAX_PROCESS);
+}
+
+void* uvmalloc(process_t* process, int size){
+    return vmalloc_r(process->pagetable, ((size - 1) & (~7)) + 8, 1, process->pid);
+}
+
+void kvfree(void* ptr){
+    vfree_r(kernel_pagetable, ptr);
+}
+
+void uvfree(process_t* process, void* ptr){
+    vfree_r(process->pagetable, ptr);
 }

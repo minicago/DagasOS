@@ -4,11 +4,11 @@
 #include "types.h"
 #include "defs.h"
 #include "memory_layout.h"
+
+typedef struct process_struct process_t;
+
 typedef uint64 pte_t;
 typedef pte_t* pagetable_t;
-
-
-
 
 
 // The risc-v Sv39 scheme has three levels of page-table
@@ -85,8 +85,18 @@ int copy_to_pa(void *dst, uint64 src, uint64 len, uint8 from_user);
 
 uint64 va2pa(pagetable_t pagetable, uint64 va);
 
-int copy_to_va(uint64 va, void *src, uint64 len);
+int copy_to_va(pagetable_t pagetable, uint64 va, void *src, uint64 len);
 
 int copy_string_from_user(uint64 va, char *buf, int size);
+
+void* kvmalloc(int size);
+
+void* uvmalloc(process_t* process, int size);
+
+void kvfree(void* ptr);
+
+void uvfree(process_t* process, void* ptr);
+
+#define MIN_ALL_SFENCE_PG 0x10
 
 #endif

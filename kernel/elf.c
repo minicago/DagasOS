@@ -12,7 +12,7 @@ int load_elf_from_inode(process_t* process, inode_t* elf){
     if(elf_hdr.magic != ELF_MAGIC)
         goto elf_hdr_err;
 
-    process->pagetable = alloc_user_pagetable();
+    // process->pagetable = alloc_user_pagetable();
     if(process->pagetable == NULL) goto pagetable_err;
 
     for(uint64 i=0, off = elf_hdr.phoff; i < elf_hdr.phnum; i++, off += sizeof(prog_hdr_t)){

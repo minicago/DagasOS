@@ -38,9 +38,7 @@ void entry_main(thread_t* thread){
     thread->trapframe->kernel_trap = (uint64 )usertrap;
     thread->trapframe->epc = USER_ENTRY;
     thread->trapframe->ra = USER_EXIT;
-    thread->trapframe->sp = thread->user_stack_bottom;
-    // TIP: to satisfy the requirement of the main.c in testcases
-    thread->trapframe->sp -= 4;
+    thread->trapframe->sp = ARG_PAGE;
     thread->state = T_READY;
     release_spinlock(&thread->lock);
 }

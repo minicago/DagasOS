@@ -92,7 +92,8 @@ void test_write(){
 	TEST_END(__func__);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    printf("RUNNING %s\n", argv[0]);
     test_printf();
     test_getcwd();
     test_open_read_close();

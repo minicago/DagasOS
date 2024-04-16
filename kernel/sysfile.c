@@ -68,7 +68,7 @@ int sys_getcwd(uint64 va, uint64 size)
         printf("sys_getcwd: size is too small\n");
         return -1;
     }
-    return copy_to_va(va, proc->cwd_name, len);
+    return copy_to_va(get_current_proc()->pagetable ,va, proc->cwd_name, len);
 }
 
 int sys_openat(int dirfd, uint64 va, int flags, int mode)

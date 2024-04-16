@@ -26,7 +26,8 @@ enum PROCESS_STATE {
     ZOMBIE,
 };
 
-typedef struct process_struct {
+typedef struct process_struct process_t;
+struct process_struct{
     spinlock_t lock;
     // basic information
     enum PROCESS_STATE state;
@@ -42,7 +43,7 @@ typedef struct process_struct {
     file_t *open_files[MAX_FD];  // Open files
     inode_t *cwd;           // Current directory
     char cwd_name[MAX_PATH]; // Current directory name
-} process_t;
+} ;
 
 extern process_t process_pool[];
 

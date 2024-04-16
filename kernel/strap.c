@@ -47,10 +47,12 @@ void resolve_unknown_trap(){
 }
 
 int resolve_page_fault(){
+    
     int tid = get_tid();
     uint64 scause = 0, stval = 0;
     R_CSR(scause, scause);
     R_CSR(stval, stval);
+    printf("page_fault! %p\n", stval);
 
     // fake stack
     if(thread_pool[tid].trapframe->sp >= FAKE_STACK0
@@ -76,7 +78,7 @@ int resolve_page_fault(){
         sfencevma(va, thread_pool[tid].process->pid);
         return 1;
     }    
-
+    // printf("Real page fault");
     return 0;
 }
 

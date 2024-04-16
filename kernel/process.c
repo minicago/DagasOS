@@ -112,9 +112,13 @@ void set_arg(process_t* process, int argc, char** argv){
     acquire_spinlock(&process->lock);
     uint64 pa = (uint64) palloc();
     mappages(process->pagetable, ARG_PAGE, pa, PG_SIZE, PTE_W | PTE_U | PTE_R);
+    sfencevma(ARG_PAGE, process->pid);
     *(int*) pa = argc;
     for(int i = 0; i < argc; i++){
-        *(char**) (pa + 4 + i * 8) = argv[i];
+        char* ptr = uvmalloc(process, 7);
+        // printf("ptr:%p\n",ptr);
+        copy_to_va(process->pagetable, (uint64) ptr, argv[i], 7);
+        *(char**) (pa + 8 + i * 8) = ptr;
     }
     release_spinlock(&process->lock);
 }

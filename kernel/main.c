@@ -54,9 +54,8 @@ int main(){
     // map_elf(p);
     //map_elf(p);
     printf("load process\n");
-
-    
-    set_arg(p, 0, NULL);
+    char* argv[] = {"/test","test"};
+    set_arg(p, 1, argv);
     // map_elf(p);
     //map_elf(p);
     printf("set arg\n");   
@@ -74,7 +73,7 @@ int main(){
     entry_main(t);
     printf("entry done\n");
 
-    printf("trapret: %p",*(uint64*)(0x0000003ffffff08c));
+    printf("fake_stack:%p\n", FAKE_STACK0);
 
     scheduler_loop();
     
