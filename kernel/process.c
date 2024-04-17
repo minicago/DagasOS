@@ -33,7 +33,8 @@ void process_pool_init(){
 void init_process(process_t* process){
     init_spinlock(&process->lock);
     acquire_spinlock(&process->lock);
-    process->pagetable = alloc_user_pagetable();
+    uvminit(process);
+    // process->pagetable = alloc_user_pagetable();
     process->thread_count = 0;
     process->pid = process - process_pool;
 
@@ -43,15 +44,27 @@ void init_process(process_t* process){
 }
 
 void prepare_initcode_process(process_t* process){
-    init_spinlock(&process->lock);
+    acquire_spinlock(&process->lock);
     
+    printf("ok!\n");
 
     alloc_vm(process, TRAMPOLINE, PG_SIZE, 
-    alloc_pm(0, (uint64) trampoline, PG_SIZE), PTE_R | PTE_X , VM_PA_SHARED );
-    
+        alloc_pm(0, (uint64) trampoline, PG_SIZE), PTE_R | PTE_X , VM_PA_SHARED );
+    printf("ok!\n");
+    alloc_vm(process, FAKE_STACK0, MAX_TSTACK_SIZE, 
+        NULL , PTE_R | PTE_X , VM_NO_ALLOC | VM_TO_THREAD_STACK);
 
-    alloc_vm(process, ARG_PAGE, PG_SIZE, 
-    NULL, PTE_R | PTE_W | PTE_U, 0 );         
+    process->arg_vm = alloc_vm(process, ARG_PAGE, PG_SIZE, 
+        NULL, PTE_R | PTE_W | PTE_U, 0 );        
+
+    process->heap_vm = alloc_vm(process, HEAP_SPACE, HEAP_SIZE, 
+        NULL, PTE_R | PTE_W | PTE_U, VM_NO_ALLOC ); 
+
+    vm_insert_pm(process->heap_vm, 
+    alloc_pm(0, 0, PG_SIZE));
+
+    heap_init(process->pagetable, 1);
+    
     
     for(int i=0;i<MAX_FD;i++){
         process->open_files[i] = NULL;
@@ -85,14 +98,6 @@ void free_process(process_t* process){
     *(process_t**) process = free_process_head;
     free_process_head = process;
     release_spinlock(&process_pool_lock);
-}
-
-void map_elf(process_t* process){
-    printf("%p\n",MAGIC_CODE);
-    mappages(process->pagetable, 0x0ull, (uint64) MAGIC_CODE, PG_SIZE, PTE_X | PTE_U | PTE_R); //read_only
-    print_page_table((pagetable_t)walk(process->pagetable, 0, 0));
-
-
 }
 
 // Return the current struct proc *, or zero if none.

@@ -45,9 +45,10 @@
 
 // kernel virtual layout
 
+
 #define HEAP_SPACE 0x100000000ull
 
-#define HEAP_SZIE 0x080000000ull
+#define HEAP_SIZE 0x080000000ull
 
 #define THREAD_SPACE 0x200000000ull
 

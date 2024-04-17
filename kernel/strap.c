@@ -54,32 +54,52 @@ int resolve_page_fault(){
     R_CSR(stval, stval);
     printf("page_fault! %p\n", stval);
 
-    // fake stack
-    if(thread->trapframe->sp >= FAKE_STACK0
-    && thread->trapframe->sp < FAKE_STACK_BOTTOM
-    && stval > thread->trapframe->sp
-    && stval < FAKE_STACK_BOTTOM) {
-        thread->trapframe->sp += TSTACK0(thread->tid) - FAKE_STACK0;
-        uint64 pa = (uint64) palloc();
-        uint64 va = (stval + TSTACK0(thread->tid) - FAKE_STACK0) & ~PG_OFFSET_MASK;
-        thread->user_stack_size = MAX(thread->user_stack_size, TSTACK_BOTTOM(thread->tid) - va);
-        mappages(thread->process->pagetable , va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
-        sfencevma(va, thread->process->pid);
-        return 1;
-    }
 
-    // stack
-    if(thread->trapframe->sp >= TSTACK0(thread->tid)
-    && thread->trapframe->sp < TSTACK_BOTTOM(thread->tid)
-    && stval > thread->trapframe->sp
-    && stval < FAKE_STACK_BOTTOM) {
-        uint64 pa = (uint64) palloc();
-        uint64 va = stval & ~PG_OFFSET_MASK;
-        thread->user_stack_size = MAX(thread->user_stack_size, TSTACK_BOTTOM(thread->tid) - va);
-        mappages(thread->process->pagetable ,va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
-        sfencevma(va, thread->process->pid);
-        return 1;
-    }    
+    for(vm_t* vm = thread->process->vm_list; vm != NULL; vm = vm->next){
+        if(stval >= vm->va && stval < vm->va + vm->size){
+            printf("va:%p type:%p\n",vm->va, vm->type);
+            if(vm->type & VM_LAZY_ALLOC){
+                printf("sp : %p\n",thread->trapframe->sp);
+                vm_insert_pm(vm, 
+                    alloc_pm(PG_FLOOR(stval - vm->va), 0, PG_SIZE));
+                return 1;
+            }
+            if(vm->type & VM_TO_THREAD_STACK){
+                thread->trapframe->sp += thread->stack_vm->va - vm->va;
+                printf("sp : %p\n",thread->trapframe->sp);
+                vm_insert_pm(thread->stack_vm, 
+                    alloc_pm(PG_FLOOR(stval - vm->va), 0, PG_SIZE));
+                return 1;
+            }
+        
+        }
+    }
+    // // fake stack
+    // if(thread->trapframe->sp >= FAKE_STACK0
+    // && thread->trapframe->sp < FAKE_STACK_BOTTOM
+    // && stval > thread->trapframe->sp
+    // && stval < FAKE_STACK_BOTTOM) {
+    //     thread->trapframe->sp += TSTACK0(thread->tid) - FAKE_STACK0;
+    //     uint64 pa = (uint64) palloc();
+    //     uint64 va = (stval + TSTACK0(thread->tid) - FAKE_STACK0) & ~PG_OFFSET_MASK;
+    //     // thread->user_stack_size = MAX(thread->user_stack_size, TSTACK_BOTTOM(thread->tid) - va);
+    //     mappages(thread->process->pagetable , va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
+    //     sfencevma(va, thread->process->pid);
+    //     return 1;
+    // }
+
+    // // stack
+    // if(thread->trapframe->sp >= TSTACK0(thread->tid)
+    // && thread->trapframe->sp < TSTACK_BOTTOM(thread->tid)
+    // && stval > thread->trapframe->sp
+    // && stval < FAKE_STACK_BOTTOM) {
+    //     uint64 pa = (uint64) palloc();
+    //     uint64 va = stval & ~PG_OFFSET_MASK;
+    //     // thread->user_stack_size = MAX(thread->user_stack_size, TSTACK_BOTTOM(thread->tid) - va);
+    //     mappages(thread->process->pagetable ,va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
+    //     sfencevma(va, thread->process->pid);
+    //     return 1;
+    // }    
     // printf("Real page fault");
     return 0;
 }

@@ -9,8 +9,6 @@
 
 pagetable_t kernel_pagetable;
 
-void heap_init(pagetable_t pagetable, int user);
-
 void print_pte(pte_t *pte)
 {
     printf("pa : %p\n", PTE2PA(*pte));
@@ -177,6 +175,8 @@ void kvminit()
     mappages(kernel_pagetable, KERNEL0, KERNEL0, PMEM0 - KERNEL0, PTE_R | PTE_W | PTE_X);
     mappages(kernel_pagetable, PMEM0, PMEM0, MAX_PA - PMEM0, PTE_R | PTE_W);
     mappages(kernel_pagetable, TRAMPOLINE, (uint64)trampoline, PG_SIZE, PTE_R | PTE_X);
+    
+    mappages(kernel_pagetable, HEAP_SPACE, (uint64) palloc(), PG_SIZE, PTE_R | PTE_W);
     heap_init(kernel_pagetable, 0);
 
     sfencevma_all(MAX_PROCESS);
@@ -186,14 +186,13 @@ void kvminit()
     sfencevma_all(MAX_PROCESS);
 }
 
-pagetable_t alloc_user_pagetable()
+void uvminit(process_t* process)
 {
-    pagetable_t u_pagetable = palloc();
-    memset(u_pagetable, 0, PG_SIZE);
+    process->pagetable = palloc();
+    memset(process->pagetable, 0, PG_SIZE);
     
     // mappages(u_pagetable, TRAMPOLINE, (uint64)trampoline, PG_SIZE, PTE_R | PTE_X);
-    heap_init(u_pagetable, 1);
-    return u_pagetable;
+    // heap_init(process->pagetable, 1);
 }
 
 // void free_user_pagetable(pagetable_t pagetable)
@@ -287,9 +286,9 @@ struct brk_struct{
 
 void heap_init(pagetable_t pagetable, int user){
     printf("!init heap\n");
-    uint64 pa = (uint64) palloc();
-    mappages(pagetable, HEAP_SPACE, pa, PG_SIZE,(user?PTE_U:0) | PTE_W | PTE_R );
-    brk_t* brk_first = (brk_t*) pa;
+    // uint64 pa = (uint64) palloc();
+    // mappages(pagetable, HEAP_SPACE, pa, PG_SIZE,(user?PTE_U:0) | PTE_W | PTE_R );
+    brk_t* brk_first = (brk_t*) va2pa(pagetable, HEAP_SPACE);
     brk_first->next = NULL;
     brk_first->size = PG_SIZE - sizeof(brk_t);;
     brk_first->used = 0;
@@ -320,7 +319,10 @@ void* vmalloc_r(pagetable_t pagetable, int size, int user, int pid){
     
     while(brk->size < sizeof(brk_t) + size ){
         uint64 pa = (uint64) palloc();
-        mappages(pagetable, (uint64) brk + sizeof(brk_t) + brk->size, pa, PG_SIZE,(user?PTE_U:0) | PTE_W | PTE_R );
+        if(user){
+            vm_insert_pm(process_pool[pid].heap_vm, 
+                alloc_pm((uint64) brk + sizeof(brk_t) + brk->size - HEAP_SPACE, pa, PG_SIZE) );
+        } else mappages(pagetable, (uint64) brk + sizeof(brk_t) + brk->size, pa, PG_SIZE,(user?PTE_U:0) | PTE_W | PTE_R );
         if(size <= MIN_ALL_SFENCE_PG * PG_SIZE) sfencevma((uint64) brk + sizeof(brk_t) + brk->size, pid);
         brk->size += PG_SIZE;
     }
@@ -370,8 +372,8 @@ vm_t* alloc_vm(process_t* process, uint64 va, uint64 size, pm_t* pm, int perm, i
     vm->perm = perm;
     vm->type = type;
 
-    if (vm->type & VM_TO_THREAD_STACK) return vm;
     
+    if (vm->type & VM_NO_ALLOC)  goto alloc_vm_ret;
 
     if(vm->pm == NULL && !(vm->type & VM_LAZY_ALLOC)){
         vm->pm = alloc_pm(0, 0, vm->size);
@@ -392,8 +394,27 @@ vm_t* alloc_vm(process_t* process, uint64 va, uint64 size, pm_t* pm, int perm, i
         mappages(vm->pagetable, vm->va + pm->v_offset, pm->pa, pm->size, vm->perm);
     } 
 
-
+alloc_vm_ret:
     process->vm_list = vm;
 
     return vm;
+}
+
+void vm_clear_pm(vm_t* vm){
+    for(pm_t* pm = vm->pm; pm != NULL; pm = vm->pm){
+        vm->pm = pm->next;
+        unmappages(vm->pagetable, vm->va + pm->v_offset, pm->size, 0);
+        free_pm(pm);
+    } 
+}
+
+void free_vm(vm_t* vm){
+    vm_clear_pm(vm);
+    kfree(vm);
+}
+
+void vm_insert_pm(vm_t* vm, pm_t* pm){
+    mappages(vm->pagetable, vm->va + pm->v_offset, pm->pa, pm->size, vm->perm);
+    pm->next = vm->pm;
+    vm->pm = pm;
 }

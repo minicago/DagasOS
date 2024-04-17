@@ -32,7 +32,11 @@ struct process_struct{
     // basic information
     enum PROCESS_STATE state;
     int64 pid;
+
     vm_t* vm_list;
+    vm_t* arg_vm;
+    vm_t* heap_vm;
+
     pagetable_t pagetable;
 
     // sub process
