@@ -398,7 +398,6 @@ vm_t* alloc_vm(process_t* process, uint64 va, uint64 size, pm_t* pm, int perm, i
 
 alloc_vm_ret:
     process->vm_list = vm;
-
     return vm;
 }
 
@@ -419,4 +418,30 @@ void vm_insert_pm(vm_t* vm, pm_t* pm){
     mappages(vm->pagetable, vm->va + pm->v_offset, pm->pa, pm->size, vm->perm);
     pm->next = vm->pm;
     vm->pm = pm;
+}
+
+void vm_insert(process_t* process, vm_t* vm){
+    vm->next = process->vm_list;
+    process->vm_list = vm;
+}
+
+int vm_rm(process_t* process, vm_t* rm_vm){
+    if (process->vm_list == NULL || rm_vm == NULL) return 0;
+    int cnt = 0;
+    for(vm_t* vm = process->vm_list; vm->next != NULL; vm = vm->next){
+        if(vm->next == rm_vm){
+            cnt++;
+            vm->next = vm->next->next;
+        }
+    }
+    return cnt;
+}
+
+vm_t* vm_lookup(process_t* process, uint64 va){
+    for(vm_t* vm = process->vm_list; vm != NULL; vm = vm->next){
+        printf("va:%p va:%p\n",vm->va, va);
+        if(va >= vm->va && va < vm->va + vm->size)
+            return vm;
+    }
+    return NULL;
 }

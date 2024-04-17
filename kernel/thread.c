@@ -32,7 +32,7 @@ void thread_pool_init(){
 // only work after init thread manager coro
 void entry_main(thread_t* thread){        
 
-    acquire_spinlock(&thread->lock);
+    // acquire_spinlock(&thread->lock);
     thread->trapframe->kernel_satp = 
         ATP(MAX_THREAD, kernel_pagetable); 
     thread->trapframe->kernel_trap = (uint64 )usertrap;
@@ -42,13 +42,13 @@ void entry_main(thread_t* thread){
     thread->state = T_READY;
     thread->stack_vm = alloc_vm(thread->process, TSTACK0(thread->tid), MAX_TSTACK_SIZE, 
         NULL, PTE_U | PTE_W | PTE_R, VM_LAZY_ALLOC | VM_NO_FORK);
-    release_spinlock(&thread->lock);
+    // release_spinlock(&thread->lock);
 }
 
 void attach_to_process(thread_t* thread, process_t* process){
-    acquire_spinlock(&thread->lock);
+    // acquire_spinlock(&thread->lock);
     thread -> process = process;
-    release_spinlock(&thread->lock);
+    // release_spinlock(&thread->lock);
     acquire_spinlock(&process->lock);
     process -> thread_count ++;
     // uint64 pa = (uint64)palloc();
@@ -67,7 +67,7 @@ void init_thread(thread_t* thread){
     thread->process = NULL;
  
     
-    release_spinlock(&thread->lock);
+    // release_spinlock(&thread->lock);
 }
 
 thread_t* alloc_thread(){
@@ -141,6 +141,7 @@ int sys_fork(){
     init_thread_manager_coro(thread_new->tid);
     clone_thread(thread, thread_new);
     thread_new->trapframe->a0 = 0;
+    release_spinlock(&thread_new->lock);
     return process_new->pid;
 }
 

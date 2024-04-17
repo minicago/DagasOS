@@ -52,28 +52,25 @@ int resolve_page_fault(){
     uint64 scause = 0, stval = 0;
     R_CSR(scause, scause);
     R_CSR(stval, stval);
-    printf("page_fault! %p\n", stval);
+    printf("page_fault! va:%p\n", stval);
 
+    vm_t* vm = vm_lookup(thread->process, stval);
 
-    for(vm_t* vm = thread->process->vm_list; vm != NULL; vm = vm->next){
-        if(stval >= vm->va && stval < vm->va + vm->size){
-            printf("va:%p type:%p\n",vm->va, vm->type);
-            if(vm->type & VM_LAZY_ALLOC){
-                printf("sp : %p\n",thread->trapframe->sp);
-                vm_insert_pm(vm, 
-                    alloc_pm(PG_FLOOR(stval - vm->va), 0, PG_SIZE));
-                return 1;
-            }
-            if(vm->type & VM_TO_THREAD_STACK){
-                thread->trapframe->sp += thread->stack_vm->va - vm->va;
-                printf("sp : %p\n",thread->trapframe->sp);
-                vm_insert_pm(thread->stack_vm, 
-                    alloc_pm(PG_FLOOR(stval - vm->va), 0, PG_SIZE));
-                return 1;
-            }
-        
-        }
+    if(vm->type & VM_LAZY_ALLOC){
+        printf("sp : %p\n",thread->trapframe->sp);
+        vm_insert_pm(vm, 
+            alloc_pm(PG_FLOOR(stval - vm->va), 0, PG_SIZE));
+        return 1;
     }
+    
+    if(vm->type & VM_TO_THREAD_STACK){
+        thread->trapframe->sp += thread->stack_vm->va - vm->va;
+        printf("sp : %p\n",thread->trapframe->sp);
+        vm_insert_pm(thread->stack_vm, 
+            alloc_pm(PG_FLOOR(stval - vm->va), 0, PG_SIZE));
+        return 1;
+    }
+        
     // // fake stack
     // if(thread->trapframe->sp >= FAKE_STACK0
     // && thread->trapframe->sp < FAKE_STACK_BOTTOM

@@ -60,6 +60,7 @@ int main(){
     // map_elf(p);
     //map_elf(p);
     printf("set arg\n");   
+    release_spinlock(&p->lock);
 
     thread_t* t = alloc_thread();
     printf("get thread\n");
@@ -73,6 +74,7 @@ int main(){
     printf("init manager done\n");
    
     entry_main(t);
+    release_spinlock(&t->lock);
     printf("entry done\n");
 
     printf("fake_stack:%p\n", FAKE_STACK0);

@@ -128,4 +128,10 @@ void vm_clear_pm(vm_t* vm);
 void free_vm(vm_t* vm);
 void vm_insert_pm(vm_t* vm, pm_t* pm);
 
+void vm_insert(process_t* process, vm_t* vm);
+
+int vm_rm(process_t* process, vm_t* rm_vm);
+
+vm_t* vm_lookup(process_t* process, uint64 va);
+
 #endif

@@ -40,11 +40,11 @@ void init_process(process_t* process){
 
 
 
-    release_spinlock(&process->lock);
+    // release_spinlock(&process->lock);
 }
 
 void prepare_initcode_process(process_t* process){
-    acquire_spinlock(&process->lock);
+    // acquire_spinlock(&process->lock);
     
     printf("ok!\n");
 
@@ -82,7 +82,7 @@ void prepare_initcode_process(process_t* process){
     
     process->cwd = get_root();
     strcpy(process->cwd_name, "/");
-    release_spinlock(&process->lock);
+    // release_spinlock(&process->lock);
 }
 
 process_t* alloc_process(){
@@ -131,11 +131,12 @@ int create_fd(process_t* process, file_t* file){
 }
 
 void set_arg(process_t* process, int argc, char** argv){
-    acquire_spinlock(&process->lock);
+    // acquire_spinlock(&process->lock);
     // uint64 pa = (uint64) palloc();
     // mappages(process->pagetable, ARG_PAGE, pa, PG_SIZE, PTE_W | PTE_U | PTE_R);
     // sfencevma(ARG_PAGE, process->pid);
     uint64 pa = va2pa(process->pagetable, ARG_PAGE);
+    // printf("ok!\n");
     *(int*) pa = argc;
     for(int i = 0; i < argc; i++){
         char* ptr = uvmalloc(process, 7);
@@ -143,7 +144,7 @@ void set_arg(process_t* process, int argc, char** argv){
         copy_to_va(process->pagetable, (uint64) ptr, argv[i], 7);
         *(char**) (pa + 8 + i * 8) = ptr;
     }
-    release_spinlock(&process->lock);
+    // release_spinlock(&process->lock);
 }
 
 process_t* fork_process(process_t* process){
@@ -161,10 +162,6 @@ process_t* fork_process(process_t* process){
     process_new->cwd = process->cwd;
     memcpy(process_new->cwd_name, process->cwd, MAX_PATH);
     process_new->parent = process;
+    release_spinlock(&process_new->lock);
     return process_new; 
-}
-
-void vm_insert(process_t* process, vm_t* vm){
-    vm->next = process->vm_list;
-    process->vm_list = vm;
 }
