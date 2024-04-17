@@ -267,7 +267,7 @@ void pmem_init() {
 }
 
 pm_t* alloc_pm(uint64 v_offset, uint64 pa, uint64 size){
-    pm_t* pm = kmalloc(sizeof(pm_t));
+    pm_t* pm = palloc_n(PG_CEIL (sizeof(pm_t)) / PG_SIZE);
     pm->next = NULL;
     pm->v_offset = v_offset;
     if(pa == 0) pm->pa = (uint64) kmalloc(size);
