@@ -153,7 +153,8 @@ void unmappages(pagetable_t pagetable, uint64 va, uint64 sz, uint64 free_p)
         pte = walk(pagetable, va + i, 0);
         if (pte == 0 || !(*pte & PTE_V))
         {
-            panic("unmappages : no such mmap");
+            continue;
+            // panic("unmappages : no such mmap");
         }
         if (free_p)
         {
@@ -189,17 +190,18 @@ pagetable_t alloc_user_pagetable()
 {
     pagetable_t u_pagetable = palloc();
     memset(u_pagetable, 0, PG_SIZE);
-    mappages(u_pagetable, TRAMPOLINE, (uint64)trampoline, PG_SIZE, PTE_R | PTE_X);
+    
+    // mappages(u_pagetable, TRAMPOLINE, (uint64)trampoline, PG_SIZE, PTE_R | PTE_X);
     heap_init(u_pagetable, 1);
     return u_pagetable;
 }
 
-void free_user_pagetable(pagetable_t pagetable)
-{
-    unmappages(pagetable, TRAMPOLINE, PG_SIZE, 0);
+// void free_user_pagetable(pagetable_t pagetable)
+// {
+//     unmappages(pagetable, TRAMPOLINE, PG_SIZE, 0);
 
-    walk_and_free(pagetable, 2);
-}
+//     walk_and_free(pagetable, 2);
+// }
 
 // Copy from user to kernel.
 // Copy len bytes to dst from virtual address srcva in a given page table.
@@ -356,4 +358,42 @@ void kvfree(void* ptr){
 
 void uvfree(process_t* process, void* ptr){
     vfree_r(process->pagetable, ptr);
+}
+
+vm_t* alloc_vm(process_t* process, uint64 va, uint64 size, pm_t* pm, int perm, int type){
+    vm_t* vm = kmalloc(sizeof(vm_t));
+    vm->next = process->vm_list;
+    vm->pagetable = process->pagetable;
+    vm->va = va;
+    vm->size = size;
+    vm->pm = pm;
+    vm->perm = perm;
+    vm->type = type;
+
+    if (vm->type & VM_TO_THREAD_STACK) return vm;
+    
+
+    if(vm->pm == NULL && !(vm->type & VM_LAZY_ALLOC)){
+        vm->pm = alloc_pm(0, 0, vm->size);
+    }
+
+
+
+    for(pm_t* pm = vm->pm; pm != NULL; pm = pm->next){
+        if (! (vm->type & VM_PA_SHARED)) {
+            if(pm->cnt == 0){
+                pm->cnt = 1;
+            } else {
+                pm_t* tmp = alloc_pm(pm->v_offset, 0, pm->size);
+                tmp->next = vm->pm;
+                vm->pm = tmp;
+            }
+        } else pm->cnt ++;
+        mappages(vm->pagetable, vm->va + pm->v_offset, pm->pa, pm->size, vm->perm);
+    } 
+
+
+    process->vm_list = vm;
+
+    return vm;
 }

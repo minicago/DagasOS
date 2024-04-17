@@ -48,34 +48,36 @@ void resolve_unknown_trap(){
 
 int resolve_page_fault(){
     
-    int tid = get_tid();
+    thread_t* thread = thread_pool + get_tid();
     uint64 scause = 0, stval = 0;
     R_CSR(scause, scause);
     R_CSR(stval, stval);
     printf("page_fault! %p\n", stval);
 
     // fake stack
-    if(thread_pool[tid].trapframe->sp >= FAKE_STACK0
-    && thread_pool[tid].trapframe->sp < FAKE_STACK_BOTTOM
-    && stval > thread_pool[tid].trapframe->sp
+    if(thread->trapframe->sp >= FAKE_STACK0
+    && thread->trapframe->sp < FAKE_STACK_BOTTOM
+    && stval > thread->trapframe->sp
     && stval < FAKE_STACK_BOTTOM) {
-        thread_pool[tid].trapframe->sp += TSTACK0(tid) - FAKE_STACK0;
+        thread->trapframe->sp += TSTACK0(thread->tid) - FAKE_STACK0;
         uint64 pa = (uint64) palloc();
-        uint64 va = (stval + TSTACK0(tid) - FAKE_STACK0) & ~PG_OFFSET_MASK;
-        mappages(thread_pool[tid].process->pagetable , va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
-        sfencevma(va, thread_pool[tid].process->pid);
+        uint64 va = (stval + TSTACK0(thread->tid) - FAKE_STACK0) & ~PG_OFFSET_MASK;
+        thread->user_stack_size = MAX(thread->user_stack_size, TSTACK_BOTTOM(thread->tid) - va);
+        mappages(thread->process->pagetable , va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
+        sfencevma(va, thread->process->pid);
         return 1;
     }
 
     // stack
-    if(thread_pool[tid].trapframe->sp >= TSTACK0(tid)
-    && thread_pool[tid].trapframe->sp < TSTACK_BOTTOM(tid)
-    && stval > thread_pool[tid].trapframe->sp
+    if(thread->trapframe->sp >= TSTACK0(thread->tid)
+    && thread->trapframe->sp < TSTACK_BOTTOM(thread->tid)
+    && stval > thread->trapframe->sp
     && stval < FAKE_STACK_BOTTOM) {
         uint64 pa = (uint64) palloc();
         uint64 va = stval & ~PG_OFFSET_MASK;
-        mappages(thread_pool[tid].process->pagetable ,va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
-        sfencevma(va, thread_pool[tid].process->pid);
+        thread->user_stack_size = MAX(thread->user_stack_size, TSTACK_BOTTOM(thread->tid) - va);
+        mappages(thread->process->pagetable ,va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
+        sfencevma(va, thread->process->pid);
         return 1;
     }    
     // printf("Real page fault");

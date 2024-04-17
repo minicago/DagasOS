@@ -32,6 +32,7 @@ struct process_struct{
     // basic information
     enum PROCESS_STATE state;
     int64 pid;
+    vm_t* vm_list;
     pagetable_t pagetable;
 
     // sub process
@@ -55,5 +56,6 @@ void map_elf(process_t* process);
 process_t* get_current_proc(void);
 int create_fd(process_t* process, file_t* file);
 void set_arg(process_t* process, int argc, char** argv);
+void prepare_initcode_process(process_t* process);
 
 #endif

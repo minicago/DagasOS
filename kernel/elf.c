@@ -21,8 +21,14 @@ int load_elf_from_inode(process_t* process, inode_t* elf){
             goto prog_hdr_err;
         if(prog_hdr.type != ELF_PROG_LOAD) continue;
         printf("vaddr:%p paddr:%p off:%p filesz:%p memsz:%p, flags:%p\n",prog_hdr.vaddr,prog_hdr.paddr,prog_hdr.off, prog_hdr.filesz, prog_hdr.memsz, prog_hdr.flags);
-        addpages(process->pagetable, prog_hdr.vaddr, prog_hdr.memsz, FLAGS2PERM(prog_hdr.flags));
-        load_from_inode_to_page(elf, process->pagetable, prog_hdr.vaddr, prog_hdr.off, prog_hdr.filesz);
+        // addpages(process->pagetable, prog_hdr.vaddr, prog_hdr.memsz, FLAGS2PERM(prog_hdr.flags));
+        int vm_type = (prog_hdr.flags & ELF_PROG_FLAG_WRITE)?VM_PA_SHARED:0;
+       
+        vm_t* vm = alloc_vm(process, prog_hdr.vaddr, prog_hdr.memsz, NULL, FLAGS2PERM(prog_hdr.flags), vm_type);
+
+        read_inode(elf, prog_hdr.off, prog_hdr.filesz, (void*) vm->pm->pa);
+        
+        // load_from_inode_to_page(elf, process->pagetable, prog_hdr.vaddr, prog_hdr.off, prog_hdr.filesz);
     } 
     
     printf("load_elf_from_inode: pagetable:%p\n", process->pagetable);

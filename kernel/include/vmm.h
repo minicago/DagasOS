@@ -79,7 +79,7 @@ void print_page_table(pagetable_t pagetable);
 
 pagetable_t alloc_user_pagetable();
 
-void free_user_pagetable(pagetable_t pagetable);
+// void free_user_pagetable(pagetable_t pagetable);
 
 int copy_to_pa(void *dst, uint64 src, uint64 len, uint8 from_user);
 
@@ -99,4 +99,26 @@ void uvfree(process_t* process, void* ptr);
 
 #define MIN_ALL_SFENCE_PG 0x10
 
+#define VM_PA_SHARED 0x1
+#define VM_LAZY_ALLOC 0x2
+#define VM_TO_THREAD_STACK 0x4
+#define VM_NO_FORK 0x8
+
+typedef struct vm_struct vm_t;
+typedef struct pm_struct pm_t;
+
+struct vm_struct
+{
+    pagetable_t pagetable;
+    uint64 va;
+    uint64 size;
+    int type;
+    uint64 perm;
+    pm_t* pm;
+    vm_t* next;
+
+    
+} ;
+
+vm_t* alloc_vm(process_t* process, uint64 va, uint64 size, pm_t* pm, int perm, int type);
 #endif

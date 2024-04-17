@@ -24,4 +24,17 @@ int buddy_free(int offset);
 void* kmalloc(int size);
 void kfree(void* ptr);
 
+typedef struct pm_struct pm_t;
+struct pm_struct
+{
+    uint64 v_offset;
+    uint64 pa;
+    uint64 size;
+    int cnt;
+    pm_t* next;
+};
+
+pm_t* alloc_pm(uint64 v_offset, uint64 pa, uint64 size);
+void free_pm(pm_t* pm);
+
 #endif

@@ -46,14 +46,16 @@ void entry_main(thread_t* thread){
 void attach_to_process(thread_t* thread, process_t* process){
     acquire_spinlock(&thread->lock);
     thread -> process = process;
+    release_spinlock(&thread->lock);
+    acquire_spinlock(&process->lock);
     process -> thread_count ++;
 
-    uint64 pa = (uint64)palloc();
-    uint64 va = thread->user_stack_bottom - PG_SIZE;
-    mappages(process->pagetable, va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
-    sfencevma(va, process->pid);
-    process->thread_count ++;
-    release_spinlock(&thread->lock);
+    // uint64 pa = (uint64)palloc();
+    // uint64 va = thread->user_stack_bottom - PG_SIZE;
+    // mappages(process->pagetable, va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
+    // sfencevma(va, process->pid);
+    
+    release_spinlock(&process->lock);
 }
 
 void detach_from_process(thread_t* thread){
@@ -71,7 +73,7 @@ void init_thread(thread_t* thread){
     thread->process = NULL;
  
     thread->user_stack_bottom = TSTACK_BOTTOM(thread->tid);
-    thread->user_stack_size = PG_SIZE;
+    thread->user_stack_size = 0;
     
     release_spinlock(&thread->lock);
 }
@@ -118,4 +120,28 @@ void sched(){
 void sleep(){
     thread_pool[get_tid()].state = T_SLEEPING;
     sched();
+}
+
+void awake(int tid){
+    thread_pool[tid].state = T_READY;
+}
+
+void clone_thread(thread_t *thread, thread_t *thread_new){
+    memcpy(thread_new->trapframe, thread->trapframe, sizeof(trapframe_t));
+    thread_new->state = T_READY;
+    // alloc_vm(thread_new->process, TSTACK0(thread_new->tid), MAX_TSTACK_SIZE);
+    
+    // for(uint64 va = thread->user_stack_bottom - thread->user_stack_size; va < thread->user_stack_bottom; va += PG_SIZE){
+    //     uint64 pa = va2pa(thread->process->pagetable, va);
+    //     if (pa == 0) continue;
+    //     uint64 va_new = va + TSTACK0(thread_new->tid) - TSTACK0(thread->tid),pa_new = (uint64) palloc();
+    //     memcpy((void*) pa_new, (void*) pa, PG_SIZE);
+    //     mappages(thread_new->process->pagetable, va_new, pa_new, PG_SIZE, PTE_U | PTE_R | PTE_W);
+    // }
+    thread_new->user_stack_size = thread->user_stack_size;
+}
+
+void deattach_thread(thread_t* thread){
+    thread->process->thread_count --;
+    unmappages(thread->process->pagetable, thread->user_stack_bottom - thread->user_stack_size, thread->user_stack_size, thread->user_stack_size / PG_SIZE);
 }

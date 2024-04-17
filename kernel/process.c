@@ -36,6 +36,23 @@ void init_process(process_t* process){
     process->pagetable = alloc_user_pagetable();
     process->thread_count = 0;
     process->pid = process - process_pool;
+
+
+
+    release_spinlock(&process->lock);
+}
+
+void prepare_initcode_process(process_t* process){
+    init_spinlock(&process->lock);
+    
+
+    alloc_vm(process, TRAMPOLINE, PG_SIZE, 
+    alloc_pm(0, (uint64) trampoline, PG_SIZE), PTE_R | PTE_X , VM_PA_SHARED );
+    
+
+    alloc_vm(process, ARG_PAGE, PG_SIZE, 
+    NULL, PTE_R | PTE_W | PTE_U, 0 );         
+    
     for(int i=0;i<MAX_FD;i++){
         process->open_files[i] = NULL;
     }
@@ -48,8 +65,8 @@ void init_process(process_t* process){
     tmp->readable = 0;
     tmp = process->open_files[FD_STDERR] = file_create_by_inode(get_stderr());
     tmp->writable = 1;
-    tmp->readable = 0;
-
+    tmp->readable = 0;    
+    
     process->cwd = get_root();
     strcpy(process->cwd_name, "/");
     release_spinlock(&process->lock);
@@ -110,9 +127,10 @@ int create_fd(process_t* process, file_t* file){
 
 void set_arg(process_t* process, int argc, char** argv){
     acquire_spinlock(&process->lock);
-    uint64 pa = (uint64) palloc();
-    mappages(process->pagetable, ARG_PAGE, pa, PG_SIZE, PTE_W | PTE_U | PTE_R);
-    sfencevma(ARG_PAGE, process->pid);
+    // uint64 pa = (uint64) palloc();
+    // mappages(process->pagetable, ARG_PAGE, pa, PG_SIZE, PTE_W | PTE_U | PTE_R);
+    // sfencevma(ARG_PAGE, process->pid);
+    uint64 pa = va2pa(process->pagetable, ARG_PAGE);
     *(int*) pa = argc;
     for(int i = 0; i < argc; i++){
         char* ptr = uvmalloc(process, 7);
@@ -121,4 +139,14 @@ void set_arg(process_t* process, int argc, char** argv){
         *(char**) (pa + 8 + i * 8) = ptr;
     }
     release_spinlock(&process->lock);
+}
+
+void fork_process(process_t* process){
+    process_t* process_new = alloc_process();
+    init_process(process_new);
+}
+
+void vm_insert(process_t* process, vm_t* vm){
+    vm->next = process->vm_list;
+    process->vm_list = vm;
 }
