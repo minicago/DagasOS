@@ -40,7 +40,7 @@ struct process_struct{
     pagetable_t pagetable;
 
     // sub process
-    struct process_t* parent;
+    process_t* parent;
     // linked_list_t* child; // current wo don't save children.
 
     // threads;
@@ -61,5 +61,5 @@ process_t* get_current_proc(void);
 int create_fd(process_t* process, file_t* file);
 void set_arg(process_t* process, int argc, char** argv);
 void prepare_initcode_process(process_t* process);
-
+process_t* fork_process(process_t* process);
 #endif

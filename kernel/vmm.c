@@ -386,9 +386,11 @@ vm_t* alloc_vm(process_t* process, uint64 va, uint64 size, pm_t* pm, int perm, i
             if(pm->cnt == 0){
                 pm->cnt = 1;
             } else {
-                pm_t* tmp = alloc_pm(pm->v_offset, 0, pm->size);
-                tmp->next = vm->pm;
-                vm->pm = tmp;
+                pm_t* pa_new = alloc_pm(pm->v_offset, 0, pm->size);
+                pa_new->next = vm->pm;
+                vm->pm = pa_new;
+                memcpy((void*) pa_new->pa, (void*) pm->pa, pm->size);
+                pa_new->cnt = 1;
             }
         } else pm->cnt ++;
         mappages(vm->pagetable, vm->va + pm->v_offset, pm->pa, pm->size, vm->perm);

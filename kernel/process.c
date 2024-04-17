@@ -146,9 +146,15 @@ void set_arg(process_t* process, int argc, char** argv){
     release_spinlock(&process->lock);
 }
 
-void fork_process(process_t* process){
+process_t* fork_process(process_t* process){
     process_t* process_new = alloc_process();
     init_process(process_new);
+    for(vm_t* vm = process->vm_list; vm != NULL; vm = vm->next){
+        if(vm->type | VM_NO_FORK) continue;
+        alloc_vm(process_new, vm->va, vm->size, vm->pm, vm->perm, vm->type);
+    }
+    process_new->parent = process; 
+    return process_new; 
 }
 
 void vm_insert(process_t* process, vm_t* vm){

@@ -122,9 +122,9 @@ void clone_thread(thread_t *thread, thread_t *thread_new){
     memcpy(thread_new->trapframe, thread->trapframe, sizeof(trapframe_t));
     thread_new->trapframe->kernel_sp = COROSTACK0(thread_new->tid);
     thread_new->trapframe->sp = thread->trapframe->sp - TSTACK0(thread->tid) + TSTACK0(thread_new->tid);
-    thread_new->state = T_READY;
+    
     thread_new->stack_vm = alloc_vm(thread_new->process, TSTACK0(thread_new->tid), MAX_TSTACK_SIZE, thread->stack_vm->pm, thread->stack_vm->perm, thread->stack_vm->type);
-
+    thread_new->state = T_READY;
     // for(uint64 va = thread->user_stack_bottom - thread->user_stack_size; va < thread->user_stack_bottom; va += PG_SIZE){
     //     uint64 pa = va2pa(thread->process->pagetable, va);
     //     if (pa == 0) continue;
@@ -134,7 +134,16 @@ void clone_thread(thread_t *thread, thread_t *thread_new){
     // }
 }
 
+int sys_fork(){
+    thread_t *thread = thread_pool+get_tid(), *thread_new = alloc_thread();
+    process_t* process_new = fork_process(thread->process);
+    attach_to_process(thread_new, process_new);
+    init_thread_manager_coro(thread_new->tid);
+    clone_thread(thread, thread_new);
+    thread_new->trapframe->a0 = 0;
+    return process_new->pid;
+}
+
 void deattach_thread(thread_t* thread){
     thread->process->thread_count --;
-    
 }
