@@ -151,9 +151,16 @@ process_t* fork_process(process_t* process){
     init_process(process_new);
     for(vm_t* vm = process->vm_list; vm != NULL; vm = vm->next){
         if(vm->type | VM_NO_FORK) continue;
-        alloc_vm(process_new, vm->va, vm->size, vm->pm, vm->perm, vm->type);
+        vm_t* vm_new = alloc_vm(process_new, vm->va, vm->size, vm->pm, vm->perm, vm->type);
+        if(process->arg_vm == vm) process_new->arg_vm = vm_new;
+        if(process->heap_vm == vm) process_new->heap_vm = vm_new;
     }
-    process_new->parent = process; 
+    for(int i = 0; i < MAX_FD; i++){
+        process_new->open_files[i] = process->open_files[i];
+    }
+    process_new->cwd = process->cwd;
+    memcpy(process_new->cwd_name, process->cwd, MAX_PATH);
+    process_new->parent = process;
     return process_new; 
 }
 
