@@ -45,21 +45,22 @@ int main(){
     printf("console init finished!\n");
     kernel_test();
 
-
-    process_t* p = alloc_process();
+    process_t* p = alloc_process(); 
     printf("get process\n");
     init_process(p);
+    prepare_initcode_process(p);
     printf("init process\n");
     load_elf(p, "test");
     // map_elf(p);
     //map_elf(p);
     printf("load process\n");
 
-    
-    set_arg(p, 0, NULL);
+    char* argv[] = {"/test","test"};
+    set_arg(p, 1, argv);
     // map_elf(p);
     //map_elf(p);
     printf("set arg\n");   
+    release_spinlock(&p->lock);
 
     thread_t* t = alloc_thread();
     printf("get thread\n");
@@ -71,10 +72,12 @@ int main(){
 
     init_thread_manager_coro(t->tid);
     printf("init manager done\n");
+   
     entry_main(t);
+    release_spinlock(&t->lock);
     printf("entry done\n");
 
-    printf("trapret: %p",*(uint64*)(0x0000003ffffff08c));
+    // printf("fake_stack:%p\n", FAKE_STACK0);
 
     scheduler_loop();
     

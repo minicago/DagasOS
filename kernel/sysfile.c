@@ -4,6 +4,7 @@
 #include "spinlock.h"
 #include "fs.h"
 #include "pmm.h"
+#include "coro.h"
 
 // the buf addr is in user space
 int sys_write(int fd, uint64 va, uint64 size)
@@ -65,7 +66,7 @@ int sys_getcwd(uint64 va, uint64 size)
         printf("sys_getcwd: size is too small\n");
         goto sys_getcwd_error;
     }
-    copy_to_va(va,buffer,len);
+    copy_to_va(thread_pool[get_tid()].stack_pagetable,va,buffer,len);
     pfree(mem);
     return va;
 
@@ -231,7 +232,7 @@ int sys_getdents64(int fd, uint64 va, int len) {
         printf("sys_getdents64: get_dirent error\n");
         goto sys_getdents64_error;
     }
-    copy_to_va(va, buffer, res);
+    copy_to_va(thread_pool[get_tid()].stack_pagetable, va, buffer, res);
     pfree(mem);
     return res;
 
@@ -306,6 +307,6 @@ int sys_fstat(int fd, uint64 va) {
     st.st_mtime_nsec = 0;
     st.st_ctime_sec = 0;
     st.st_ctime_nsec = 0;
-    copy_to_va(va, &st, sizeof(struct kstat));
+    copy_to_va(thread_pool[get_tid()].stack_pagetable,va, &st, sizeof(struct kstat));
     return 0;
 }

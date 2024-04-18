@@ -178,12 +178,15 @@ void test_chdir(void){
 // 	TEST_END(__func__);
 // }
 
-int main() {
+int main(int argc, char* argv[]) {
+    int pid = fork();
+    printf("pid: %d\n",pid);
+    printf("RUNNING %s\n", argv[0]);
     test_printf();
     test_getcwd();
     test_open_read_close();
     test_dup();
-    //test_mkdir();
+    test_mkdir();
     test_write();
     test_dup2();
     test_getdents();

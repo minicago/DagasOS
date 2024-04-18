@@ -71,7 +71,7 @@ userret:
         srli    a1,a1,44
         slli    a1,a1,48
         srli    a1,a1,48        
-        sfence.vma zero, a1
+        // sfence.vma zero, a1
         
         
         # restore all but a0 from TRAPFRAME

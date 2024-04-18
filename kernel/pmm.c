@@ -265,3 +265,22 @@ void pmem_init() {
     memset((char*) pmem_base, 'U', (char*)PMEM_END - pmem_base - 1);
     init_kmem_cache();
 }
+
+pm_t* alloc_pm(uint64 v_offset, uint64 pa, uint64 size){
+    pm_t* pm = palloc_n(PG_CEIL (sizeof(pm_t)) / PG_SIZE);
+    pm->next = NULL;
+    pm->v_offset = v_offset;
+    if(pa == 0) pm->pa = (uint64) kmalloc(size);
+    else pm->pa = pa;
+    pm->size = size;
+    pm->cnt = 0;
+    return pm;
+}
+
+void free_pm(pm_t* pm){
+    pm->cnt--;
+    if(pm->cnt == 0) {
+        kfree((void*) pm->pa);
+        kfree(pm);
+    }
+}

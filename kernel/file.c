@@ -6,6 +6,7 @@
 #include "memory_layout.h"
 #include "dagaslib.h"
 #include "fs.h"
+#include "coro.h"
 
 static file_t files[MAX_FILE];
 static spinlock_t files_lock;
@@ -83,7 +84,7 @@ int file_read(file_t *file, uint64 va, int size)
     }
     else if (file->type == T_FILE)
     {
-        pagetable_t pagetable = get_current_proc()->pagetable;
+        pagetable_t pagetable = thread_pool[get_tid()].stack_pagetable;
         int real_size = 0;
         
         if (file->off + size > file->node->size)
@@ -126,7 +127,7 @@ int file_write(file_t *file, uint64 va, int size) {
     if (file->type == T_DEVICE) {
         return devices[file->major].write(1, va, size);
     } else if (file->type == T_FILE) {
-        pagetable_t pagetable = get_current_proc()->pagetable;
+        pagetable_t pagetable = thread_pool[get_tid()].stack_pagetable;
         int real_size = 0;
         int cover = 1;
         while (size > 0)

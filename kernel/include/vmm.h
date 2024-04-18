@@ -4,11 +4,12 @@
 #include "types.h"
 #include "defs.h"
 #include "memory_layout.h"
+
+typedef struct process_struct process_t;
+typedef struct thread_struct thread_t;
+
 typedef uint64 pte_t;
 typedef pte_t* pagetable_t;
-
-
-
 
 
 // The risc-v Sv39 scheme has three levels of page-table
@@ -53,6 +54,7 @@ typedef pte_t* pagetable_t;
 #define ATP_PNN_MASK  0x00000fffffffffffull
 #define ATP_PNN_OFFSET 0
 
+//ASID = PID
 #define ATP(ASID, PNN) (((uint64) ((ASID)) << ATP_ASID_OFFSET) | \
     ((uint64) (PNN) >> PG_OFFSET_SHIFT << ATP_PNN_OFFSET) | \
     ATP_MODE_SV39)
@@ -73,20 +75,70 @@ int mappages(pagetable_t pagetable, uint64 va, uint64 pa, uint64 sz, uint64 perm
 
 void unmappages(pagetable_t pagetable, uint64 va, uint64 sz, uint64 free_p);
 
+pagetable_t alloc_stack_pagetable();
+
+void switch_stack_pagetable(pagetable_t pagetable, pagetable_t stack_pagetable);
+
 void kvminit();
 
 void print_page_table(pagetable_t pagetable);
 
-pagetable_t alloc_user_pagetable();
+void uvminit(process_t* process);
 
-void free_user_pagetable(pagetable_t pagetable);
+// void free_user_pagetable(pagetable_t pagetable);
 
 int copy_to_pa(void *dst, uint64 src, uint64 len, uint8 from_user);
 
 uint64 va2pa(pagetable_t pagetable, uint64 va);
 
-int copy_to_va(uint64 va, void *src, uint64 len);
+int copy_to_va(pagetable_t pagetable, uint64 va, void *src, uint64 len);
 
 int copy_string_from_user(uint64 va, char *buf, int size);
+
+void* kvmalloc(int size);
+
+void* uvmalloc(process_t* process, int size);
+
+void kvfree(void* ptr);
+
+void uvfree(process_t* process, void* ptr);
+
+void heap_init(pagetable_t pagetable, int user);
+
+#define MIN_ALL_SFENCE_PG 0x10
+
+#define VM_PA_SHARED 0x1
+#define VM_LAZY_ALLOC 0x2
+#define VM_THREAD_STACK 0x4
+#define VM_NO_FORK 0x8
+#define VM_NO_ALLOC 0x10
+
+typedef struct vm_struct vm_t;
+typedef struct pm_struct pm_t;
+
+struct vm_struct
+{
+    pagetable_t pagetable;
+    uint64 va;
+    uint64 size;
+    int type;
+    uint64 perm;
+    pm_t* pm;
+    vm_t* next;
+    
+} ;
+
+vm_t* alloc_vm(process_t* process, uint64 va, uint64 size, pm_t* pm, int perm, int type);
+vm_t* alloc_vm_stack(thread_t* thread, uint64 va, uint64 size, pm_t* pm, int perm, int type);
+
+void vm_clear_pm(vm_t* vm);
+void free_vm(vm_t* vm);
+void vm_insert_pm(vm_t* vm, pm_t* pm);
+
+void vm_insert(process_t* process, vm_t* vm);
+
+int vm_rm(process_t* process, vm_t* rm_vm);
+
+vm_t* vm_lookup(vm_t* vm_list, uint64 va);
 
 #endif

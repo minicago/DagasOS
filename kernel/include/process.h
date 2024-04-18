@@ -26,22 +26,28 @@ enum PROCESS_STATE {
     ZOMBIE,
 };
 
-typedef struct process_struct {
+typedef struct process_struct process_t;
+struct process_struct{
     spinlock_t lock;
     // basic information
     enum PROCESS_STATE state;
     int64 pid;
+
+    vm_t* vm_list;
+    vm_t* arg_vm;
+    vm_t* heap_vm;
+
     pagetable_t pagetable;
 
     // sub process
-    struct process_t* parent;
+    process_t* parent;
     // linked_list_t* child; // current wo don't save children.
 
     // threads;
     int thread_count;
     file_t *open_files[MAX_FD];  // Open files
     inode_t *cwd;           // Current directory
-} process_t;
+};
 
 extern process_t process_pool[];
 
@@ -53,5 +59,6 @@ void map_elf(process_t* process);
 process_t* get_current_proc(void);
 int create_fd(process_t* process, file_t* file);
 void set_arg(process_t* process, int argc, char** argv);
-
+void prepare_initcode_process(process_t* process);
+process_t* fork_process(process_t* process);
 #endif

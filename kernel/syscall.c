@@ -8,6 +8,8 @@
 void syscall_handler(trapframe_t *trapframe)
 {
     int sysid = trapframe->a7;
+    printf("%p\n", trapframe);
+    printf("%p\n", sysid);
     switch (sysid)
     {
     case SYS_openat:
@@ -95,6 +97,11 @@ void syscall_handler(trapframe_t *trapframe)
         printf("syscall_handler: SYS_exit, code is %d\n", trapframe->a0);
         //TODO: maybe should not flush here
         flush_cache_to_disk();
+        break;
+    }
+    case SYS_clone:
+    {
+        trapframe->a0 = sys_fork();
         break;
     }
     default:
