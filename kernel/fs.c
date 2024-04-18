@@ -113,6 +113,10 @@ void release_inode(inode_t *node) {
         printf("warning: release_inode: root can't be released\n");
         return;
     }
+    if(node==NULL) {
+        printf("warning: release_inode: node == NULL\n");
+        return;
+    }
     acquire_spinlock(&cache_lock);
     if (node->refcnt == 0) {
         panic("release_inode: already released");
@@ -167,7 +171,8 @@ inode_t* create_inode(inode_t* dir, char* filename, uint8 major, uint8 type) {
         panic("create_inode: invalid inode");
     }
     if ((dir->sb->create_inode(dir, filename, type, major, &node)) == 0) {
-        panic("create_inode: create error");
+        printf("create_inode: create error");
+        return NULL;
     }
     inode_t* res = get_inode(node.dev, node.id);
     acquire_spinlock(&cache_lock);
@@ -309,4 +314,55 @@ void pin_inode(inode_t* node) {
     }
     node->refcnt++;
     release_spinlock(&cache_lock);
+}
+
+// size include dirent other filed not just d_name, return bytes read
+int get_dirent(inode_t *node, int size, dirent_t *dirent) {
+    if (node->valid == 0) {
+        panic("get_dirent: invalid inode");
+    }
+    return node->sb->get_dirent(node, size, dirent);
+}
+
+// TODO: inode_t should have lock
+int get_inode_path(inode_t *node, char *buf, int size) {
+    if(node==NULL) {
+        printf("get_file_path: file->node == NULL\n");
+        return -1;
+    }
+    if(node->type!=T_FILE && node->type!=T_DIR) {
+        printf("get_file_path: node->type error\n");
+        return -1;
+    }
+    if(node==get_root()) {
+        if(size<2) {
+            printf("get_file_path: size is too small\n");
+            return -1;
+        }
+        buf[0] = '/';
+        buf[1] = '\0';
+        return 0;// len-1, because root should be handled specially
+    }
+    if(node->parent==NULL) {
+        printf("get_file_path: node->parent == NULL\n");
+        return -1;
+    }
+    int len = get_inode_path(node->parent, buf, size);
+    if(len==-1) return -1;
+    buf+=len;
+    *buf = '/';
+    buf++;
+    size -= len+1;
+    //TODO: change to get_node_name
+    int res = get_inode_name(node, buf, size);
+    
+    printf("get_inode_path1: size%d %s\n",size, buf);
+    printf("get_inode_path2: size%d %s\n",size-len-1, buf-len-1);
+    printf("get_inode_path3: len%d\n",res+len+1);
+    if(res == -1) return -1;
+    return res+len+1;
+}
+
+int get_inode_name(inode_t* node, char* buffer, int size) {
+    return node->sb->get_inode_name(node,buffer,size);
 }

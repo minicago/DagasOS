@@ -6,9 +6,9 @@
 #include "types.h"
 #include "vmm.h"
 
-#define BSIZE 512  // block size
-#define MAXOPBLOCKS  10  // max # of blocks any FS op writes
-#define NBUF         (MAXOPBLOCKS*3)  // size of disk block cache
+#define BSIZE 512              // block size
+#define MAXOPBLOCKS 10         // max # of blocks any FS op writes
+#define NBUF (MAXOPBLOCKS * 3) // size of disk block cache
 #define NULL_DEV 0
 #define VIRTIO_DISK_DEV 1
 
@@ -17,6 +17,9 @@
 
 struct inode_struct;
 typedef struct inode_struct inode_t;
+
+struct dirent_struct;
+typedef struct dirent_struct dirent_t;
 typedef struct superblock_struct
 {
   uint32 dev;
@@ -24,23 +27,26 @@ typedef struct superblock_struct
   uint32 fs_type;
   void *extra;
 
-  //ops, node.refcnt = 0 but others is proper. return 0 if can't find
+  // ops, node.refcnt = 0 but others is proper. return 0 if can't find
   int (*lookup_inode)(inode_t *dir, char *filename, inode_t *node);
 
   // return the real size. return -1 is error
   int (*read_inode)(inode_t *node, int offset, int size, void *buffer);
 
-  int (*write_inode)(inode_t *node, int offset, int size,int cover, void *buffer);
+  int (*write_inode)(inode_t *node, int offset, int size, int cover, void *buffer);
 
   void (*update_inode)(inode_t *node);
 
   // return 0 is error
-  int (*create_inode)(inode_t* dir, char* filename, uint8 type, uint8 major, inode_t* inode);
+  int (*create_inode)(inode_t *dir, char *filename, uint8 type, uint8 major, inode_t *inode);
 
   void (*print_fs_info)(inode_t *node);
+  int (*get_dirent)(inode_t *node, int size, dirent_t *dirent);
+  int (*get_inode_name)(inode_t* node, char* buffer, int size);
 } superblock_t;
 
-struct inode_struct{
+struct inode_struct
+{
   uint32 dev; // Device number
   uint32 id;  // Inode number
   int refcnt; // Reference count
@@ -55,23 +61,32 @@ struct inode_struct{
   int index_in_parent;
 };
 
+struct dirent_struct
+{
+  uint64 d_ino;
+  int64 d_off;
+  unsigned short d_reclen;
+  unsigned char d_type;
+  char d_name[];
+};
+
 // root(/) inode, can only be used after filesystem_init called
-inode_t* get_root();
-inode_t* get_inode(uint32 dev, uint32 id);
+inode_t *get_root();
+inode_t *get_inode(uint32 dev, uint32 id);
 // will init inode cache, root inode's superblock and root inode
 void filesystem_init(uint32 type);
 // will lookup inode in dir, and return inode
-inode_t* lookup_inode(inode_t *dir, char *filename);
+inode_t *lookup_inode(inode_t *dir, char *filename);
 // once inode is not used, release it
 void release_inode(inode_t *node);
 // read inode's data to buffer, the unit of offset is byte
 int read_inode(inode_t *node, int offset, int size, void *buffer);
 
-int write_inode(inode_t *node, int offset, int size,int cover, void *buffer);
+int write_inode(inode_t *node, int offset, int size, int cover, void *buffer);
 
 void update_inode(inode_t *node);
 
-inode_t* create_inode(inode_t* dir, char* filename, uint8 major, uint8 type);
+inode_t *create_inode(inode_t *dir, char *filename, uint8 major, uint8 type);
 
 void print_inode(inode_t *node);
 
@@ -81,8 +96,14 @@ int file_test();
 
 int load_from_inode_to_page(inode_t *inode, pagetable_t pagetable, uint64 va, int offset, int size);
 
-inode_t* look_up_path(inode_t* root, const char *path, int *depth);
+inode_t *look_up_path(inode_t *root, const char *path, int *depth);
 
-void pin_inode(inode_t* node);
+void pin_inode(inode_t *node);
 
+// return -1 if error
+int get_dirent(inode_t *node, int size, dirent_t *dirent);
+
+// return len of path, return 0 when '/', return -1 when error
+int get_inode_path(inode_t *node, char *buf, int size);
+int get_inode_name(inode_t* node, char* buffer, int size);
 #endif

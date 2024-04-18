@@ -14,7 +14,7 @@
 #define USER_ENTRY 0x00001000ull
 #define USER_EXIT 0x80000000ull
 
-#define MAX_FD 16
+#define MAX_FD 256
 
 #define FD_STDIN 0
 #define FD_STDOUT 1
@@ -41,7 +41,6 @@ typedef struct process_struct {
     int thread_count;
     file_t *open_files[MAX_FD];  // Open files
     inode_t *cwd;           // Current directory
-    char cwd_name[MAX_PATH]; // Current directory name
 } process_t;
 
 extern process_t process_pool[];

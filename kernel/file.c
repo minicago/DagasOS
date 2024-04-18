@@ -263,3 +263,17 @@ file_mkdirat_error:
     pfree(mem);
     return -1;
 }
+
+int get_file_path(file_t *file, char *buf, int size)
+{
+    if(file->type == T_PIPE) {
+        printf("get_file_path: pipe has no path\n");
+        return -1;
+    }
+    inode_t *node = file->node;
+    if(node==NULL) {
+        printf("get_file_path: file's node is NULL\n");
+        return -1;
+    }
+    return get_inode_path(node,buf,size);
+}

@@ -25,6 +25,7 @@
 #define FAT32_LFN_LEN 13
 
 #define FAT32_OVER_SIZE -1
+#define FAT32_OVER_BASE -2
 
 #define FAT32_INVALID_CID_MASK 0x0ffffff0
 #define FAT32_FREE_CID 0

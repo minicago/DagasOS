@@ -51,7 +51,6 @@ void init_process(process_t* process){
     tmp->readable = 0;
 
     process->cwd = get_root();
-    strcpy(process->cwd_name, "/");
     release_spinlock(&process->lock);
 }
 

@@ -6,6 +6,7 @@
 #define SIZE 4096+10
 
 char buf[SIZE];
+char buffer[512];
 void test_printf(){
     printf("user: test printf\n");
     int a = 1;
@@ -91,6 +92,91 @@ void test_write(){
     close(fd);
 	TEST_END(__func__);
 }
+void test_getdents(void){
+    TEST_START(__func__);
+    int fd, nread;
+    struct linux_dirent64 *dirp64;
+    dirp64 = (struct linux_dirent64 *)buf;
+    //fd = open(".", O_DIRECTORY);
+    fd = open(".", O_RDONLY);
+    printf("open fd:%d\n", fd);
+
+	nread = getdents(fd, dirp64, 512);
+	printf("getdents fd:%d\n", nread);
+	assert(nread != -1);
+	printf("getdents success.\n%s\n", dirp64->d_name);
+
+    printf("\n");
+    close(fd);
+
+    fd = open("/test", O_RDONLY);
+    printf("open fd:%d\n", fd);
+
+	nread = getdents(fd, dirp64, 512);
+	printf("getdents fd:%d\n", nread);
+	assert(nread != -1);
+	printf("getdents success.\n%s\n", dirp64->d_name);
+
+    printf("\n");
+    close(fd);
+
+    fd = open("/dev/stdin", O_RDONLY);
+    printf("open fd:%d\n", fd);
+
+	nread = getdents(fd, dirp64, 512);
+	printf("getdents fd:%d\n", nread);
+	assert(nread != -1);
+	printf("getdents success.\n%s\n", dirp64->d_name);
+
+    printf("\n");
+    close(fd);
+    TEST_END(__func__);
+}
+void test_dup2(){
+	TEST_START(__func__);
+	int fd = dup2(STDOUT, 100);
+	assert(fd != -1);
+	const char *str = "  from fd 100\n";
+	write(100, str, strlen(str));
+	TEST_END(__func__);
+}
+void test_chdir(void){
+    TEST_START(__func__);
+    char name[20];
+    
+    int len = 11;
+    strncpy(name, "test_chdir0",len+1);
+    for(int i=0;i<5;i++) {
+        mkdir(name,0666);
+        int ret = chdir(name);
+        printf("chdir ret: %d\n", ret);
+        assert(ret == 0);
+        getcwd(buffer, 100);
+        printf("  current working dir : %s\n", buffer);
+        name[len-1]++;
+    }
+    
+    int ret = chdir("/");
+    printf("chdir ret: %d\n", ret);
+    TEST_END(__func__);
+}
+
+//Stat *kst;
+// static struct kstat kst;
+// void test_fstat() {
+// 	TEST_START(__func__);
+//     getcwd(buffer, 100);
+//     printf("  current working dir : %s\n", buffer);
+// 	int fd = open("./test", O_RDWR);
+// 	int ret = fstat(fd, &kst);
+// 	printf("fstat ret: %d\n", ret);
+// 	assert(ret >= 0);
+
+// 	printf("fstat: dev: %d, inode: %d, mode: %d, nlink: %d, size: %d, atime: %d, mtime: %d, ctime: %d\n",
+// 	      kst.st_dev, kst.st_ino, kst.st_mode, kst.st_nlink, kst.st_size, kst.st_atime_sec, kst.st_mtime_sec, kst.st_ctime_sec);
+
+// 	TEST_END(__func__);
+// }
 
 int main() {
     test_printf();
@@ -99,6 +185,10 @@ int main() {
     test_dup();
     //test_mkdir();
     test_write();
+    test_dup2();
+    test_getdents();
+    test_chdir();
+    // test_fstat();
     printf("user: exit");
     return 0;
 }

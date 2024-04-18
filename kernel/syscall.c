@@ -62,6 +62,34 @@ void syscall_handler(trapframe_t *trapframe)
         trapframe->a0 = sys_dup(fd);
         break;
     }
+    case SYS_dup3:
+    {
+        int oldfd = trapframe->a0;
+        int newfd = trapframe->a1;
+        trapframe->a0 = sys_dup3(oldfd, newfd);
+        break;
+    }
+    case SYS_chdir:
+    {
+        uint64 va = trapframe->a0;
+        trapframe->a0 = sys_chdir(va);
+        break;
+    }
+    case SYS_getdents64:
+    {
+        int fd = trapframe->a0;
+        uint64 va = trapframe->a1;
+        int len = trapframe->a2;
+        trapframe->a0 = sys_getdents64(fd, va, len);
+        break;
+    }
+    case SYS_fstat:
+    {
+        int fd = trapframe->a0;
+        uint64 va = trapframe->a1;
+        trapframe->a0 = sys_fstat(fd, va);
+        break;
+    }
     case SYS_exit:
     {
         printf("syscall_handler: SYS_exit, code is %d\n", trapframe->a0);
