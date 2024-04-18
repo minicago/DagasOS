@@ -54,22 +54,22 @@ int resolve_page_fault(){
     R_CSR(stval, stval);
     printf("page_fault! va:%p\n", stval);
 
-    vm_t* vm = vm_lookup(thread->process, stval);
+    vm_t* vm = vm_lookup(thread->stack_vm, stval);
 
     if(vm->type & VM_LAZY_ALLOC){
-        printf("sp : %p\n",thread->trapframe->sp);
+        // printf("vm: %p %p\n",vm->pagetable, thread->stack_pagetable);
         vm_insert_pm(vm, 
             alloc_pm(PG_FLOOR(stval - vm->va), 0, PG_SIZE));
         return 1;
     }
     
-    if(vm->type & VM_TO_THREAD_STACK){
-        thread->trapframe->sp += thread->stack_vm->va - vm->va;
-        printf("sp : %p\n",thread->trapframe->sp);
-        vm_insert_pm(thread->stack_vm, 
-            alloc_pm(PG_FLOOR(stval - vm->va), 0, PG_SIZE));
-        return 1;
-    }
+    // if(vm->type & VM_TO_THREAD_STACK){
+    //     thread->trapframe->sp += thread->stack_vm->va - vm->va;
+    //     printf("sp : %p\n",thread->trapframe->sp);
+    //     vm_insert_pm(thread->stack_vm, 
+    //         alloc_pm(PG_FLOOR(stval - vm->va), 0, PG_SIZE));
+    //     return 1;
+    // }
         
     // // fake stack
     // if(thread->trapframe->sp >= FAKE_STACK0
@@ -81,7 +81,7 @@ int resolve_page_fault(){
     //     uint64 va = (stval + TSTACK0(thread->tid) - FAKE_STACK0) & ~PG_OFFSET_MASK;
     //     // thread->user_stack_size = MAX(thread->user_stack_size, TSTACK_BOTTOM(thread->tid) - va);
     //     mappages(thread->process->pagetable , va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
-    //     sfencevma(va, thread->process->pid);
+    //     // sfencevma(va, thread->process->pid);
     //     return 1;
     // }
 
@@ -94,7 +94,7 @@ int resolve_page_fault(){
     //     uint64 va = stval & ~PG_OFFSET_MASK;
     //     // thread->user_stack_size = MAX(thread->user_stack_size, TSTACK_BOTTOM(thread->tid) - va);
     //     mappages(thread->process->pagetable ,va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
-    //     sfencevma(va, thread->process->pid);
+    //     // sfencevma(va, thread->process->pid);
     //     return 1;
     // }    
     // printf("Real page fault");

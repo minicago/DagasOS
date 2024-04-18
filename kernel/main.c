@@ -77,7 +77,7 @@ int main(){
     release_spinlock(&t->lock);
     printf("entry done\n");
 
-    printf("fake_stack:%p\n", FAKE_STACK0);
+    // printf("fake_stack:%p\n", FAKE_STACK0);
 
     scheduler_loop();
     

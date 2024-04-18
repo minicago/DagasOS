@@ -18,7 +18,6 @@ thread_t thread_pool[MAX_THREAD];
 thread_t* free_thread_head = NULL;
 
 
-
 void thread_pool_init(){
     init_spinlock(&thread_pool_lock);
     acquire_spinlock(&thread_pool_lock);
@@ -42,8 +41,8 @@ void entry_main(thread_t* thread){
     thread->trapframe->ra = USER_EXIT;
     thread->trapframe->sp = ARG_PAGE;
     thread->state = T_READY;
-    thread->stack_vm = alloc_vm(thread->process, TSTACK0(thread->tid), MAX_TSTACK_SIZE, 
-        NULL, PTE_U | PTE_W | PTE_R, VM_LAZY_ALLOC | VM_NO_FORK);
+    alloc_vm_stack(thread, TSTACK0, MAX_TSTACK_SIZE, 
+        NULL, PTE_U | PTE_W | PTE_R, VM_LAZY_ALLOC | VM_THREAD_STACK);
     // release_spinlock(&thread->lock);
 }
 
@@ -56,7 +55,7 @@ void attach_to_process(thread_t* thread, process_t* process){
     // uint64 pa = (uint64)palloc();
     // uint64 va = thread->user_stack_bottom - PG_SIZE;
     // mappages(process->pagetable, va, pa, PG_SIZE, PTE_R | PTE_W | PTE_U);
-    // sfencevma(va, process->pid);
+    // // sfencevma(va, process->pid);
     
     release_spinlock(&process->lock);
 }
@@ -77,6 +76,7 @@ thread_t* alloc_thread(){
     printf("alloc thread:%p\n" , free_thread_head);
     thread_t* new_thread = free_thread_head;
     free_thread_head = *(void**) free_thread_head;
+    new_thread->stack_pagetable = alloc_stack_pagetable();
     release_spinlock(&thread_pool_lock);
     return new_thread;
 }
@@ -96,6 +96,7 @@ void entry_to_user(){
     W_CSR(sepc, thread_pool[tid].trapframe->epc);
     C_CSR(sstatus, SSTATUS_SPP);
     W_CSR(sscratch, thread_pool[tid].trapframe);
+    switch_stack_pagetable(thread_pool[tid].process->pagetable, thread_pool[tid].stack_pagetable);
     printf("trapframe:%p page_table:%p\n",thread_pool[tid].trapframe, thread_pool[tid].process->pagetable);
     printf("go to user\n");
     printf("trampoline:%p\n", va2pa(thread_pool[tid].process->pagetable, TRAMPOLINE));
@@ -104,7 +105,7 @@ void entry_to_user(){
     // printf("%p\n", PTE2PA( * walk( thread_pool[tid].process->pagetable ,0x1000, 0)) );
     ((userret_t*) (TRAMPOLINE + USER_RET_OFFSET) )(
     thread_pool[tid].trapframe, 
-    ATP(thread_pool[tid].process->pid, thread_pool[tid].process->pagetable) );
+    ATP(tid, thread_pool[tid].stack_pagetable) );
     
 }
 
@@ -126,10 +127,10 @@ void awake(int tid){
 void clone_thread(thread_t *thread, thread_t *thread_new){
     memcpy(thread_new->trapframe, thread->trapframe, sizeof(trapframe_t));
     thread_new->trapframe->kernel_sp = COROSTACK_BOTTOM(thread_new->tid);
-    thread_new->trapframe->sp = thread->trapframe->sp - TSTACK0(thread->tid) + TSTACK0(thread_new->tid);
+    // thread_new->trapframe->sp = thread->trapframe->sp - TSTACK0(thread->tid) + TSTACK0(thread_new->tid);
     printf("sp:%p\n", thread_new->trapframe->sp);
     thread_new->trapframe->epc += 4;
-    thread_new->stack_vm = alloc_vm(thread_new->process, TSTACK0(thread_new->tid), MAX_TSTACK_SIZE, thread->stack_vm->pm, thread->stack_vm->perm, thread->stack_vm->type);
+    alloc_vm_stack(thread_new, TSTACK0, MAX_TSTACK_SIZE, thread->stack_vm->pm, thread->stack_vm->perm, thread->stack_vm->type);
     thread_new->state = T_READY;
     // for(uint64 va = thread->user_stack_bottom - thread->user_stack_size; va < thread->user_stack_bottom; va += PG_SIZE){
     //     uint64 pa = va2pa(thread->process->pagetable, va);

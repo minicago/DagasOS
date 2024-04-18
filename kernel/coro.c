@@ -61,8 +61,8 @@ void init_thread_manager_coro(uint64 tid){
     alloc_vm(thread_pool[tid].process, va, PG_SIZE, 
         pm, PTE_W | PTE_R, VM_NO_FORK);
     mappages(kernel_pagetable, va, pm->pa, PG_SIZE, PTE_W | PTE_R) ;
-    sfencevma(va, MAX_THREAD);
-    sfencevma(va, thread_pool[tid].process->pid);
+    // sfencevma(va, MAX_THREAD);
+    // sfencevma(va, thread_pool[tid].process->pid);
     thread_pool[tid].trapframe = (trapframe_t*) TRAPFRAME0(tid);
     thread_pool[tid].trapframe->kernel_sp = (uint64) thread_pool[tid].trapframe;
     printf("init_thread_manager_coro: kernel_sp= %p\n",&(thread_pool[tid].trapframe->kernel_sp));

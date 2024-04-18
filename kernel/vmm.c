@@ -61,6 +61,23 @@ pte_t *walk(pagetable_t pagetable, uint64 va, int alloc)
     return &pagetable[PTE_INDEX(va, 0)];
 }
 
+
+pagetable_t alloc_stack_pagetable(){
+    pagetable_t p = palloc();
+    memset(p, 0, PG_SIZE);
+    return p;
+}
+
+void switch_stack_pagetable(pagetable_t pagetable, pagetable_t stack_pagetable){
+    printf("pagetable:%p %p\n",stack_pagetable, pagetable);
+    for(int i = 0; i < PTE_NUM; i++){
+        if(i != TSTACK_PAGETABLE_INDEX)
+            stack_pagetable[i] = pagetable[i];
+    }
+    
+}
+
+
 void walk_and_free(pagetable_t pagetable, int level)
 {
     if ((uint64)pagetable >= MAX_VA)
@@ -73,11 +90,6 @@ void walk_and_free(pagetable_t pagetable, int level)
         if (*pte & PTE_V)
         {
             walk_and_free((pagetable_t)PTE2PA(*pte), level - 1);
-            if (level == 1)
-            {
-                if (!(*pte & PTE_G))
-                    pfree((void *)PTE2PA(*pte));
-            }
         }
     }
     pfree((void *)pagetable);
@@ -179,11 +191,11 @@ void kvminit()
     mappages(kernel_pagetable, HEAP_SPACE, (uint64) palloc(), PG_SIZE, PTE_R | PTE_W);
     heap_init(kernel_pagetable, 0);
 
-    sfencevma_all(MAX_PROCESS);
+    // sfencevma_all(MAX_PROCESS);
 
     W_CSR(satp, ATP(MAX_THREAD, kernel_pagetable));
 
-    sfencevma_all(MAX_PROCESS);
+    // sfencevma_all(MAX_PROCESS);
 }
 
 void uvminit(process_t* process)
@@ -298,13 +310,14 @@ void* vmalloc_r(pagetable_t pagetable, int size, int user, int pid){
     printf("vmalloc_r(%d,%d,%d)\n",size,user,pid);
     uint64 va;
     brk_t *brk,*next_brk;
+    
     for(va = HEAP_SPACE; ; va = (uint64)brk->next){
         // printf("%p\n",va);
         brk = (brk_t*) va2pa(pagetable, va);
         
         if(brk->used) continue;
         if(brk->next == NULL) break;
-        
+        printf("brk(%d,%d,%d)\n",brk->next,brk->size,brk->used);
         next_brk = (brk_t*) va2pa(pagetable, (uint64) brk->next);
         
 
@@ -323,16 +336,15 @@ void* vmalloc_r(pagetable_t pagetable, int size, int user, int pid){
             vm_insert_pm(process_pool[pid].heap_vm, 
                 alloc_pm((uint64) brk + sizeof(brk_t) + brk->size - HEAP_SPACE, pa, PG_SIZE) );
         } else mappages(pagetable, (uint64) brk + sizeof(brk_t) + brk->size, pa, PG_SIZE,(user?PTE_U:0) | PTE_W | PTE_R );
-        if(size <= MIN_ALL_SFENCE_PG * PG_SIZE) sfencevma((uint64) brk + sizeof(brk_t) + brk->size, pid);
+        if(size <= MIN_ALL_SFENCE_PG * PG_SIZE) // sfencevma((uint64) brk + sizeof(brk_t) + brk->size, pid);
         brk->size += PG_SIZE;
     }
     
-    if(size > MIN_ALL_SFENCE_PG * PG_SIZE) sfencevma_all(pid);
+    // if(size > MIN_ALL_SFENCE_PG * PG_SIZE) // sfencevma_all(pid);
 
     
 
     brk->next = (brk_t*) (va + size + sizeof(brk_t));
-    // printf("%p!\n",brk->next);
     next_brk = (brk_t*) va2pa(pagetable, (uint64) brk->next);
     next_brk->size = brk->size - size - sizeof(brk_t);
     next_brk->next = NULL;
@@ -362,10 +374,11 @@ void uvfree(process_t* process, void* ptr){
     vfree_r(process->pagetable, ptr);
 }
 
-vm_t* alloc_vm(process_t* process, uint64 va, uint64 size, pm_t* pm, int perm, int type){
+vm_t* alloc_vm_r(vm_t** vm_list, pagetable_t pagetable, uint64 va, uint64 size, pm_t* pm, int perm, int type){
+    printf("aok!\n");
     vm_t* vm = kmalloc(sizeof(vm_t));
-    vm->next = process->vm_list;
-    vm->pagetable = process->pagetable;
+    vm->next = *vm_list;
+    vm->pagetable = pagetable;
     vm->va = va;
     vm->size = size;
     vm->pm = pm;
@@ -374,12 +387,12 @@ vm_t* alloc_vm(process_t* process, uint64 va, uint64 size, pm_t* pm, int perm, i
 
     
     if (vm->type & VM_NO_ALLOC)  goto alloc_vm_ret;
-
+    printf("aok!\n");
     if(vm->pm == NULL && !(vm->type & VM_LAZY_ALLOC)){
         vm->pm = alloc_pm(0, 0, vm->size);
     }
 
-
+    
 
     for(pm_t* pm = vm->pm; pm != NULL; pm = pm->next){
         if (! (vm->type & VM_PA_SHARED)) {
@@ -397,8 +410,16 @@ vm_t* alloc_vm(process_t* process, uint64 va, uint64 size, pm_t* pm, int perm, i
     } 
 
 alloc_vm_ret:
-    process->vm_list = vm;
+    *vm_list = vm;
     return vm;
+}
+
+vm_t* alloc_vm(process_t* process, uint64 va, uint64 size, pm_t* pm, int perm, int type){
+    return alloc_vm_r(&process->vm_list, process->pagetable, va, size, pm, perm, type);
+}
+
+vm_t* alloc_vm_stack(thread_t* thread, uint64 va, uint64 size, pm_t* pm, int perm, int type){
+    return alloc_vm_r(&thread->stack_vm, thread->stack_pagetable, va, size, pm, perm, type);
 }
 
 void vm_clear_pm(vm_t* vm){
@@ -437,9 +458,9 @@ int vm_rm(process_t* process, vm_t* rm_vm){
     return cnt;
 }
 
-vm_t* vm_lookup(process_t* process, uint64 va){
-    for(vm_t* vm = process->vm_list; vm != NULL; vm = vm->next){
-        printf("va:%p va:%p\n",vm->va, va);
+vm_t* vm_lookup(vm_t* vm_list, uint64 va){
+    for(vm_t* vm = vm_list; vm != NULL; vm = vm->next){
+        printf("va:%p size:%p\n",vm->va, vm->size);
         if(va >= vm->va && va < vm->va + vm->size)
             return vm;
     }

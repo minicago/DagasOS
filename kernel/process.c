@@ -51,20 +51,19 @@ void prepare_initcode_process(process_t* process){
     alloc_vm(process, TRAMPOLINE, PG_SIZE, 
         alloc_pm(0, (uint64) trampoline, PG_SIZE), PTE_R | PTE_X , VM_PA_SHARED );
     printf("ok!\n");
-    alloc_vm(process, FAKE_STACK0, MAX_TSTACK_SIZE, 
-        NULL , PTE_R | PTE_X , VM_NO_ALLOC | VM_TO_THREAD_STACK);
+    
+    
 
     process->arg_vm = alloc_vm(process, ARG_PAGE, PG_SIZE, 
         NULL, PTE_R | PTE_W | PTE_U, 0 );        
 
     process->heap_vm = alloc_vm(process, HEAP_SPACE, HEAP_SIZE, 
         NULL, PTE_R | PTE_W | PTE_U, VM_NO_ALLOC ); 
-
     vm_insert_pm(process->heap_vm, 
     alloc_pm(0, 0, PG_SIZE));
-
+    printf("ok!\n");
     heap_init(process->pagetable, 1);
-    
+    printf("ok!\n");
     
     for(int i=0;i<MAX_FD;i++){
         process->open_files[i] = NULL;
@@ -134,13 +133,13 @@ void set_arg(process_t* process, int argc, char** argv){
     // acquire_spinlock(&process->lock);
     // uint64 pa = (uint64) palloc();
     // mappages(process->pagetable, ARG_PAGE, pa, PG_SIZE, PTE_W | PTE_U | PTE_R);
-    // sfencevma(ARG_PAGE, process->pid);
+    // // sfencevma(ARG_PAGE, process->pid);
     uint64 pa = va2pa(process->pagetable, ARG_PAGE);
     // printf("ok!\n");
     *(int*) pa = argc;
     for(int i = 0; i < argc; i++){
         char* ptr = uvmalloc(process, 7);
-        // printf("ptr:%p\n",ptr);
+        printf("ptr:%p\n",ptr);
         copy_to_va(process->pagetable, (uint64) ptr, argv[i], 7);
         *(char**) (pa + 8 + i * 8) = ptr;
     }

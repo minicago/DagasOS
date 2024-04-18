@@ -59,6 +59,7 @@ typedef struct thread_struct{
     trapframe_t* trapframe;
 
     vm_t* stack_vm;
+    pagetable_t stack_pagetable;
 
     process_t* process;
     uint64 tid;
