@@ -130,3 +130,7 @@ void panic(char *str) {
     printf("panic: %s\n", str);
     while(1) {}
 }
+
+void puts(char *str) {
+    printf("%s\n", str);
+}

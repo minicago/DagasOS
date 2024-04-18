@@ -73,6 +73,7 @@ int bio_test(){
 int print_test(){
     // Test for printf;
     printf("%s, %c, %d, %u, %x, %p, Helloworld, %% \n", "Helloworld", 'H', -16, -1, -1, -1);
+    puts("test put");
     return 1;
 }
 
