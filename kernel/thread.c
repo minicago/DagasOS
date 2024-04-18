@@ -97,9 +97,9 @@ void entry_to_user(){
     C_CSR(sstatus, SSTATUS_SPP);
     W_CSR(sscratch, thread_pool[tid].trapframe);
     switch_stack_pagetable(thread_pool[tid].process->pagetable, thread_pool[tid].stack_pagetable);
-    printf("trapframe:%p page_table:%p\n",thread_pool[tid].trapframe, thread_pool[tid].process->pagetable);
+    printf("sp:%p page_table:%p\n",thread_pool[tid].trapframe->kernel_sp, thread_pool[tid].process->pagetable);
     printf("go to user\n");
-    printf("trampoline:%p\n", va2pa(thread_pool[tid].process->pagetable, TRAMPOLINE));
+    printf("trampoline:%p\n", *(uint64*) ( va2pa(thread_pool[tid].stack_pagetable, TRAMPOLINE)) );
     set_strap_uservec();
     // printf("%p\n", PTE2PA( * walk( thread_pool[tid].process->pagetable ,0, 0)) );
     // printf("%p\n", PTE2PA( * walk( thread_pool[tid].process->pagetable ,0x1000, 0)) );
@@ -126,10 +126,8 @@ void awake(int tid){
 
 void clone_thread(thread_t *thread, thread_t *thread_new){
     memcpy(thread_new->trapframe, thread->trapframe, sizeof(trapframe_t));
-    thread_new->trapframe->kernel_sp = COROSTACK_BOTTOM(thread_new->tid);
+    thread_new->trapframe->kernel_sp = TRAPFRAME0(thread_new->tid);
     // thread_new->trapframe->sp = thread->trapframe->sp - TSTACK0(thread->tid) + TSTACK0(thread_new->tid);
-    printf("sp:%p\n", thread_new->trapframe->sp);
-    thread_new->trapframe->epc += 4;
     alloc_vm_stack(thread_new, TSTACK0, MAX_TSTACK_SIZE, thread->stack_vm->pm, thread->stack_vm->perm, thread->stack_vm->type);
     thread_new->state = T_READY;
     // for(uint64 va = thread->user_stack_bottom - thread->user_stack_size; va < thread->user_stack_bottom; va += PG_SIZE){
@@ -154,8 +152,14 @@ int sys_fork(){
     printf("tid:%p\n", thread_new - thread_pool );
     init_thread_manager_coro(thread_new->tid);
     clone_thread(thread, thread_new);
+    
+    thread_new->trapframe->epc += 4;
     thread_new->trapframe->a0 = 0;
     thread_new->state = T_READY;
+    vm_lookup(process_new->vm_list, 0);
+    printf("*\n");
+    vm_lookup(thread_new->stack_vm, 0);
+    printf("fork epc:%p->epc:%p\n", thread->trapframe->epc, thread_new->trapframe->epc);
     release_spinlock(&thread_new->lock);
     return process_new->pid;
 }

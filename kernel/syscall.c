@@ -8,6 +8,8 @@
 void syscall_handler(trapframe_t *trapframe)
 {
     int sysid = trapframe->a7;
+    printf("%p\n", trapframe);
+    printf("%p\n", sysid);
     switch (sysid)
     {
     case SYS_openat:

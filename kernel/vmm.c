@@ -100,7 +100,7 @@ uint64 va2pa(pagetable_t pagetable, uint64 va)
     if (va > MAX_VA)
         return 0;
     pte_t *pte = walk(pagetable, va, 0);
-    if (*pte == 0)
+    if (pte == NULL)
         return 0;
     else
         return PTE2PA(*pte) | (va & PG_OFFSET_MASK);
@@ -242,7 +242,7 @@ int copy_to_pa(void *dst, uint64 src, uint64 len, uint8 from_user)
 {
     if(from_user)
     {
-        if(copy_from_va(get_current_proc()->pagetable, dst, src, len) < 0)
+        if(copy_from_va(thread_pool[get_tid()].stack_pagetable, dst, src, len) < 0)
             return -1;
     } else {
         memcpy(dst, (void *)src, len);
@@ -375,7 +375,6 @@ void uvfree(process_t* process, void* ptr){
 }
 
 vm_t* alloc_vm_r(vm_t** vm_list, pagetable_t pagetable, uint64 va, uint64 size, pm_t* pm, int perm, int type){
-    printf("aok!\n");
     vm_t* vm = kmalloc(sizeof(vm_t));
     vm->next = *vm_list;
     vm->pagetable = pagetable;
@@ -385,10 +384,8 @@ vm_t* alloc_vm_r(vm_t** vm_list, pagetable_t pagetable, uint64 va, uint64 size, 
     vm->perm = perm;
     vm->type = type;
 
-    
-    if (vm->type & VM_NO_ALLOC)  goto alloc_vm_ret;
-    printf("aok!\n");
-    if(vm->pm == NULL && !(vm->type & VM_LAZY_ALLOC)){
+
+    if(vm->pm == NULL && !(vm->type & VM_LAZY_ALLOC) && !(vm->type & VM_NO_ALLOC)){
         vm->pm = alloc_pm(0, 0, vm->size);
     }
 
@@ -406,10 +403,11 @@ vm_t* alloc_vm_r(vm_t** vm_list, pagetable_t pagetable, uint64 va, uint64 size, 
                 pa_new->cnt = 1;
             }
         } else pm->cnt ++;
+        printf("mappages: (%p,%p,%p,%p,%p)\n",vm->pagetable, vm->va + pm->v_offset, pm->pa, pm->size, vm->perm);
         mappages(vm->pagetable, vm->va + pm->v_offset, pm->pa, pm->size, vm->perm);
     } 
 
-alloc_vm_ret:
+
     *vm_list = vm;
     return vm;
 }
