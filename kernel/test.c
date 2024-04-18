@@ -74,6 +74,13 @@ int print_test(){
     // Test for printf;
     printf("%s, %c, %d, %u, %x, %p, Helloworld, %% \n", "Helloworld", 'H', -16, -1, -1, -1);
     puts("test put");
+    LOG("%s\n", "test LOG");
+    #define PTEST 1
+    TLOG(PTEST, "%s\n", "test TLOG true");
+    #undef PTEST
+    #define PTEST 0
+    TLOG(PTEST, "%s\n", "test TLOG true");
+    #undef PTEST
     return 1;
 }
 
