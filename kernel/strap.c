@@ -15,7 +15,7 @@ void set_strap_stvec()
 
 void set_strap_uservec()
 {
-    printf("trap:%p\n", TRAMPOLINE + USER_VEC_OFFSET);
+    // printf("trap:%p\n", TRAMPOLINE + USER_VEC_OFFSET);
     W_CSR(stvec, (TRAMPOLINE + USER_VEC_OFFSET));
 }
 

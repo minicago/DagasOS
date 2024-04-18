@@ -23,9 +23,11 @@ void thread_pool_init(){
     init_spinlock(&thread_pool_lock);
     acquire_spinlock(&thread_pool_lock);
     free_thread_head = &thread_pool[0];
-    for(uint64 i = 1; i < MAX_THREAD; i++){
-        *(uint64*)&thread_pool[i] = (uint64) &thread_pool[i - 1];
+    for(uint64 i = 0; i < MAX_THREAD - 1; i++){
+        *(void**)(thread_pool+i) = thread_pool + i + 1;
+        
     }
+    printf("thread_pool_0:%p %p", thread_pool ,*(void**) (thread_pool + 0));
     release_spinlock(&thread_pool_lock);
 }
 
@@ -72,8 +74,9 @@ void init_thread(thread_t* thread){
 
 thread_t* alloc_thread(){
     acquire_spinlock(&thread_pool_lock);
+    printf("alloc thread:%p\n" , free_thread_head);
     thread_t* new_thread = free_thread_head;
-    free_thread_head = (thread_t*)*(uint64*) free_thread_head;
+    free_thread_head = *(void**) free_thread_head;
     release_spinlock(&thread_pool_lock);
     return new_thread;
 }
@@ -88,15 +91,17 @@ void free_thread(thread_t* thread){
 void entry_to_user(){
     printf("entry to user\n");
     int tid = get_tid();
+    if(tid == 1) printf("!!!!fork!!!!\n");
     if(tid == -1) panic("wrong coro");
     W_CSR(sepc, thread_pool[tid].trapframe->epc);
     C_CSR(sstatus, SSTATUS_SPP);
     W_CSR(sscratch, thread_pool[tid].trapframe);
-    printf("trapframe:%p\n",thread_pool[tid].trapframe);
+    printf("trapframe:%p page_table:%p\n",thread_pool[tid].trapframe, thread_pool[tid].process->pagetable);
     printf("go to user\n");
+    printf("trampoline:%p\n", va2pa(thread_pool[tid].process->pagetable, TRAMPOLINE));
     set_strap_uservec();
-    printf("%p\n", PTE2PA( * walk( thread_pool[tid].process->pagetable ,0, 0)) );
-    printf("%p\n", PTE2PA( * walk( thread_pool[tid].process->pagetable ,0x1000, 0)) );
+    // printf("%p\n", PTE2PA( * walk( thread_pool[tid].process->pagetable ,0, 0)) );
+    // printf("%p\n", PTE2PA( * walk( thread_pool[tid].process->pagetable ,0x1000, 0)) );
     ((userret_t*) (TRAMPOLINE + USER_RET_OFFSET) )(
     thread_pool[tid].trapframe, 
     ATP(thread_pool[tid].process->pid, thread_pool[tid].process->pagetable) );
@@ -120,9 +125,10 @@ void awake(int tid){
 
 void clone_thread(thread_t *thread, thread_t *thread_new){
     memcpy(thread_new->trapframe, thread->trapframe, sizeof(trapframe_t));
-    thread_new->trapframe->kernel_sp = COROSTACK0(thread_new->tid);
+    thread_new->trapframe->kernel_sp = COROSTACK_BOTTOM(thread_new->tid);
     thread_new->trapframe->sp = thread->trapframe->sp - TSTACK0(thread->tid) + TSTACK0(thread_new->tid);
-    
+    printf("sp:%p\n", thread_new->trapframe->sp);
+    thread_new->trapframe->epc += 4;
     thread_new->stack_vm = alloc_vm(thread_new->process, TSTACK0(thread_new->tid), MAX_TSTACK_SIZE, thread->stack_vm->pm, thread->stack_vm->perm, thread->stack_vm->type);
     thread_new->state = T_READY;
     // for(uint64 va = thread->user_stack_bottom - thread->user_stack_size; va < thread->user_stack_bottom; va += PG_SIZE){
@@ -135,12 +141,20 @@ void clone_thread(thread_t *thread, thread_t *thread_new){
 }
 
 int sys_fork(){
-    thread_t *thread = thread_pool+get_tid(), *thread_new = alloc_thread();
+    printf("fork!\n");
+    thread_t* thread = thread_pool+get_tid();
+    printf("fork: 0\n");
+    thread_t* thread_new = alloc_thread();
+    init_thread(thread_new);
+    printf("fork: 1\n");
     process_t* process_new = fork_process(thread->process);
+    printf("fork: 2\n");
     attach_to_process(thread_new, process_new);
+    printf("tid:%p\n", thread_new - thread_pool );
     init_thread_manager_coro(thread_new->tid);
     clone_thread(thread, thread_new);
     thread_new->trapframe->a0 = 0;
+    thread_new->state = T_READY;
     release_spinlock(&thread_new->lock);
     return process_new->pid;
 }

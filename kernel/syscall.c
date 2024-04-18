@@ -69,6 +69,11 @@ void syscall_handler(trapframe_t *trapframe)
         flush_cache_to_disk();
         break;
     }
+    case SYS_clone:
+    {
+        trapframe->a0 = sys_fork();
+        break;
+    }
     default:
     {
         printf("syscall_handler: Unknown system call\n");

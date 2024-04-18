@@ -93,6 +93,7 @@ void test_write(){
 }
 
 int main(int argc, char* argv[]) {
+    fork();
     printf("RUNNING %s\n", argv[0]);
     test_printf();
     test_getcwd();

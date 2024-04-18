@@ -23,8 +23,8 @@ void process_pool_init(){
     init_spinlock(&process_pool_lock);
     acquire_spinlock(&process_pool_lock);
     free_process_head = &process_pool[0];
-    for(uint64 i = 1; i < MAX_PROCESS; i++){
-        *(uint64*)&process_pool[i] = (uint64) &process_pool[i - 1];
+    for(uint64 i = 0; i < MAX_PROCESS - 1; i++){
+        *(uint64*)&process_pool[i] = (uint64) &process_pool[i + 1];
     }
     release_spinlock(&process_pool_lock);
 }
@@ -151,7 +151,9 @@ process_t* fork_process(process_t* process){
     process_t* process_new = alloc_process();
     init_process(process_new);
     for(vm_t* vm = process->vm_list; vm != NULL; vm = vm->next){
-        if(vm->type | VM_NO_FORK) continue;
+        // printf("va=%p type=%p\n",vm->va, vm->type);
+        if(vm->type & VM_NO_FORK) continue;
+        
         vm_t* vm_new = alloc_vm(process_new, vm->va, vm->size, vm->pm, vm->perm, vm->type);
         if(process->arg_vm == vm) process_new->arg_vm = vm_new;
         if(process->heap_vm == vm) process_new->heap_vm = vm_new;

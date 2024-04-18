@@ -87,4 +87,6 @@ void sched();
 
 void sleep();
 
+int sys_fork();
+
 #endif
