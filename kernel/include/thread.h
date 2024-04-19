@@ -90,4 +90,6 @@ void sleep();
 
 int sys_fork();
 
+int sys_exec(char* path);
+
 #endif

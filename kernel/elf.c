@@ -3,6 +3,7 @@
 #include "file.h"
 #include "fs.h"
 #include "vmm.h"
+#include "strap.h"
 
 int load_elf_from_inode(process_t* process, inode_t* elf){
     
@@ -42,7 +43,19 @@ prog_hdr_err:
 }
 
 int load_elf(process_t* process, char* path){
+
+    printf("ok!\n");
+     
+
+    process->heap_vm = alloc_vm(process, HEAP_SPACE, HEAP_SIZE, 
+        NULL, PTE_R | PTE_W | PTE_U, VM_NO_ALLOC ); 
+    vm_insert_pm(process->heap_vm, 
+    alloc_pm(0, 0, PG_SIZE));
+    LOG("ok\n");
+    heap_init(process->pagetable, 1);
+LOG("ok\n");
     inode_t* elf = look_up_path(get_root(), path, NULL);
+   LOG("ok\n"); 
     print_inode(elf);
     printf("inode:%p\n", elf);
     return load_elf_from_inode(process, elf);

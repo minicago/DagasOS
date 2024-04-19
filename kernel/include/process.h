@@ -61,4 +61,5 @@ int create_fd(process_t* process, file_t* file);
 void set_arg(process_t* process, int argc, char** argv);
 void prepare_initcode_process(process_t* process);
 process_t* fork_process(process_t* process);
+void exec_process(process_t* process, char* path);
 #endif

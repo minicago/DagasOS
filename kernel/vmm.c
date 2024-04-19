@@ -447,11 +447,12 @@ void vm_insert(process_t* process, vm_t* vm){
 int vm_rm(process_t* process, vm_t* rm_vm){
     if (process->vm_list == NULL || rm_vm == NULL) return 0;
     int cnt = 0;
-    for(vm_t* vm = process->vm_list; vm->next != NULL; vm = vm->next){
-        if(vm->next == rm_vm){
+    for(vm_t** vm = &(process->vm_list); *vm != NULL; vm = &((*vm)->next)){
+        while(*vm != NULL && *vm == rm_vm){
             cnt++;
-            vm->next = vm->next->next;
+            *vm = ((*vm)->next);
         }
+        if(*vm == NULL) break;
     }
     return cnt;
 }
@@ -463,4 +464,15 @@ vm_t* vm_lookup(vm_t* vm_list, uint64 va){
             return vm;
     }
     return NULL;
+}
+
+void vm_list_free(process_t* process, int deep){
+    for(vm_t** vm = &(process->vm_list); *vm != NULL; vm = &((*vm)->next)){
+        while(*vm != NULL && (!((*vm)->type & VM_GLOBAL) || deep)  ){
+            vm_t* next_vm  = ((*vm)->next);
+            free_vm(*vm);
+            *vm = next_vm;
+        }
+        if(*vm == NULL) break;
+    }
 }

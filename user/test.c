@@ -180,6 +180,9 @@ void test_chdir(void){
 
 int main(int argc, char* argv[]) {
     int pid = fork();
+    if(pid == 0){
+        execve("/test2",NULL, NULL);
+    }
     printf("pid: %d\n",pid);
     printf("RUNNING %s\n", argv[0]);
     test_printf();

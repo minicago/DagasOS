@@ -112,6 +112,7 @@ void heap_init(pagetable_t pagetable, int user);
 #define VM_THREAD_STACK 0x4
 #define VM_NO_FORK 0x8
 #define VM_NO_ALLOC 0x10
+#define VM_GLOBAL 0x20
 
 typedef struct vm_struct vm_t;
 typedef struct pm_struct pm_t;
@@ -140,5 +141,7 @@ void vm_insert(process_t* process, vm_t* vm);
 int vm_rm(process_t* process, vm_t* rm_vm);
 
 vm_t* vm_lookup(vm_t* vm_list, uint64 va);
+
+void vm_list_free(process_t* process, int deep);
 
 #endif

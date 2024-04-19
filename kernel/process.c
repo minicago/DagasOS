@@ -6,6 +6,7 @@
 #include "file.h"
 #include "console.h"
 #include "dagaslib.h"
+#include "elf.h"
 
 spinlock_t process_pool_lock;
 
@@ -46,23 +47,12 @@ void init_process(process_t* process){
 void prepare_initcode_process(process_t* process){
     // acquire_spinlock(&process->lock);
     
-    printf("ok!\n");
+    process->arg_vm = alloc_vm(process, ARG_PAGE, PG_SIZE, 
+        NULL, PTE_R | PTE_W | PTE_U, VM_GLOBAL );
 
     alloc_vm(process, TRAMPOLINE, PG_SIZE, 
-        alloc_pm(0, (uint64) trampoline, PG_SIZE), PTE_R | PTE_X , VM_PA_SHARED );
-    printf("ok!\n");
-    
-    
+    alloc_pm(0, (uint64) trampoline, PG_SIZE), PTE_R | PTE_X , VM_PA_SHARED | VM_GLOBAL);
 
-    process->arg_vm = alloc_vm(process, ARG_PAGE, PG_SIZE, 
-        NULL, PTE_R | PTE_W | PTE_U, 0 );        
-
-    process->heap_vm = alloc_vm(process, HEAP_SPACE, HEAP_SIZE, 
-        NULL, PTE_R | PTE_W | PTE_U, VM_NO_ALLOC ); 
-    vm_insert_pm(process->heap_vm, 
-    alloc_pm(0, 0, PG_SIZE));
-    printf("ok!\n");
-    heap_init(process->pagetable, 1);
     printf("ok!\n");
     
     for(int i=0;i<MAX_FD;i++){
@@ -133,7 +123,7 @@ void set_arg(process_t* process, int argc, char** argv){
     // uint64 pa = (uint64) palloc();
     // mappages(process->pagetable, ARG_PAGE, pa, PG_SIZE, PTE_W | PTE_U | PTE_R);
     // // sfencevma(ARG_PAGE, process->pid);
-    uint64 pa = va2pa(process->pagetable, ARG_PAGE);
+    uint64 pa = process->arg_vm->pm->pa;
     // printf("ok!\n");
     *(int*) pa = argc;
     for(int i = 0; i < argc; i++){
@@ -163,4 +153,11 @@ process_t* fork_process(process_t* process){
     process_new->parent = process;
     release_spinlock(&process_new->lock);
     return process_new; 
+}
+
+
+void exec_process(process_t* process, char* path){
+    vm_list_free(process, 0);
+    LOG("ok!");
+    load_elf(process, path);
 }

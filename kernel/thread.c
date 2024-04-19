@@ -167,3 +167,28 @@ int sys_fork(){
 void deattach_thread(thread_t* thread){
     thread->process->thread_count --;
 }
+
+void reset_stack(thread_t* thread){
+    free_vm(thread->stack_vm);
+    // thread->stack_vm = alloc_vm_stack(thread, TSTACK0, MAX_TSTACK_SIZE, 
+    // NULL, PTE_U | PTE_W | PTE_R, VM_LAZY_ALLOC | VM_THREAD_STACK);
+    // thread->trapframe->sp = TSTACK_BOTTOM;
+}
+
+int sys_exec(char* path){
+    char* buf = kmalloc(MAX_PATH);
+    LOG("buf:%p\n",buf);
+    copy_to_pa(buf, (uint64)path, MAX_PATH, 1);    
+    thread_t* thread = thread_pool + get_tid();
+    reset_stack(thread);
+    // LOG("buf:%p\n",buf);
+    exec_process(thread->process, path);
+    
+    entry_main(thread);
+    // uint64 name = (uint64)uvmalloc(thread->process, MAX_PATH);
+    // copy_to_va(thread->process->pagetable, name, buf, MAX_PATH);
+    
+    set_arg(thread->process, 1, &buf);
+    kfree(buf);
+    return 0;
+}
