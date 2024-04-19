@@ -5,6 +5,8 @@
 #include "types.h"
 #include "vmm.h"
 
+#define MAX_PATH 256
+
 #define MAX_INODE 128
 #define MAX_FILE 256
 #define MAX_DEV 16

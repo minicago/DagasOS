@@ -275,7 +275,9 @@ int load_from_inode_to_page(inode_t *inode, pagetable_t pagetable, uint64 va, in
 inode_t* look_up_path(inode_t* root,const char *ori_path, int* depth){
     inode_t* res = root;
     char *mem = palloc();
+    // LOG("%p\n",ori_path);
     strcpy(mem, ori_path);
+    // LOG("%p\n",mem);
     char* path = mem;
     char* filename = path;
     if(depth!=NULL) *depth = 0;

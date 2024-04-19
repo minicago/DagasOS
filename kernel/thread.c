@@ -182,7 +182,7 @@ int sys_exec(char* path){
     thread_t* thread = thread_pool + get_tid();
     reset_stack(thread);
     // LOG("buf:%p\n",buf);
-    exec_process(thread->process, path);
+    exec_process(thread->process, buf);
     
     entry_main(thread);
     // uint64 name = (uint64)uvmalloc(thread->process, MAX_PATH);

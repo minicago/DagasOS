@@ -158,6 +158,6 @@ process_t* fork_process(process_t* process){
 
 void exec_process(process_t* process, char* path){
     vm_list_free(process, 0);
-    LOG("ok!");
+    LOG("%s",path);
     load_elf(process, path);
 }
