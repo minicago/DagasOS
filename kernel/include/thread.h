@@ -97,4 +97,8 @@ int sys_fork();
 
 int sys_exec(char* path);
 
+int sys_exit(int ret);
+
+int sys_wait(int pid);
+
 #endif

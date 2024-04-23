@@ -52,9 +52,11 @@ int resolve_page_fault(){
     uint64 scause = 0, stval = 0;
     R_CSR(scause, scause);
     R_CSR(stval, stval);
-    printf("page_fault! va:%p\n", stval);
+    LOG("page_fault! va:%p\n", stval);
 
     vm_t* vm = vm_lookup(thread->stack_vm, stval);
+
+    if(vm == NULL) return 0;
 
     if(vm->type & VM_LAZY_ALLOC){
         // printf("vm: %p %p\n",vm->pagetable, thread->stack_pagetable);
@@ -116,7 +118,7 @@ void usertrap()
     R_CSR(sepc, sepc);
 
     thread_pool[tid].trapframe->epc = sepc;
-    
+    LOG("User trap\n scause = %p, sepc = %p\n", scause, sepc);
     switch (scause)
     {
     case SCAUSE_ECALL:
@@ -165,9 +167,9 @@ void strap_handler()
     R_CSR(sepc, sepc);
     R_CSR(sip, sip);
     R_CSR(scause, scause);
-
+    
     if((which_dev = dev_intr()) == 0) {
-        printf("scause = %p, stval = %p, sscratch = %p, sepc = %p, sip = %p\n", scause, stval, sscratch, sepc, sip);
+        LOG("Unknown trap\n scause = %p, stval = %p, sscratch = %p, sepc = %p, sip = %p\n", scause, stval, sscratch, sepc, sip);
         while (1)
             ;
     } else {

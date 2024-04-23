@@ -209,7 +209,7 @@ void uvminit(process_t* process)
 
 void free_user_pagetable(pagetable_t pagetable)
 {
-
+    LOG("pagetable:%p\n",pagetable);
     walk_and_free(pagetable, 2);
 }
 
@@ -379,26 +379,30 @@ vm_t* alloc_vm_r(vm_t** vm_list, pagetable_t pagetable, uint64 va, uint64 size, 
     vm->pagetable = pagetable;
     vm->va = va;
     vm->size = size;
-    vm->pm = pm;
+    vm->pm = NULL;
     vm->perm = perm;
     vm->type = type;
+    LOG("type:%d, pm:%p\n",type, pm);
 
 
-    if(vm->pm == NULL && !(vm->type & VM_LAZY_ALLOC) && !(vm->type & VM_NO_ALLOC)){
-        vm->pm = alloc_pm(0, 0, vm->size);
+    if(pm == NULL && !(vm->type & VM_LAZY_ALLOC) && !(vm->type & VM_NO_ALLOC)){
+        pm = alloc_pm(0, 0, vm->size);
+        vm->pm = pm;
     }
+    if ((vm->type & VM_PA_SHARED)) vm->pm = pm;
 
     
 
-    for(pm_t* pm = vm->pm; pm != NULL; pm = pm->next){
+    for(pm_t* pm_i = pm; pm_i != NULL; pm_i = pm_i->next){
         if (! (vm->type & VM_PA_SHARED)) {
-            if(pm->cnt == 0){
-                pm->cnt = 1;
+            if(pm_i->cnt == 0){
+                pm_i->cnt = 1;
             } else {
-                pm_t* pa_new = alloc_pm(pm->v_offset, 0, pm->size);
+                LOG("pm->va%p\n",vm->va + pm_i->v_offset);
+                pm_t* pa_new = alloc_pm(pm_i->v_offset, 0, pm_i->size);
                 pa_new->next = vm->pm;
                 vm->pm = pa_new;
-                memcpy((void*) pa_new->pa, (void*) pm->pa, pm->size);
+                memcpy((void*) pa_new->pa, (void*) pm_i->pa, pm_i->size);
                 pa_new->cnt = 1;
             }
         } else pm->cnt ++;
@@ -435,6 +439,7 @@ void free_vm(vm_t* vm){
 void vm_insert_pm(vm_t* vm, pm_t* pm){
     mappages(vm->pagetable, vm->va + pm->v_offset, pm->pa, pm->size, vm->perm);
     pm->next = vm->pm;
+    pm->cnt = 1;
     vm->pm = pm;
 }
 
@@ -464,8 +469,6 @@ vm_t* vm_lookup(vm_t* vm_list, uint64 va){
     }
     return NULL;
 }
-
-#define VM_LIST_FREE_DEEP 0x1
 
 void vm_list_free(process_t* process, int deep){
     for(vm_t** vm = &(process->vm_list); *vm != NULL; vm = &((*vm)->next)){

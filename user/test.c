@@ -180,11 +180,13 @@ void test_chdir(void){
 
 int main(int argc, char* argv[]) {
     int pid = fork();
+    printf("pid: %d\n",pid);
     if(pid == 0){
         execve("test2",NULL, NULL);
     }
-    printf("pid: %d\n",pid);
-    printf("RUNNING %s\n", argv[0]);
+    printf("pid:%d RUNNING %s\n",pid, argv[0]);
+    printf("pid:%d user: exit\n",pid);
+    
     test_printf();
     test_getcwd();
     test_open_read_close();
@@ -194,7 +196,8 @@ int main(int argc, char* argv[]) {
     test_dup2();
     test_getdents();
     test_chdir();
+    exit(0);
     // test_fstat();
-    printf("user: exit");
+    
     return 0;
 }

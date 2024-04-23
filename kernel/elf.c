@@ -21,7 +21,7 @@ int load_elf_from_inode(process_t* process, inode_t* elf){
         if(read_inode(elf, off, sizeof(prog_hdr), &prog_hdr) != sizeof(prog_hdr_t))
             goto prog_hdr_err;
         if(prog_hdr.type != ELF_PROG_LOAD) continue;
-        printf("vaddr:%p paddr:%p off:%p filesz:%p memsz:%p, flags:%p\n",prog_hdr.vaddr,prog_hdr.paddr,prog_hdr.off, prog_hdr.filesz, prog_hdr.memsz, prog_hdr.flags);
+        LOG("vaddr:%p paddr:%p off:%p filesz:%p memsz:%p, flags:%p\n",prog_hdr.vaddr,prog_hdr.paddr,prog_hdr.off, prog_hdr.filesz, prog_hdr.memsz, prog_hdr.flags);
         // addpages(process->pagetable, prog_hdr.vaddr, prog_hdr.memsz, FLAGS2PERM(prog_hdr.flags));
         int vm_type = (prog_hdr.flags & ELF_PROG_FLAG_WRITE)?VM_PA_SHARED:0;
        
@@ -32,7 +32,7 @@ int load_elf_from_inode(process_t* process, inode_t* elf){
         // load_from_inode_to_page(elf, process->pagetable, prog_hdr.vaddr, prog_hdr.off, prog_hdr.filesz);
     } 
     
-    printf("load_elf_from_inode: pagetable:%p\n", process->pagetable);
+    LOG("pagetable:%p\n", process->pagetable);
     return 1;
 
 elf_hdr_err:
@@ -43,20 +43,13 @@ prog_hdr_err:
 }
 
 int load_elf(process_t* process, char* path){
-
-    printf("ok!\n");
-     
-
     process->heap_vm = alloc_vm(process, HEAP_SPACE, HEAP_SIZE, 
         NULL, PTE_R | PTE_W | PTE_U, VM_NO_ALLOC ); 
     vm_insert_pm(process->heap_vm, 
     alloc_pm(0, 0, PG_SIZE));
-    LOG("ok\n");
     heap_init(process->pagetable, 1);
-LOG("ok\n");
     inode_t* elf = look_up_path(get_root(), path, NULL);
-   LOG("ok\n"); 
     print_inode(elf);
-    printf("inode:%p\n", elf);
+    LOG("inode:%p\n", elf);
     return load_elf_from_inode(process, elf);
 }

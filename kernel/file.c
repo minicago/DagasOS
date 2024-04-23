@@ -8,6 +8,7 @@
 #include "fs.h"
 #include "coro.h"
 
+
 static file_t files[MAX_FILE];
 static spinlock_t files_lock;
 

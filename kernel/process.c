@@ -55,8 +55,6 @@ void prepare_initcode_process(process_t* process){
 
     alloc_vm(process, TRAMPOLINE, PG_SIZE, 
     alloc_pm(0, (uint64) trampoline, PG_SIZE), PTE_R | PTE_X , VM_PA_SHARED | VM_GLOBAL);
-
-    printf("ok!\n");
     
     for(int i=0;i<MAX_FD;i++){
         process->open_files[i] = NULL;
@@ -130,9 +128,9 @@ void set_arg(process_t* process, int argc, char** argv){
     // printf("ok!\n");
     *(int*) pa = argc;
     for(int i = 0; i < argc; i++){
-        char* ptr = uvmalloc(process, strlen(argv[i]));
-        printf("ptr:%p\n",ptr);
-        copy_to_va(process->pagetable, (uint64) ptr, argv[i], strlen(argv[i]));
+        char* ptr = uvmalloc(process, strlen(argv[i]) + 1);
+        // printf("ptr:%p\n",ptr);
+        copy_to_va(process->pagetable, (uint64) ptr, argv[i], strlen(argv[i]) + 1);
         *(char**) (pa + 8 + i * 8) = ptr;
     }
     // release_spinlock(&process->lock);
@@ -168,7 +166,7 @@ process_t* fork_process(process_t* process){
 
 void exec_process(process_t* process, char* path){
     vm_list_free(process, 0);
-    LOG("%s",path);
+    LOG("%s %d",path, strlen(path));
     load_elf(process, path);
 }
 
@@ -180,7 +178,8 @@ void release_zombie(process_t* process){
 void release_process(process_t* process){
     acquire_spinlock(&wait_lock);
     vm_list_free(process, 1);
-    awake_wait_queue(process->parent->wait_child, process->pid);
+    if(process->parent != NULL)
+        awake_wait_queue(process->parent->wait_child, process->pid);
     awake_wait_queue(process->wait_self, process->pid);
     free_wait_queue(process->wait_child);
     free_wait_queue(process->wait_self);

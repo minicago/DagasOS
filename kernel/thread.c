@@ -26,7 +26,7 @@ void thread_pool_init(){
         *(void**)(thread_pool+i) = thread_pool + i + 1;
         
     }
-    printf("thread_pool_0:%p %p", thread_pool ,*(void**) (thread_pool + 0));
+    LOG("thread_pool_0:%p %p", thread_pool ,*(void**) (thread_pool + 0));
     release_spinlock(&thread_pool_lock);
 }
 
@@ -90,7 +90,7 @@ void free_thread(thread_t* thread){
 }
 
 void entry_to_user(){
-    printf("entry to user\n");
+    LOG("entry to user %d\n", get_tid());
     int tid = get_tid();
     if(tid == 1) printf("!!!!fork!!!!\n");
     if(tid == -1) panic("wrong coro");
@@ -98,9 +98,9 @@ void entry_to_user(){
     C_CSR(sstatus, SSTATUS_SPP);
     W_CSR(sscratch, thread_pool[tid].trapframe);
     switch_stack_pagetable(thread_pool[tid].process->pagetable, thread_pool[tid].stack_pagetable);
-    printf("sp:%p page_table:%p\n",thread_pool[tid].trapframe->kernel_sp, thread_pool[tid].process->pagetable);
-    printf("go to user\n");
-    printf("trampoline:%p\n", *(uint64*) ( va2pa(thread_pool[tid].stack_pagetable, TRAMPOLINE)) );
+    // printf("sp:%p page_table:%p\n",thread_pool[tid].trapframe->kernel_sp, thread_pool[tid].process->pagetable);
+    // printf("go to user\n");
+    // printf("trampoline:%p\n", *(uint64*) ( va2pa(thread_pool[tid].stack_pagetable, TRAMPOLINE)) );
     set_strap_uservec();
     // printf("%p\n", PTE2PA( * walk( thread_pool[tid].process->pagetable ,0, 0)) );
     // printf("%p\n", PTE2PA( * walk( thread_pool[tid].process->pagetable ,0x1000, 0)) );
@@ -132,6 +132,7 @@ void clone_thread(thread_t *thread, thread_t *thread_new){
     thread_new->trapframe->kernel_sp = TRAPFRAME0(thread_new->tid);
     // thread_new->trapframe->sp = thread->trapframe->sp - TSTACK0(thread->tid) + TSTACK0(thread_new->tid);
     alloc_vm_stack(thread_new, TSTACK0, MAX_TSTACK_SIZE, thread->stack_vm->pm, thread->stack_vm->perm, thread->stack_vm->type);
+    LOG("thread->vm->pm:%p\n",thread->stack_vm->pm);
     thread_new->state = T_READY;
     // for(uint64 va = thread->user_stack_bottom - thread->user_stack_size; va < thread->user_stack_bottom; va += PG_SIZE){
     //     uint64 pa = va2pa(thread->process->pagetable, va);
@@ -143,16 +144,16 @@ void clone_thread(thread_t *thread, thread_t *thread_new){
 }
 
 int sys_fork(){
-    printf("fork!\n");
+    // printf("fork!\n");
     thread_t* thread = thread_pool+get_tid();
-    printf("fork: 0\n");
+    // printf("fork: 0\n");
     thread_t* thread_new = alloc_thread();
     init_thread(thread_new);
-    printf("fork: 1\n");
+    // printf("fork: 1\n");
     process_t* process_new = fork_process(thread->process);
-    printf("fork: 2\n");
+    // printf("fork: 2\n");
     attach_to_process(thread_new, process_new);
-    printf("tid:%p\n", thread_new - thread_pool );
+    printf("new tid:%p\n", thread_new - thread_pool );
     init_thread_manager_coro(thread_new->tid);
     clone_thread(thread, thread_new);
     
@@ -168,17 +169,21 @@ int sys_fork(){
 }
 
 void deattach_thread(thread_t* thread){
+    LOG("deattach start\n");
     free_vm(thread->stack_vm);
-    free_user_pagetable(thread->stack_pagetable);
+    pfree(thread->stack_pagetable);
+    // free_user_pagetable(thread->stack_pagetable);
     unmappages(thread->process->pagetable, COROSTACK0(thread->tid), PG_SIZE, 0);
     acquire_spinlock(&thread->process->lock);
     int thread_cnt = --thread->process->thread_count;
     release_spinlock(&thread->process->lock);
+    LOG("deattach fin\n");
     if(thread_cnt == 0) release_process(thread->process);
     free_thread(thread);
 }
 
 void reset_stack(thread_t* thread){
+    LOG("%p\n",thread->stack_vm->pm->pa);
     free_vm(thread->stack_vm);
     // thread->stack_vm = alloc_vm_stack(thread, TSTACK0, MAX_TSTACK_SIZE, 
     // NULL, PTE_U | PTE_W | PTE_R, VM_LAZY_ALLOC | VM_THREAD_STACK);
@@ -188,10 +193,11 @@ void reset_stack(thread_t* thread){
 int sys_exec(char* path){
     char* buf = kmalloc(MAX_PATH);
     LOG("buf:%p\n",buf);
-    copy_to_pa(buf, (uint64)path, MAX_PATH, 1);    
+    copy_to_pa(buf, (uint64)path, MAX_PATH, 1);
+    LOG("ok\n");
     thread_t* thread = thread_pool + get_tid();
     reset_stack(thread);
-    // LOG("buf:%p\n",buf);
+    LOG("ok2\n");
     exec_process(thread->process, buf);
     
     entry_main(thread);

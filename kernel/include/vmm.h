@@ -141,6 +141,7 @@ int vm_rm(process_t* process, vm_t* rm_vm);
 
 vm_t* vm_lookup(vm_t* vm_list, uint64 va);
 
+#define VM_LIST_FREE_DEEP 0x1
 void vm_list_free(process_t* process, int deep);
 
 #endif

@@ -20,7 +20,7 @@ void switch_coro(coro_t* dest){
 }
 
 void scheduler_loop(){
-    printf("enter loop!\n");
+    LOG("enter loop!\n");
     while (1)
     {
         for (int i = 0 ; i < MAX_THREAD; i++){
@@ -68,7 +68,7 @@ void init_thread_manager_coro(uint64 tid){
     // sfencevma(va, thread_pool[tid].process->pid);
     thread_pool[tid].trapframe = (trapframe_t*) TRAPFRAME0(tid);
     thread_pool[tid].trapframe->kernel_sp = (uint64) thread_pool[tid].trapframe;
-    printf("init_thread_manager_coro: kernel_sp= %p\n",&(thread_pool[tid].trapframe->kernel_sp));
+    LOG("init_thread_manager_coro: kernel_sp= %p\n",&(thread_pool[tid].trapframe->kernel_sp));
     set_sp(&thread_manager_coro[tid], (uint64) thread_pool[tid].trapframe);
 
     

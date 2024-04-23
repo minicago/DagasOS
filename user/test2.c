@@ -7,4 +7,5 @@
 
 int main(int argc, char* argv[]) {
     printf("!!I am test2!\n");
+    exit(0);
 }
