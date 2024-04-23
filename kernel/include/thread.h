@@ -5,12 +5,14 @@
 #include "process.h"
 #include "vmm.h"
 #include "spinlock.h"
+#include "waitqueue.h"
+
+typedef struct wait_queue_struct wait_queue_t;
 
 enum THREAD_STATE {
     T_RUNNING,
     T_READY,
     T_SLEEPING,
-    T_ZOMBIE,
 };
 
 typedef struct trapframe_struct{
@@ -54,6 +56,7 @@ typedef struct trapframe_struct{
 
 typedef struct thread_struct{
     spinlock_t lock;
+    wait_queue_t* waiting;
 
     enum THREAD_STATE state;
     trapframe_t* trapframe;
@@ -87,6 +90,8 @@ void entry_to_user();
 void sched();
 
 void sleep();
+
+void awake(thread_t* thread);
 
 int sys_fork();
 

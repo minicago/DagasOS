@@ -207,12 +207,11 @@ void uvminit(process_t* process)
     // heap_init(process->pagetable, 1);
 }
 
-// void free_user_pagetable(pagetable_t pagetable)
-// {
-//     unmappages(pagetable, TRAMPOLINE, PG_SIZE, 0);
+void free_user_pagetable(pagetable_t pagetable)
+{
 
-//     walk_and_free(pagetable, 2);
-// }
+    walk_and_free(pagetable, 2);
+}
 
 // Copy from user to kernel.
 // Copy len bytes to dst from virtual address srcva in a given page table.
@@ -336,7 +335,7 @@ void* vmalloc_r(pagetable_t pagetable, int size, int user, int pid){
             vm_insert_pm(process_pool[pid].heap_vm, 
                 alloc_pm((uint64) brk + sizeof(brk_t) + brk->size - HEAP_SPACE, pa, PG_SIZE) );
         } else mappages(pagetable, (uint64) brk + sizeof(brk_t) + brk->size, pa, PG_SIZE,(user?PTE_U:0) | PTE_W | PTE_R );
-        if(size <= MIN_ALL_SFENCE_PG * PG_SIZE) // sfencevma((uint64) brk + sizeof(brk_t) + brk->size, pid);
+        // if(size <= MIN_ALL_SFENCE_PG * PG_SIZE) // sfencevma((uint64) brk + sizeof(brk_t) + brk->size, pid);
         brk->size += PG_SIZE;
     }
     
@@ -466,9 +465,11 @@ vm_t* vm_lookup(vm_t* vm_list, uint64 va){
     return NULL;
 }
 
+#define VM_LIST_FREE_DEEP 0x1
+
 void vm_list_free(process_t* process, int deep){
     for(vm_t** vm = &(process->vm_list); *vm != NULL; vm = &((*vm)->next)){
-        while(*vm != NULL && (!((*vm)->type & VM_GLOBAL) || deep)  ){
+        while(*vm != NULL && (!((*vm)->type & VM_GLOBAL) || deep == 1)  ){
             vm_t* next_vm  = ((*vm)->next);
             free_vm(*vm);
             *vm = next_vm;

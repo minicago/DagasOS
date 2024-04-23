@@ -8,7 +8,7 @@
 #include "dagaslib.h"
 #include "elf.h"
 
-spinlock_t process_pool_lock;
+spinlock_t process_pool_lock, wait_lock;
 
 process_t process_pool[MAX_PROCESS];
 
@@ -36,11 +36,14 @@ void init_process(process_t* process){
     acquire_spinlock(&process->lock);
     uvminit(process);
     // process->pagetable = alloc_user_pagetable();
+    process->wait_child = alloc_wait_queue(WAIT_QUEUE_ALLRELEASE);
+    process->wait_self = alloc_wait_queue(WAIT_QUEUE_ALLRELEASE);
     process->thread_count = 0;
     process->pid = process - process_pool;
-
-
-
+    process->parent = NULL;
+    process->child_list = NULL;
+    process->prev = NULL;
+    process->next = NULL;
     // release_spinlock(&process->lock);
 }
 
@@ -127,9 +130,9 @@ void set_arg(process_t* process, int argc, char** argv){
     // printf("ok!\n");
     *(int*) pa = argc;
     for(int i = 0; i < argc; i++){
-        char* ptr = uvmalloc(process, 7);
+        char* ptr = uvmalloc(process, strlen(argv[i]));
         printf("ptr:%p\n",ptr);
-        copy_to_va(process->pagetable, (uint64) ptr, argv[i], 7);
+        copy_to_va(process->pagetable, (uint64) ptr, argv[i], strlen(argv[i]));
         *(char**) (pa + 8 + i * 8) = ptr;
     }
     // release_spinlock(&process->lock);
@@ -146,11 +149,18 @@ process_t* fork_process(process_t* process){
         if(process->arg_vm == vm) process_new->arg_vm = vm_new;
         if(process->heap_vm == vm) process_new->heap_vm = vm_new;
     }
+    LOG("vm copy done!\n");
     for(int i = 0; i < MAX_FD; i++){
         process_new->open_files[i] = process->open_files[i];
     }
     process_new->cwd = process->cwd;
     process_new->parent = process;
+    process_new->prev = &process->child_list;
+    if(process_new->child_list != NULL) 
+        process->child_list->prev = &process_new->next;
+    process_new->next = process->child_list;
+    process->child_list = process_new;  
+    LOG("child add done!\n");
     release_spinlock(&process_new->lock);
     return process_new; 
 }
@@ -160,4 +170,31 @@ void exec_process(process_t* process, char* path){
     vm_list_free(process, 0);
     LOG("%s",path);
     load_elf(process, path);
+}
+
+void release_zombie(process_t* process){
+    if(process->prev != NULL) *(process->prev) = process->next;
+    free_process(process);
+}
+
+void release_process(process_t* process){
+    acquire_spinlock(&wait_lock);
+    vm_list_free(process, 1);
+    awake_wait_queue(process->parent->wait_child, process->pid);
+    awake_wait_queue(process->wait_self, process->pid);
+    free_wait_queue(process->wait_child);
+    free_wait_queue(process->wait_self);
+    free_user_pagetable(process->pagetable);
+    for(process_t* child = process->child_list; child != NULL; child = child->next){
+        acquire_spinlock(&child->lock);
+        child->parent = NULL;
+        if(child->state == ZOMBIE) {
+            release_zombie(child);
+        }
+        release_spinlock(&child->lock);
+    }    
+    if(process->parent == NULL){
+        release_zombie(process);
+    }else process->state = ZOMBIE;
+    release_spinlock(&wait_lock);
 }

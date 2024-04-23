@@ -57,10 +57,13 @@ void init_thread_manager_coro(uint64 tid){
     // uint64 pa = (uint64)palloc();
     uint64 va = thread_manager_coro[tid].coro_stack_bottom - PG_SIZE;
     
-    pm_t* pm = alloc_pm(0, 0, PG_SIZE);
-    alloc_vm(thread_pool[tid].process, va, PG_SIZE, 
-        pm, PTE_W | PTE_R, VM_NO_FORK | VM_GLOBAL);
-    mappages(kernel_pagetable, va, pm->pa, PG_SIZE, PTE_W | PTE_R) ;
+    uint64 pa = va2pa(kernel_pagetable, va);
+    if (pa == 0) {
+        pa = (uint64) palloc();
+        mappages(kernel_pagetable, va, pa, PG_SIZE, PTE_W | PTE_R) ;
+    }
+    mappages(thread_pool[tid].process->pagetable, va, pa ,PG_SIZE, PTE_W | PTE_R);
+    
     // sfencevma(va, MAX_THREAD);
     // sfencevma(va, thread_pool[tid].process->pid);
     thread_pool[tid].trapframe = (trapframe_t*) TRAPFRAME0(tid);

@@ -82,6 +82,7 @@ thread_t* alloc_thread(){
 }
 
 void free_thread(thread_t* thread){
+    thread->state = T_RUNNING;
     acquire_spinlock(&thread_pool_lock);
     *(thread_t**) thread = free_thread_head;
     free_thread_head = thread;
@@ -120,8 +121,10 @@ void sleep(){
     sched();
 }
 
-void awake(int tid){
-    thread_pool[tid].state = T_READY;
+void awake(thread_t* thread){
+    acquire_spinlock(&thread->lock);
+    thread->state = T_READY;
+    release_spinlock(&thread->lock);
 }
 
 void clone_thread(thread_t *thread, thread_t *thread_new){
@@ -165,7 +168,14 @@ int sys_fork(){
 }
 
 void deattach_thread(thread_t* thread){
-    thread->process->thread_count --;
+    free_vm(thread->stack_vm);
+    free_user_pagetable(thread->stack_pagetable);
+    unmappages(thread->process->pagetable, COROSTACK0(thread->tid), PG_SIZE, 0);
+    acquire_spinlock(&thread->process->lock);
+    int thread_cnt = --thread->process->thread_count;
+    release_spinlock(&thread->process->lock);
+    if(thread_cnt == 0) release_process(thread->process);
+    free_thread(thread);
 }
 
 void reset_stack(thread_t* thread){
@@ -191,4 +201,40 @@ int sys_exec(char* path){
     set_arg(thread->process, 1, &buf);
     kfree(buf);
     return 0;
+}
+
+int sys_exit(int ret){
+    deattach_thread(thread_pool + get_tid() );
+    sched();
+    return ret;
+}
+
+int sys_wait(int pid){
+    thread_t* thread = thread_pool + get_tid();
+    int child_cnt = 0;
+    uint64 child_pid = 0;
+    acquire_spinlock(&wait_lock);
+    for(process_t* child = thread->process->child_list; child != NULL; child = child->next){
+        acquire_spinlock(&child->lock);
+        if(pid == -1 || pid == child->pid){
+            child_cnt++;
+            if(child->state == ZOMBIE){
+                release_spinlock(&child->lock);
+                release_spinlock(&wait_lock);
+                release_zombie(child);
+                return child->pid;
+            } else if(pid == child->pid) {
+                wait_queue_push_back(child->wait_self, thread, &child_pid);
+            }
+        }
+        release_spinlock(&child->lock);
+    }
+    if(child_cnt == 0) return -1;
+    if(pid == -1) 
+        wait_queue_push_back(thread->process->wait_child, thread, &child_pid);
+    thread->state = T_SLEEPING;
+    release_spinlock(&wait_lock);
+    sched();
+    release_zombie(thread_pool[child_pid].process);
+    return child_pid;   
 }

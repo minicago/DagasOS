@@ -6,9 +6,11 @@
 #include "spinlock.h"
 #include "fs.h"
 #include "file.h"
+#include "waitqueue.h"
+
+typedef struct wait_queue_struct wait_queue_t;
 
 #define MAX_PROCESS 256
-#define MAX_PATH 256
 
 // TIP: To satisfy the requirement of test's entry
 #define USER_ENTRY 0x00001000ull
@@ -32,6 +34,9 @@ struct process_struct{
     // basic information
     enum PROCESS_STATE state;
     int64 pid;
+    wait_queue_t *wait_child, *wait_self;
+
+
 
     vm_t* vm_list;
     vm_t* arg_vm;
@@ -41,7 +46,8 @@ struct process_struct{
 
     // sub process
     process_t* parent;
-    // linked_list_t* child; // current wo don't save children.
+    process_t* child_list;
+    process_t **prev, *next;
 
     // threads;
     int thread_count;
@@ -50,6 +56,7 @@ struct process_struct{
 };
 
 extern process_t process_pool[];
+extern spinlock_t wait_lock;
 
 void process_pool_init();
 void init_process(process_t* process);
@@ -62,4 +69,8 @@ void set_arg(process_t* process, int argc, char** argv);
 void prepare_initcode_process(process_t* process);
 process_t* fork_process(process_t* process);
 void exec_process(process_t* process, char* path);
+
+void release_zombie(process_t* process);
+void release_process(process_t* process);
+
 #endif
