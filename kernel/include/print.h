@@ -6,10 +6,11 @@
 #include "uart.h"
 #include "types.h"
 #include "defs.h"
+#include "coro.h"
 
 #ifndef LOG
 #define LOG(format, ...) \
-    printf("%s:%d in %s ", __FILE__, __LINE__, __FUNCTION__); \
+    printf("TID:%d %s:%d in %s ",get_tid(), __FILE__, __LINE__, __FUNCTION__); \
     printf(format, ##__VA_ARGS__)
 #endif
 

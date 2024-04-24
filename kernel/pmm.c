@@ -124,14 +124,14 @@ int buddy_alloc(int size) {
          MAX(buddy_tree[LE_CHILD(index)], buddy_tree[RI_CHILD(index)]);
         index = PARENT(index);
     }
-    LOG("%p\n",offset);
+    // LOG("%p\n",offset);
     return offset;
 }
 
 int buddy_free(int offset) {
     int node_size, index = 0;
     int left_longest, right_longest, free_num;
-    LOG("%p\n",offset);
+    // LOG("%p\n",offset);
     assert(offset >= 0 && offset < buddy_size);
 
     node_size = 1;

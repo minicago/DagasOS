@@ -2,7 +2,7 @@
 #define __CORO__H__
 
 #include "types.h"
-#include "thread.h"
+// #include "thread.h"
 
 typedef struct env_struct {
   uint64 ra;

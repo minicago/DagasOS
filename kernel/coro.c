@@ -32,9 +32,8 @@ void scheduler_loop(){
                     thread_pool[i].state = T_RUNNING;
                     switch_coro(&thread_manager_coro[i]);
                     printf("STATE:%d ***********************\n",thread_pool[i].state);
-                }
-                
-                // release_spinlock(&thread_pool[i].lock);
+                    log_vm(thread_pool[i].stack_vm);
+                } else release_spinlock(&thread_pool[i].lock);
             }
         }
     }
