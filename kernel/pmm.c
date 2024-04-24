@@ -270,9 +270,9 @@ pm_t* alloc_pm(uint64 v_offset, uint64 pa, uint64 size){
     pm_t* pm = kmalloc(sizeof(pm_t));
     pm->next = NULL;
     pm->v_offset = v_offset;
+    pm->size = size;
     if(pa == 0) pm->pa = (uint64) palloc_n(PG_CEIL(size)/ PG_SIZE);
     else pm->pa = pa;
-    pm->size = size;
     pm->cnt = 0;
     return pm;
 }

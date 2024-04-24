@@ -124,6 +124,5 @@ clean :
 	@make -C $(TEST)/$U clean
 	rm -rf build/* \
 	sdcard.img \
-	.gdbinit \
 	kernel-qemu \
 	sbi-qemu 

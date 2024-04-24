@@ -10,7 +10,8 @@
 typedef struct wait_queue_struct wait_queue_t;
 
 enum THREAD_STATE {
-    T_UNUSED,  
+    T_UNUSED,
+    T_PREPARING,
     T_RUNNING,
     T_READY,
     T_SLEEPING,
@@ -56,6 +57,7 @@ typedef struct trapframe_struct{
 } trapframe_t;
 
 typedef struct thread_struct{
+    thread_t* next;
     spinlock_t lock;
     wait_queue_t* waiting;
 

@@ -112,6 +112,11 @@ void syscall_handler(trapframe_t *trapframe)
         trapframe->a0 = sys_exec(path);
         break;
     }
+    case SYS_wait4:
+    {
+        trapframe->a0 = sys_wait(trapframe->a0);
+        break;
+    }
     default:
     {
         printf("syscall_handler: Unknown system call\n");

@@ -484,3 +484,13 @@ void vm_list_free(process_t* process, int deep){
         if(*vm == NULL) break;
     }
 }
+
+void log_vm(vm_t* vm){
+    printf("***********************\n");
+    printf("va:[%p, %p) size:%p\n", vm->va, vm->va + vm->size, vm->size);
+    for(pm_t* pm = vm->pm; pm != NULL; pm = pm->next){
+        printf("va:[%p, %p) pa:[%p, %p) size:%p\n", vm->va + pm->v_offset, vm->va + pm->v_offset + pm->size, 
+        pm->pa, pm->pa + pm->size , pm->size);
+    }
+    printf("***********************\n");
+}

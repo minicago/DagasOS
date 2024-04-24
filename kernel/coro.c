@@ -26,7 +26,8 @@ void scheduler_loop(){
         for (int i = 0 ; i < MAX_THREAD; i++){
             if (try_acquire_spinlock(&thread_pool[i].lock) != 0){
                 if(thread_pool[i].state == T_READY){
-                    printf("USER:%d ***********************\n",i);
+                    printf("USER:%d pid:%d***********************\n",i, thread_pool[i].process->pid);
+                    log_vm(thread_pool[i].stack_vm);
                     assert(i == thread_pool[i].tid);
                     thread_pool[i].state = T_RUNNING;
                     switch_coro(&thread_manager_coro[i]);
@@ -53,7 +54,9 @@ void clean_s(coro_t* coro){
 
 // only work after that thread has been attached to process
 void init_thread_manager_coro(uint64 tid){
+    // LOG("%p\n", tid);
     clean_s(&thread_manager_coro[tid]);
+    // LOG("ok!\n");
     thread_manager_coro[tid].coro_stack_bottom = COROSTACK_BOTTOM(tid);
     thread_manager_coro[tid].coro_stack_size = PG_SIZE;
 

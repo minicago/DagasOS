@@ -65,6 +65,7 @@ int main(){
     thread_t* t = alloc_thread();
     printf("get thread\n");
     init_thread(t);
+    // LOG("%p\n",t->tid);
     printf("init thread\n");
     attach_to_process(t, p);
     printf("attached done\n");

@@ -183,6 +183,8 @@ int main(int argc, char* argv[]) {
     printf("pid: %d\n",pid);
     if(pid == 0){
         execve("test2",NULL, NULL);
+    } else {
+        waitpid(pid, NULL, 0);
     }
     printf("pid:%d RUNNING %s\n",pid, argv[0]);
     
