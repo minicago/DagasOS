@@ -6,6 +6,7 @@
 #define SIZE 4096+10
 
 int main(int argc, char* argv[]) {
+    fork();
     printf("!!I am test2!\n");
     exit(0);
 }

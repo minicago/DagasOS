@@ -10,6 +10,7 @@
 typedef struct wait_queue_struct wait_queue_t;
 
 enum THREAD_STATE {
+    T_UNUSED,  
     T_RUNNING,
     T_READY,
     T_SLEEPING,

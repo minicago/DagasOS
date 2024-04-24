@@ -178,12 +178,15 @@ void release_zombie(process_t* process){
 void release_process(process_t* process){
     acquire_spinlock(&wait_lock);
     vm_list_free(process, 1);
+    LOG("vm_list_free done\n");
     if(process->parent != NULL)
         awake_wait_queue(process->parent->wait_child, process->pid);
     awake_wait_queue(process->wait_self, process->pid);
     free_wait_queue(process->wait_child);
     free_wait_queue(process->wait_self);
+    LOG("free_wait_queue done\n");
     free_user_pagetable(process->pagetable);
+    LOG("free_user_ done\n");
     for(process_t* child = process->child_list; child != NULL; child = child->next){
         acquire_spinlock(&child->lock);
         child->parent = NULL;

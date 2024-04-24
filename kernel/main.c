@@ -74,6 +74,7 @@ int main(){
     printf("init manager done\n");
    
     entry_main(t);
+    t->state = T_READY;
     release_spinlock(&t->lock);
     printf("entry done\n");
 

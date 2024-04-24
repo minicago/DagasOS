@@ -105,6 +105,7 @@ void uvfree(process_t* process, void* ptr);
 
 void heap_init(pagetable_t pagetable, int user);
 void free_user_pagetable(pagetable_t pagetable);
+void free_thread_stack_pagetable(pagetable_t pagetable);
 
 #define VM_PA_SHARED 0x1
 #define VM_LAZY_ALLOC 0x2

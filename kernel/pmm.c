@@ -124,14 +124,14 @@ int buddy_alloc(int size) {
          MAX(buddy_tree[LE_CHILD(index)], buddy_tree[RI_CHILD(index)]);
         index = PARENT(index);
     }
-
+    LOG("%p\n",offset);
     return offset;
 }
 
 int buddy_free(int offset) {
     int node_size, index = 0;
     int left_longest, right_longest, free_num;
-
+    LOG("%p\n",offset);
     assert(offset >= 0 && offset < buddy_size);
 
     node_size = 1;
@@ -267,10 +267,10 @@ void pmem_init() {
 }
 
 pm_t* alloc_pm(uint64 v_offset, uint64 pa, uint64 size){
-    pm_t* pm = palloc_n(PG_CEIL (sizeof(pm_t)) / PG_SIZE);
+    pm_t* pm = kmalloc(sizeof(pm_t));
     pm->next = NULL;
     pm->v_offset = v_offset;
-    if(pa == 0) pm->pa = (uint64) kmalloc(size);
+    if(pa == 0) pm->pa = (uint64) palloc_n(PG_CEIL(size)/ PG_SIZE);
     else pm->pa = pa;
     pm->size = size;
     pm->cnt = 0;
@@ -280,7 +280,8 @@ pm_t* alloc_pm(uint64 v_offset, uint64 pa, uint64 size){
 void free_pm(pm_t* pm){
     pm->cnt--;
     if(pm->cnt == 0) {
-        kfree((void*) pm->pa);
+        LOG("%p\n",pm->pa);
+        pfree((void*) pm->pa);
         kfree(pm);
     }
 }

@@ -7,7 +7,7 @@
 #ifndef assert
 #define assert(f) \
     if (!(f))     \
-	panic("\n --- Assert Fatal ! ---\n")
+	panic("\n --- Assert Fatal ! ---\n"#f)
 #endif
 
 void* memcpy(void *dest, const void *src, unsigned int n);

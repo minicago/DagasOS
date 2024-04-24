@@ -34,7 +34,7 @@ void awake_wait_queue(wait_queue_t* wait_queue, uint64 value){
     wait_node_t* wait_node;
     while(wait_queue->left != NULL){
         wait_node = wait_queue->left;
-        if(wait_node->thread->waiting != wait_queue) {
+        if(wait_node->thread->waiting != wait_queue || wait_node->thread->state != T_SLEEPING) {
             wait_queue_pop(wait_queue);
             continue;
         }

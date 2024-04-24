@@ -69,7 +69,7 @@ pagetable_t alloc_stack_pagetable(){
 }
 
 void switch_stack_pagetable(pagetable_t pagetable, pagetable_t stack_pagetable){
-    printf("pagetable:%p %p\n",stack_pagetable, pagetable);
+    // printf("pagetable:%p %p\n",stack_pagetable, pagetable);
     for(int i = 0; i < PTE_NUM; i++){
         if(i != TSTACK_PAGETABLE_INDEX)
             stack_pagetable[i] = pagetable[i];
@@ -211,6 +211,10 @@ void free_user_pagetable(pagetable_t pagetable)
 {
     LOG("pagetable:%p\n",pagetable);
     walk_and_free(pagetable, 2);
+}
+
+void free_thread_stack_pagetable(pagetable_t pagetable){
+    walk_and_free((pagetable_t)PTE2PA(pagetable[TSTACK_PAGETABLE_INDEX]), 1);;
 }
 
 // Copy from user to kernel.
@@ -405,9 +409,9 @@ vm_t* alloc_vm_r(vm_t** vm_list, pagetable_t pagetable, uint64 va, uint64 size, 
                 memcpy((void*) pa_new->pa, (void*) pm_i->pa, pm_i->size);
                 pa_new->cnt = 1;
             }
-        } else pm->cnt ++;
-        printf("mappages: (%p,%p,%p,%p,%p)\n",vm->pagetable, vm->va + pm->v_offset, pm->pa, pm->size, vm->perm);
-        mappages(vm->pagetable, vm->va + pm->v_offset, pm->pa, pm->size, vm->perm);
+        } else pm_i->cnt ++;
+        printf("mappages: (%p,%p,%p,%p,%p)\n",vm->pagetable, vm->va + pm_i->v_offset, pm_i->pa, pm_i->size, vm->perm);
+        mappages(vm->pagetable, vm->va + pm_i->v_offset, pm_i->pa, pm_i->size, vm->perm);
     } 
 
 

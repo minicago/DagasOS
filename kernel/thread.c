@@ -40,7 +40,7 @@ void entry_main(thread_t* thread){
     thread->trapframe->epc = USER_ENTRY;
     thread->trapframe->ra = USER_EXIT;
     thread->trapframe->sp = ARG_PAGE;
-    thread->state = T_READY;
+    // thread->state = T_READY;
     alloc_vm_stack(thread, TSTACK0, MAX_TSTACK_SIZE, 
         NULL, PTE_U | PTE_W | PTE_R, VM_LAZY_ALLOC | VM_THREAD_STACK);
     // release_spinlock(&thread->lock);
@@ -82,7 +82,7 @@ thread_t* alloc_thread(){
 }
 
 void free_thread(thread_t* thread){
-    thread->state = T_RUNNING;
+    thread->state = T_UNUSED;
     acquire_spinlock(&thread_pool_lock);
     *(thread_t**) thread = free_thread_head;
     free_thread_head = thread;
@@ -90,9 +90,9 @@ void free_thread(thread_t* thread){
 }
 
 void entry_to_user(){
-    LOG("entry to user %d\n", get_tid());
+    // LOG("entry to user %d\n", get_tid());
     int tid = get_tid();
-    if(tid == 1) printf("!!!!fork!!!!\n");
+    // if(tid == 1) printf("!!!!fork!!!!\n");
     if(tid == -1) panic("wrong coro");
     W_CSR(sepc, thread_pool[tid].trapframe->epc);
     C_CSR(sstatus, SSTATUS_SPP);
@@ -171,7 +171,7 @@ int sys_fork(){
 void deattach_thread(thread_t* thread){
     LOG("deattach start\n");
     free_vm(thread->stack_vm);
-    pfree(thread->stack_pagetable);
+    free_thread_stack_pagetable(thread->stack_pagetable);
     // free_user_pagetable(thread->stack_pagetable);
     unmappages(thread->process->pagetable, COROSTACK0(thread->tid), PG_SIZE, 0);
     acquire_spinlock(&thread->process->lock);
@@ -179,6 +179,7 @@ void deattach_thread(thread_t* thread){
     release_spinlock(&thread->process->lock);
     LOG("deattach fin\n");
     if(thread_cnt == 0) release_process(thread->process);
+    LOG("release process fin\n");
     free_thread(thread);
 }
 

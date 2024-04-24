@@ -26,8 +26,11 @@ void scheduler_loop(){
         for (int i = 0 ; i < MAX_THREAD; i++){
             if (try_acquire_spinlock(&thread_pool[i].lock) != 0){
                 if(thread_pool[i].state == T_READY){
+                    printf("USER:%d ***********************\n",i);
+                    assert(i == thread_pool[i].tid);
                     thread_pool[i].state = T_RUNNING;
                     switch_coro(&thread_manager_coro[i]);
+                    printf("STATE:%d ***********************\n",thread_pool[i].state);
                 }
                 
                 // release_spinlock(&thread_pool[i].lock);
