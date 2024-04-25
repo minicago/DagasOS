@@ -5,7 +5,7 @@ SBI = sbi
 UTILS = utils
 TEST = riscv-syscalls-testing
 
-CPUS = 1
+CPUS = 2
 KMEMORY = 128*1024*1024
 
 TOOLPREFIX = riscv64-unknown-elf-
