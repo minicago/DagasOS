@@ -6,6 +6,14 @@
 
 int start(){
 
+    uint64 mhartid = 0;
+
+    R_CSR(mhartid, mhartid);
+
+    if(mhartid != 0){
+        while(1);
+    }
+
     //set mstatus.mpp as S-mode 
     C_CSR(mstatus, MSTATUS_MPP_MASK);
     S_CSR(mstatus, MSTATUS_MPP_S);
