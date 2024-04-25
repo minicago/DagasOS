@@ -52,4 +52,5 @@ int load_elf(process_t* process, char* path){
     print_inode(elf);
     LOG("inode:%p\n", elf);
     return load_elf_from_inode(process, elf);
+    LOG("inode:%p\n", elf);
 }

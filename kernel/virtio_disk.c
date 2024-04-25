@@ -272,7 +272,6 @@ void virtio_disk_rw(struct buf *b, int write)
 
     __sync_synchronize();
 
-    *R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0; // value is queue number
     //printf("virtio_rw: test_disk wait%p\n", b);
     // Wait for virtio_disk_intr() to say request has finished.
     
@@ -281,20 +280,31 @@ void virtio_disk_rw(struct buf *b, int write)
     //TODO: after sleep thread is ok, must delete intr_on and intr_off this.
     // this just for get int in user syscall without sleep.
     int int_on = 0;
-    intr_pop();
-    if(!intr_get()) {
-        // intr_print();
-        // panic("virtio_disk_rw: not in interrupt");
-        intr_on();
-        int_on = 1;
+    
+    if(get_tid()==-1) {
+        // intr_pop();
+        if(!intr_get()) {
+            // intr_print();
+            // panic("virtio_disk_rw: not in interrupt");
+            intr_on();
+            int_on = 1;
+        }
     }
+
     uint64 result;
     if(get_tid() != -1) {
-        wait_queue_push_back(b->wait_queue, &thread_pool[get_tid()], &result);
         thread_pool[get_tid()].waiting = b->wait_queue;
         thread_pool[get_tid()].state = T_SLEEPING;
+        wait_queue_push_back(b->wait_queue, &thread_pool[get_tid()], &result);
+        LOG("virtio_disk: pre to sched %p\n", b->wait_queue->left);
+        
+    *R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0; // value is queue number
         sched();
+    } else {
+    *R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0; // value is queue number
     }
+    
+    // *R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0; // value is queue number
     while(b->disk==1) {
     /*
     *******************************
@@ -307,8 +317,10 @@ void virtio_disk_rw(struct buf *b, int write)
     //     TODO: sleep
     //     sleep(b, &disk.vdisk_lock);
     }
-    if(int_on) {
-        intr_off();
+    if(get_tid()==-1) {
+        if(int_on) {
+            intr_off();
+        }
     }
 
     // int cnt = 0;
@@ -332,7 +344,6 @@ void virtio_disk_rw(struct buf *b, int write)
 void virtio_disk_intr()
 {
     
-    //printf("virtio_disk_intr: go in\n");
     acquire_spinlock(&disk.lock);
 
     // the device won't raise another interrupt until we tell it
@@ -360,6 +371,8 @@ void virtio_disk_intr()
         // wakeup(b);
 
         disk.used_idx += 1;
+        
+    printf("virtio_disk_intr: go in %p\n", b->wait_queue->left);
         awake_wait_queue(b->wait_queue, 0);
     }
     release_spinlock(&disk.lock);

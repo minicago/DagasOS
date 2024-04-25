@@ -37,7 +37,7 @@ void block_cache_init(void)
     // initsleeplock(&b->lock, "buffer");
     block_cache.head.next->prev = b;
     block_cache.head.next = b;
-    b->wait_queue = alloc_wait_queue(WAIT_QUEUE_ALLRELEASE);
+    b->wait_queue = alloc_wait_queue(WAIT_QUEUE_ONERELEASE);
   }
 }
 

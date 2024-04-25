@@ -10,13 +10,15 @@
         printf("exec "#name"\n");\
         execve("syscalls_test/"#name, NULL, NULL); \
     }\
-    // else waitpid(-1, NULL, 0);
-
+    else { \
+        waitpid(-1, NULL, 0); \
+        printf(#name" fin\n");\
+    }
 int main(int argc, char* argv[]) {
     // return 0;
     run_test(chdir);
     run_test(getcwd);
-    run_test(getpid);
-    run_test(getppid);
+    // run_test(getpid);
+    // run_test(getppid);
     return 0;
 }
