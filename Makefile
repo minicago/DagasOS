@@ -106,10 +106,15 @@ QEMUOPTS += -global virtio-mmio.force-legacy=false
 QEMUOPTS += -drive file=sdcard.img,if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
+if_root: 
+ifeq ($(ROOT_USER),0)
+    @mkdir build
+endif
+
 qemu: sdcard.img kernel sbi umount
 	$(QEMU) $(QEMUOPTS)
 
-all : sdcard.img kernel sbi
+all : if_root sdcard.img kernel sbi
 
 .gdbinit :
 	echo "\
