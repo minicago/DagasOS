@@ -98,11 +98,10 @@ sdcard: user
 
 QEMU = qemu-system-riscv64
 
-CPUS := 1
 
 QEMUBIOS = sbi-qemu
 QEMUOPTS = -machine virt -bios $(QEMUBIOS) -kernel kernel-qemu -m 128M -smp $(CPUS) -nographic
-QEMUOPTS += -global virtio-mmio.force-legacy=false
+# QEMUOPTS += -global virtio-mmio.force-legacy=false
 QEMUOPTS += -drive file=sdcard.img,if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
