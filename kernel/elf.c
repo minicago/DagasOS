@@ -48,7 +48,7 @@ int load_elf(process_t* process, char* path){
     vm_insert_pm(process->heap_vm, 
     alloc_pm(0, 0, PG_SIZE));
     heap_init(process->pagetable, 1);
-    inode_t* elf = look_up_path(get_root(), path, NULL);
+    inode_t* elf = look_up_path(process->cwd, path, NULL);
     print_inode(elf);
     LOG("inode:%p\n", elf);
     return load_elf_from_inode(process, elf);

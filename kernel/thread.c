@@ -204,6 +204,7 @@ int sys_exec(char* path){
     exec_process(thread->process, buf);
     
     entry_main(thread);
+    thread->trapframe->epc -= 4; 
     // uint64 name = (uint64)uvmalloc(thread->process, MAX_PATH);
     // copy_to_va(thread->process->pagetable, name, buf, MAX_PATH);
     
