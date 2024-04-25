@@ -117,6 +117,16 @@ void syscall_handler(trapframe_t *trapframe)
         trapframe->a0 = sys_wait(trapframe->a0);
         break;
     }
+    case SYS_getpid:
+    {
+        trapframe->a0 = sys_getpid();
+        break;
+    }
+    case SYS_getppid:
+    {
+        trapframe->a0 = sys_getppid();
+        break;
+    }
     default:
     {
         printf("syscall_handler: Unknown system call\n");

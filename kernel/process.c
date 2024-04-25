@@ -200,3 +200,17 @@ void release_process(process_t* process){
     }else process->state = ZOMBIE;
     release_spinlock(&wait_lock);
 }
+
+int64 sys_getpid() {
+    thread_t* thread = thread_pool + get_tid();
+    return thread->process->pid;
+}
+
+int64 sys_getppid() {
+    thread_t* thread = thread_pool + get_tid();
+    process_t* parent = thread->process->parent;
+    if(parent == NULL) {
+        return 0;
+    }
+    return parent->pid;
+}

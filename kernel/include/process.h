@@ -73,4 +73,7 @@ void exec_process(process_t* process, char* path);
 void release_zombie(process_t* process);
 void release_process(process_t* process);
 
+int64 sys_getpid();
+int64 sys_getppid();
+
 #endif
