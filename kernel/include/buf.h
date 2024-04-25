@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "fs.h"
+#include "waitqueue.h"
 
 struct buf {
   int dirty;   //0: clean, 1: dirty
@@ -15,6 +16,7 @@ struct buf {
   struct buf *prev; // LRU cache list
   struct buf *next;
   uint8 data[BSIZE];
+  wait_queue_t *wait_queue;
 };
 
 #endif

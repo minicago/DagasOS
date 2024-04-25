@@ -9,4 +9,5 @@ int main(int argc, char* argv[]) {
     fork();
     printf("!!I am test2!\n");
     exit(0);
+    return 0;
 }

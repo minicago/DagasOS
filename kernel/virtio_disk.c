@@ -13,6 +13,7 @@
 #include "virtio_disk.h"
 #include "spinlock.h"
 #include "strap.h"
+#include "waitqueue.h"
 
 // the address of virtio mmio register r.
 #define R(r) ((volatile uint32 *)(VIRTIO0 + (r)))
@@ -296,6 +297,13 @@ void virtio_disk_rw(struct buf *b, int write)
         intr_on();
         int_on = 1;
     }
+    uint64 result;
+    if(get_tid() != -1) {
+        wait_queue_push_back(b->wait_queue, &thread_pool[get_tid()], &result);
+        thread_pool[get_tid()].waiting = b->wait_queue;
+        thread_pool[get_tid()].state = T_SLEEPING;
+        sched();
+    }
     while(b->disk==1) {
     /*
     *******************************
@@ -361,7 +369,7 @@ void virtio_disk_intr()
         // wakeup(b);
 
         disk.used_idx += 1;
+        awake_wait_queue(b->wait_queue, 0);
     }
-
     release_spinlock(&disk.lock);
 }
