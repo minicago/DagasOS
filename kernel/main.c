@@ -39,12 +39,11 @@ int main(){
     thread_pool_init();        
 
     intr_on();
-    
     filesystem_init(FS_TYPE_FAT32);
     printf("filesystem init finished!\n");
     console_init();
     printf("console init finished!\n");
-    kernel_test();
+    //kernel_test();
 
     process_t* p = alloc_process(); 
     printf("get process\n");
