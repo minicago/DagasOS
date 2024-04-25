@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
     // return 0;
     run_test(chdir);
     run_test(getcwd);
-    // run_test(getpid);
-    // run_test(getppid);
+    run_test(getpid);
+    run_test(getppid);
     return 0;
 }

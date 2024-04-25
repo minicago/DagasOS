@@ -67,7 +67,7 @@ void init_thread(thread_t* thread){
     thread->tid = thread - thread_pool;
     // LOG("%p\n",thread->tid);
     thread->process = NULL;
- 
+    thread->stack_vm = NULL;
     thread->stack_pagetable = alloc_stack_pagetable();
     // release_spinlock(&thread->lock);
 }
