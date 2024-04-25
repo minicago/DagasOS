@@ -26,6 +26,13 @@ CFLAGS += -DKMEMORY=$(KMEMORY) -DCPUS=$(CPUS)
 
 LDFLAGS = -z max-page-size=4096
 
+ROOT_USER = $(shell id -u)
+ROOT_OR_SUDO = sudo
+ifeq ($(ROOT_USER),0)
+	ROOT_OR_SUDO =
+endif
+
+
 export BUILD_DIR
 export K 
 export U
@@ -61,21 +68,21 @@ $(TEST)/$U/riscv64:
 
 dst=/mnt/sdcard
 mount:
-	@sudo mount sdcard.img $(dst)
+	@$(ROOT_OR_SUDO) mount sdcard.img $(dst)
 
 umount:
-	-@sudo umount $(dst)
+	-@$(ROOT_OR_SUDO) umount $(dst)
 
 sdcard.img:
 	@if [ ! -f "sdcard.img" ]; then \
 		echo "making fs image..."; \
-		sudo umount $(dst) > /dev/null; \
+		$(ROOT_OR_SUDO) umount $(dst) > /dev/null; \
 		dd if=/dev/zero of=sdcard.img bs=512k count=128; \
 		mkfs.vfat -F 32 sdcard.img; fi
-	-@sudo mkdir $(dst)
+	-@$(ROOT_OR_SUDO) mkdir $(dst)
 	@make mount
 	-@make sdcard dst=$(dst)
-	@sudo umount $(dst)
+	@$(ROOT_OR_SUDO) umount $(dst)
 	@echo "sdcard image is ready"
 
 
@@ -83,11 +90,11 @@ sdcard.img:
 sdcard: user
 
 	for file in $$( ls $(BUILD_DIR)/$U/_* ); do \
-		sudo cp $$file $(dst)/$${file#$(BUILD_DIR)/$U/_}; done
+		$(ROOT_OR_SUDO) cp $$file $(dst)/$${file#$(BUILD_DIR)/$U/_}; done
 	echo fin;
 	
-	-sudo mkdir $(dst)/syscalls_test
-	sudo cp -rf $(TEST)/$U/riscv64/* $(dst)/syscalls_test
+	-$(ROOT_OR_SUDO) mkdir $(dst)/syscalls_test
+	$(ROOT_OR_SUDO) cp -rf $(TEST)/$U/riscv64/* $(dst)/syscalls_test
 
 QEMU = qemu-system-riscv64
 
@@ -99,10 +106,15 @@ QEMUOPTS += -global virtio-mmio.force-legacy=false
 QEMUOPTS += -drive file=sdcard.img,if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
+if_root: 
+ifeq ($(ROOT_USER),0)
+	@mkdir build
+endif
+
 qemu: sdcard.img kernel sbi umount
 	$(QEMU) $(QEMUOPTS)
 
-all : sdcard.img kernel sbi
+all : if_root sdcard.img kernel sbi
 
 .gdbinit :
 	echo "\

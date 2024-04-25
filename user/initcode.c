@@ -13,4 +13,5 @@ int main(int argc, char* argv[]) {
     }
     while(1);
     exit(0);
+    return 0;
 }
