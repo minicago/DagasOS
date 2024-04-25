@@ -29,7 +29,7 @@ LDFLAGS = -z max-page-size=4096
 ROOT_USER = $(shell id -u)
 ROOT_OR_SUDO = sudo
 ifeq ($(ROOT_USER),0)
-    ROOT_OR_SUDO =
+	ROOT_OR_SUDO =
 endif
 
 
@@ -108,7 +108,7 @@ QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
 if_root: 
 ifeq ($(ROOT_USER),0)
-    @mkdir build
+	@mkdir build
 endif
 
 qemu: sdcard.img kernel sbi umount
