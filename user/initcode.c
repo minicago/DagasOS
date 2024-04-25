@@ -6,7 +6,11 @@
 #define SIZE 4096+10
 
 int main(int argc, char* argv[]) {
-    fork();
-    printf("!!I am test2!\n");
+    printf("initcode\n");
+    int pid = fork();
+    if(pid == 0){
+        execve("test_syscall", NULL, NULL);
+    }
+    while(1);
     exit(0);
 }

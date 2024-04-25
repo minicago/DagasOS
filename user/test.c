@@ -179,28 +179,29 @@ void test_chdir(void){
 // }
 
 int main(int argc, char* argv[]) {
-    int pid = fork();
-    printf("pid: %d\n",pid);
-    if(pid == 0){
-        execve("test2",NULL, NULL);
-    } else {
-        waitpid(pid, NULL, 0);
-    }
-    printf("pid:%d RUNNING %s\n",pid, argv[0]);
+    // int pid = fork();
+    // printf("pid: %d\n",pid);
+    // if(pid == 0){
+    //     execve("test2",NULL, NULL);
+    // } else {
+    //     waitpid(pid, NULL, 0);
+    // }
+    // printf("pid:%d RUNNING %s\n",pid, argv[0]);
     
     
-    // test_printf();
-    // test_getcwd();
-    // test_open_read_close();
-    // test_dup();
-    // test_mkdir();
-    // test_write();
-    // test_dup2();
-    // test_getdents();
-    // test_chdir();
-    // exit(0);
+    test_printf();
+    test_getcwd();
+    test_open_read_close();
+    test_dup();
+    test_mkdir();
+    test_write();
+    test_dup2();
+    test_getdents();
+    test_chdir();
+    
     // test_fstat();
-    while(1);
-    printf("pid:%d user: exit\n",pid);
+    exit(0);
+    // while(1);
+    // printf("pid:%d user: exit\n",pid);
     return 0;
 }

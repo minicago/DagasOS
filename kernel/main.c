@@ -34,6 +34,7 @@ int main(){
     plic_init_hart();
     printf("plic init finished!\n");
     init_as_scheduler();
+
     process_pool_init();
     thread_pool_init();        
 
@@ -50,12 +51,12 @@ int main(){
     init_process(p);
     prepare_initcode_process(p);
     printf("init process\n");
-    load_elf(p, "test");
+    load_elf(p, "initcode");
     // map_elf(p);
     //map_elf(p);
     printf("load process\n");
 
-    char* argv[] = {"/test","test"};
+    char* argv[] = {"/initcode","initcode"};
     set_arg(p, 1, argv);
     // map_elf(p);
     //map_elf(p);

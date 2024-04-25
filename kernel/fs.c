@@ -273,12 +273,18 @@ int load_from_inode_to_page(inode_t *inode, pagetable_t pagetable, uint64 va, in
 //depth is the last success dir's index in path
 //the first char of path can't be '/'
 inode_t* look_up_path(inode_t* root,const char *ori_path, int* depth){
+   
     inode_t* res = root;
     char *mem = palloc();
     // LOG("%p\n",ori_path);
     strcpy(mem, ori_path);
     // LOG("%p\n",mem);
-    char* path = mem;
+
+    char* path = mem; 
+    if(ori_path[0] == '/') {
+        res = get_root();
+        path++;
+    }
     char* filename = path;
     if(depth!=NULL) *depth = 0;
     int end = 0;
