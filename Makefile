@@ -32,6 +32,8 @@ ifeq ($(ROOT_USER),0)
 	ROOT_OR_SUDO =
 endif
 
+sdcard_dst=/mnt/sdcard
+initrd_dst=/mnt/initrd
 
 export BUILD_DIR
 export K 
@@ -59,6 +61,11 @@ sbi: utils
 user: $(TEST)/$U/riscv64
 	make -C $U all
 
+initrd: user
+	@for file in $$( ls $(BUILD_DIR)/$U/_* ); do \
+		$(ROOT_OR_SUDO) cp $$file $(initrd_dst)/$${file#$(BUILD_DIR)/$U/_}; done
+	@echo fin;
+
 utils:
 	make -C $(UTILS) all
 
@@ -66,35 +73,32 @@ utils:
 $(TEST)/$U/riscv64:
 	make -C $(TEST)/$U all CHAPTER=7
 
-dst=/mnt/sdcard
-mount:
-	@$(ROOT_OR_SUDO) mount sdcard.img $(dst)
 
 umount:
-	-@$(ROOT_OR_SUDO) umount $(dst)
+	-@$(ROOT_OR_SUDO) umount $(sdcard_dst)
+	-@$(ROOT_OR_SUDO) umount $(initrd_dst)
 
 sdcard.img:
 	@if [ ! -f "sdcard.img" ]; then \
 		echo "making fs image..."; \
-		$(ROOT_OR_SUDO) umount $(dst) > /dev/null; \
+		$(ROOT_OR_SUDO) umount $(sdcard_dst) > /dev/null; \
 		dd if=/dev/zero of=sdcard.img bs=512k count=128; \
 		mkfs.vfat -F 32 sdcard.img; fi
-	-@$(ROOT_OR_SUDO) mkdir $(dst)
-	@make mount
-	-@make sdcard dst=$(dst)
-	@$(ROOT_OR_SUDO) umount $(dst)
+	-@$(ROOT_OR_SUDO) mkdir $(sdcard_dst)
+	@$(ROOT_OR_SUDO) mount sdcard.img $(sdcard_dst)
+	-@make sdcard sdcard_dst=$(sdcard_dst)
+	@$(ROOT_OR_SUDO) umount $(sdcard_dst)
 	@echo "sdcard image is ready"
 
 
-# Write sdcard mounted at $(dst)
-sdcard: user
-
-	for file in $$( ls $(BUILD_DIR)/$U/_* ); do \
-		$(ROOT_OR_SUDO) cp $$file $(dst)/$${file#$(BUILD_DIR)/$U/_}; done
-	echo fin;
+# Write sdcard mounted at $(sdcard_dst)
+sdcard: $(TEST)/$U/riscv64
+# for file in $$( ls $(BUILD_DIR)/$U/_* ); do \
+# 	$(ROOT_OR_SUDO) cp $$file $(sdcard_dst)/$${file#$(BUILD_DIR)/$U/_}; done
+# echo fin;
 	
-	-$(ROOT_OR_SUDO) mkdir $(dst)/syscalls_test
-	$(ROOT_OR_SUDO) cp -rf $(TEST)/$U/riscv64/* $(dst)/syscalls_test
+# -$(ROOT_OR_SUDO) mkdir $(sdcard_dst)/syscalls_test
+	$(ROOT_OR_SUDO) cp -rf $(TEST)/$U/riscv64/* $(sdcard_dst)
 
 QEMU = qemu-system-riscv64
 
@@ -103,16 +107,17 @@ QEMUOPTS = -machine virt -bios $(QEMUBIOS) -kernel kernel-qemu -m 128M -smp $(CP
 # QEMUOPTS += -global virtio-mmio.force-legacy=false
 QEMUOPTS += -drive file=sdcard.img,if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+QEMUOPTS += -initrd initrd.img 
 
 if_root: 
 ifeq ($(ROOT_USER),0)
 	@mkdir build
 endif
 
-qemu: sdcard.img kernel sbi umount
+qemu: sdcard.img kernel sbi initrd.img umount
 	$(QEMU) $(QEMUOPTS)
 
-all : if_root sdcard.img kernel sbi
+all : if_root sdcard.img kernel sbi initrd.img
 
 .gdbinit :
 	echo "\
@@ -135,11 +140,26 @@ clean :
 	rm -rf build/* \
 	sdcard.img \
 	kernel-qemu \
+	initrd.img \
 	sbi-qemu 
+
+initrd.img : 
+	@if [ ! -f "initrd.img" ]; then \
+		echo "making fs image..."; \
+		$(ROOT_OR_SUDO) umount $(initrd_dst) > /dev/null; \
+		dd if=/dev/zero of=initrd.img bs=128k count=128; \
+		mkfs.vfat -F 32 initrd.img; fi
+	-@$(ROOT_OR_SUDO) mkdir $(initrd_dst)
+	@$(ROOT_OR_SUDO) mount initrd.img $(initrd_dst)
+	-@make initrd
+	@$(ROOT_OR_SUDO) umount $(initrd_dst)
+	@echo "initrd image is ready"
+
 
 xiji : all
 	qemu-system-riscv64 -machine virt -kernel kernel-qemu \
 	 -m 128M -nographic -smp 2 -bios sbi-qemu \
 	 -drive file=sdcard.img,if=none,format=raw,id=x0 \
 	 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0 \
-	 -device virtio-net-device,netdev=net -netdev user,id=net
+	 -device virtio-net-device,netdev=net -netdev user,id=net \
+	-initrd initrd.img \
