@@ -262,7 +262,7 @@ void kfree(void* ptr){
 void pmem_init() {
     init_spinlock(&pmm_lock);
     buddy_init();
-    memset((char*) pmem_base, 'U', (char*)PMEM_END - pmem_base - 1);
+    // memset((char*) pmem_base, 'U', (char*)PMEM_END - pmem_base - 1);
     init_kmem_cache();
 }
 

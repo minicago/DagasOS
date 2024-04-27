@@ -41,6 +41,8 @@ int main(){
     intr_on();
     filesystem_init(FS_TYPE_FAT32);
     printf("filesystem init finished!\n");
+    install_initrd_img();
+    // flush_cache_to_disk();
     console_init();
     printf("console init finished!\n");
     //kernel_test();

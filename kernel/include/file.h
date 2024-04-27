@@ -66,4 +66,6 @@ file_t* file_openat(inode_t *dir_node, const char *path, int flags, int mode);
 int file_mkdirat(inode_t *dir_node, const char *path, int mode);
 int get_file_path(file_t *file, char *buf, int size);
 
+void install_initrd_img();
+
 #endif

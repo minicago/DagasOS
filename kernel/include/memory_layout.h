@@ -37,6 +37,10 @@
 
 #define KERNEL0 0x80000000ull
 
+#define INITRDIMG0 0x84200000ull
+
+// #define INITRDIMG_SIZE INITRDIMG_SIZE
+
 #define PLIC0 0x0c000000ull
 
 #define PMEM0 (uint64) pmem_base

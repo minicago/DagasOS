@@ -7,6 +7,7 @@
 #include "dagaslib.h"
 #include "fs.h"
 #include "coro.h"
+#include "bio.h"
 
 
 static file_t files[MAX_FILE];
@@ -278,4 +279,13 @@ int get_file_path(file_t *file, char *buf, int size)
         return -1;
     }
     return get_inode_path(node,buf,size);
+}
+
+void install_initrd_img(){
+    inode_t* inode = lookup_inode(get_root(), "initrd.img");
+    LOG("max_pa:%p\n",MAX_PA);
+    if (inode != NULL) return;
+    else inode = create_inode(get_root(), "initrd.img", 0, T_FILE);
+    write_inode(inode, 0, INITRDIMG_SIZE, 1, (void*) INITRDIMG0);
+    flush_cache_to_disk();
 }

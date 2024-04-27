@@ -372,7 +372,7 @@ void virtio_disk_intr()
 
         disk.used_idx += 1;
         
-    printf("virtio_disk_intr: go in %p\n", b->wait_queue->left);
+    // printf("virtio_disk_intr: go in %p\n", b->wait_queue->left);
         awake_wait_queue(b->wait_queue, 0);
     }
     release_spinlock(&disk.lock);

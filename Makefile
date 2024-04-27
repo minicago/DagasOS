@@ -14,6 +14,8 @@ OBJDUMP	= $(TOOLPREFIX)objdump
 CC = $(TOOLPREFIX)gcc
 LD = $(TOOLPREFIX)ld
 GDB = $(TOOLPREFIX)gdb
+INITRD_BLOCK_SIZE = 128
+INITRD_BLOCK_NUM = 128
 
 CFLAGS = -Wall -Werror -O0 -fno-omit-frame-pointer -ggdb -gdwarf-2
 CFLAGS += -MD
@@ -22,7 +24,7 @@ CFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax
 CFLAGS += -Iinclude
 CFLAGS += -fno-stack-protector
 CFLAGS += -fno-pie -no-pie
-CFLAGS += -DKMEMORY=$(KMEMORY) -DCPUS=$(CPUS)
+CFLAGS += -DKMEMORY=$(KMEMORY) -DCPUS=$(CPUS) -DINITRDIMG_SIZE=$(INITRD_BLOCK_SIZE)*$(INITRD_BLOCK_NUM)*1024
 
 LDFLAGS = -z max-page-size=4096
 
@@ -147,7 +149,7 @@ initrd.img :
 	@if [ ! -f "initrd.img" ]; then \
 		echo "making fs image..."; \
 		$(ROOT_OR_SUDO) umount $(initrd_dst) > /dev/null; \
-		dd if=/dev/zero of=initrd.img bs=128k count=128; \
+		dd if=/dev/zero of=initrd.img bs=$(INITRD_BLOCK_SIZE)k count=$(INITRD_BLOCK_NUM) ; \
 		mkfs.vfat -F 32 initrd.img; fi
 	-@$(ROOT_OR_SUDO) mkdir $(initrd_dst)
 	@$(ROOT_OR_SUDO) mount initrd.img $(initrd_dst)
