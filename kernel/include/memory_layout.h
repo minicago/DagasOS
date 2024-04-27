@@ -39,11 +39,15 @@
 
 #define INITRDIMG0 0x84200000ull
 
-// #define INITRDIMG_SIZE INITRDIMG_SIZE
+#ifndef INITRDIMG_SIZE
+
+#define INITRDIMG_SIZE 1024*128*128
+
+#endif
 
 #define PLIC0 0x0c000000ull
 
-#define PMEM0 (uint64) pmem_base
+#define PMEM0 (uint64)(pmem_base)
 
 #define MAX_PA (KERNEL0 + KMEMORY)
 
