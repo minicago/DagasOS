@@ -11,8 +11,10 @@ static inode_t inode[MAX_INODE];
 static uint32 next[MAX_INODE];
 static uint32 prev[MAX_INODE];
 static uint32 head;
-static inode_t root = {.dev = NULL_DEV};
-superblock_t root_superblock;
+static inode_t root = {.sb = NULL};
+static superblock_t virtual_disk = {.fs_type = FS_TYPE_DISK,.parent=NULL,.real_dev = VIRTIO_DISK_DEV,.identifier=0};
+static superblock_t root_superblock;
+static int superblock_cnt = 1;
 
 //TIP: can only get inode by lookup_inode or create_inode or look_up_path, and must release_inode after using
 
@@ -23,7 +25,7 @@ static void inode_cache_init(void){
     next[head] = head;
     
     for (int i = 0; i < MAX_INODE; i++){
-        inode[i].dev = NULL_DEV;
+        inode[i].sb = NULL;
         prev[i] = head;
         next[i] = next[head];
         prev[next[head]] = i;
@@ -32,25 +34,29 @@ static void inode_cache_init(void){
 }
 
 inode_t* get_root() {
-    if(root.dev==NULL_DEV) panic("get_root: root not initialized");
+    if(root.sb==NULL) panic("get_root: root not initialized");
     return &root;
 }
 
-inode_t* get_inode(uint32 dev, uint32 id) {
+inode_t* get_inode(superblock_t* sb, uint32 id) {
     acquire_spinlock(&cache_lock);
-    for (int i = next[head]; i != head; i = next[i]){
-        if (inode[i].dev == dev && inode[i].id == id){
+    for (int i = 0;i<MAX_INODE;i++){
+        if (inode[i].sb!=NULL&&inode[i].sb->identifier == sb->identifier && inode[i].id == id){
             inode[i].refcnt++;
             release_spinlock(&cache_lock);
+            if(inode[i].is_mnt) {
+                LOG("get_inode: is_mnt %d\n",inode[i].is_mnt);
+            }
             return &inode[i];
         }
     }
-    for (int i = prev[head]; i != head; i = prev[i]){
-        if (inode[i].refcnt == 0){
-            inode[i].dev = dev;
+    for (int i = 0;i<MAX_INODE;i++){
+        if (inode[i].refcnt == 0 && inode[i].is_mnt!=1){
+            inode[i].sb = sb;
             inode[i].id = id;
             inode[i].refcnt = 1;
             inode[i].valid = 0;
+            inode[i].is_mnt = 0;
             release_spinlock(&cache_lock);
             return &inode[i];
         }
@@ -58,6 +64,10 @@ inode_t* get_inode(uint32 dev, uint32 id) {
     release_spinlock(&cache_lock);
     panic("get_inode: no free inode");
     return NULL;
+}
+
+int get_new_sb_identifier() {
+    return superblock_cnt++;
 }
 
 void filesystem_init(uint32 type) {
@@ -68,9 +78,8 @@ void filesystem_init(uint32 type) {
             panic("filesystem_init: null filesystem");
             break;
         case FS_TYPE_FAT32:
-            fat32_superblock_init(VIRTIO_DISK_DEV, root.sb);
-            root.dev = VIRTIO_DISK_DEV;
-            root.id = ((fat32_info_t *)root.sb->extra)->root_cid;
+            fat32_superblock_init(NULL,&virtual_disk, root.sb, get_new_sb_identifier());
+            root.id = root.sb->root_id;
             root.refcnt = 1;
             root.valid = 1;
             root.type = T_DIR;
@@ -84,6 +93,56 @@ void filesystem_init(uint32 type) {
     }
 }
 
+superblock_t* alloc_superblock() {
+    superblock_t* sb = kmalloc(sizeof(superblock_t));
+    return sb;
+}
+
+int free_superblock(superblock_t* sb) {
+    sb->free_extra(sb->extra);
+    kfree(sb);
+    return 1;
+}
+
+int mount_inode(inode_t *dir, superblock_t *sb) {
+    if (dir->type != T_DIR) {
+        LOG("mount_inode: not a directory");
+        return 0;
+    }
+    if (dir->valid == 0) {
+        LOG("mount_inode: invalid inode");
+        return 0;
+    }
+    dir->mnt_sb = sb;
+    dir->mnt_root_id = sb->root_id;
+    dir->is_mnt = 1;
+    return 1;
+}
+
+int umount_inode(inode_t *dir) {
+    if (dir->type != T_DIR) {
+        LOG("umount_inode: not a directory");
+        return 0;
+    }
+    if (dir->valid == 0) {
+        LOG("umount_inode: invalid inode");
+        return 0;
+    }
+    if(dir->is_mnt == 0) {
+        LOG("umount_inode: not a mounted directory");
+        return 0;
+    }
+    if(dir->parent==NULL) {
+        LOG("umount_inode: root can't be unmounted or just have no parent");
+        return 0;
+    }
+    free_superblock(dir->mnt_sb);
+    dir->mnt_sb = NULL;
+    dir->mnt_root_id = -1;
+    dir->is_mnt = 0;
+    return 1;
+}
+
 inode_t* lookup_inode(inode_t *dir, char *filename) {
     inode_t node;
     if (dir->type != T_DIR) {
@@ -92,16 +151,36 @@ inode_t* lookup_inode(inode_t *dir, char *filename) {
     if (dir->valid == 0) {
         panic("lookup_inode: invalid inode");
     }
-    if (dir->sb->lookup_inode(dir, filename, &node) == 0) {
+    if(strcmp(filename, ".")==0) {
+        pin_inode(dir);
+        return dir;
+    }
+    if(strcmp(filename, "..")==0) {
+        pin_inode(dir->parent);
+        return dir->parent;
+    }
+    printf("lookup_inode: is_mnt %d\n",dir->is_mnt);
+    if(dir->is_mnt) {
+        LOG("lookup_inode: begin mnt_sb id %d\n", dir->mnt_sb->identifier);
+        if (dir->mnt_sb->lookup_inode(dir, filename, &node) == 0) {
+            printf("lookup_inode: mnt_sb id %d\n", dir->mnt_sb->identifier);
+            printf("lookup_inode: can't find file %s\n",filename);
+            return NULL;
+        }
+    } else if (dir->sb->lookup_inode(dir, filename, &node) == 0) {
+        printf("lookup_inode: sb id %d\n", dir->sb->identifier);
         printf("lookup_inode: can't find file %s\n",filename);
         return NULL;
     }
     printf("lookup_inode: find file %s\n",filename);
-    inode_t* res = get_inode(node.dev, node.id);
+    inode_t* res = get_inode(node.sb, node.id);
+    //LOG("lookup_inode: get_inode finished\n");
     acquire_spinlock(&cache_lock);
+    printf("lookup_inode: file %s valid %d\n", filename, res->valid);
     if(!(res->valid)) {
         *res = node;
         res->refcnt = 1;
+        res->is_mnt = 0;
     }
     release_spinlock(&cache_lock);
     return res;
@@ -174,7 +253,7 @@ inode_t* create_inode(inode_t* dir, char* filename, uint8 major, uint8 type) {
         printf("create_inode: create error");
         return NULL;
     }
-    inode_t* res = get_inode(node.dev, node.id);
+    inode_t* res = get_inode(node.sb, node.id);
     acquire_spinlock(&cache_lock);
     if(!res->valid) {
         *res = node;
@@ -185,7 +264,7 @@ inode_t* create_inode(inode_t* dir, char* filename, uint8 major, uint8 type) {
 }
 
 void print_inode(inode_t *node) {
-    printf("inode: dev=%d, id=%d, refcnt=%d, valid=%d, type=%d, size=%d\n", node->dev, node->id, node->refcnt, node->valid, node->type, node->size);
+    printf("inode: sb->identifier=%d, id=%d, refcnt=%d, valid=%d, type=%d, size=%d\n", node->sb->identifier, node->id, node->refcnt, node->valid, node->type, node->size);
 }
 
 int file_test() {
@@ -373,4 +452,23 @@ int get_inode_path(inode_t *node, char *buf, int size) {
 
 int get_inode_name(inode_t* node, char* buffer, int size) {
     return node->sb->get_inode_name(node,buffer,size);
+}
+
+int get_real_dev(superblock_t *sb) {
+    if(sb==NULL) return -1;
+    while(sb->parent!=NULL) {
+        sb = sb->parent;
+    }
+    return sb->real_dev;
+}
+
+int get_real_bid(superblock_t *sb, int bid) {
+    if(sb==NULL) return -1;
+    int id_in_parent = sb->id_in_parent;
+    while(sb->parent!=NULL) {
+        sb = sb->parent;
+        bid = sb->get_bid_from_son(sb, id_in_parent, bid);
+        id_in_parent = sb->id_in_parent;
+    }
+    return bid;
 }

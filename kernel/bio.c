@@ -41,13 +41,18 @@ void block_cache_init(void)
   }
 }
 
+
 // Look through buffer cache for block on device dev.
 // If not found, allocate a buffer.
 // In either case, return locked buffer.
-static struct buf *get_block(uint32 dev, uint32 block_id)
+static struct buf *get_block(superblock_t* sb, uint32 block_id)
 {
+  uint32 dev = get_real_dev(sb);
+  block_id = get_real_bid(sb,block_id);
+  if(block_id == -1) {
+    panic("get_block: block_id error: -1");
+  }
   struct buf *b;
-
   acquire_spinlock(&block_cache.lock);
 
   // Is the block already cached?
@@ -97,11 +102,12 @@ static struct buf *get_block(uint32 dev, uint32 block_id)
 }
 
 // Return a locked buf with the contents of the indicated block.
-struct buf *read_block(uint32 dev, uint32 block_id)
+// the only api to get block from eternal
+struct buf *read_block(superblock_t *sb, uint32 block_id)
 {
   struct buf *b;
   
-  b = get_block(dev, block_id);
+  b = get_block(sb, block_id);
   
   if (!b->valid)
   {
@@ -168,35 +174,35 @@ void unpin_block(struct buf *b)
 }
 
 // cnt is block's count, not byte's count
-void read_to_buffer(uint32 dev, uint32 block_id, uint32 cnt, void* buffer)
+void read_to_buffer(superblock_t *sb, uint32 block_id, uint32 cnt, void* buffer)
 {
   struct buf *b;
   for(int i=0;i<cnt;i++){
-    b = read_block(dev, block_id+i);
+    b = read_block(sb, block_id+i);
     memcpy(buffer+i*BSIZE, b->data, BSIZE);
     release_block(b);
   }
 }
 
 // cnt is block's count, not byte's count
-void write_to_disk(uint32 dev, uint32 block_id, uint32 cnt, void* buffer)
+void write_to_disk(superblock_t *sb, uint32 block_id, uint32 cnt, void* buffer)
 {
   struct buf *b;
   for(int i=0;i<cnt;i++){
-    b = read_block(dev, block_id+i);
+    b = read_block(sb, block_id+i);
     memcpy(b->data, buffer+i*BSIZE, BSIZE);
     write_block(b);
     release_block(b);
   }
 }
 
-void read_bytes_to_buffer(uint32 dev, uint32 block_id, int offset, int size, void* buffer)
+void read_bytes_to_buffer(superblock_t *sb, uint32 block_id, int offset, int size, void* buffer)
 {
   struct buf *b;
   block_id += offset/BSIZE;
   offset %= BSIZE;
   while(size>0) {
-    b = read_block(dev, block_id);
+    b = read_block(sb, block_id);
     
     if(size>=BSIZE-offset) {
       memcpy(buffer, b->data+offset, BSIZE-offset);
@@ -215,13 +221,13 @@ void read_bytes_to_buffer(uint32 dev, uint32 block_id, int offset, int size, voi
   }
 }
 
-void write_bytes_to_disk(uint32 dev, uint32 block_id, int offset, int size, void* buffer)
+void write_bytes_to_disk(superblock_t *sb, uint32 block_id, int offset, int size, void* buffer)
 {
   struct buf *b;
   block_id += offset/BSIZE;
   offset %= BSIZE;
   while(size>0) {
-    b = read_block(dev, block_id);
+    b = read_block(sb, block_id);
     
     if(size>=BSIZE-offset) {
       memcpy(b->data+offset, buffer, BSIZE-offset);

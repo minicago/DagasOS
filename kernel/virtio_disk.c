@@ -296,7 +296,7 @@ void virtio_disk_rw(struct buf *b, int write)
         thread_pool[get_tid()].waiting = b->wait_queue;
         thread_pool[get_tid()].state = T_SLEEPING;
         wait_queue_push_back(b->wait_queue, &thread_pool[get_tid()], &result);
-        LOG("virtio_disk: pre to sched %p\n", b->wait_queue->left);
+        //LOG("virtio_disk: pre to sched %p\n", b->wait_queue->left);
         
     *R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0; // value is queue number
         sched();
@@ -372,7 +372,7 @@ void virtio_disk_intr()
 
         disk.used_idx += 1;
         
-    // printf("virtio_disk_intr: go in %p\n", b->wait_queue->left);
+        //LOG("virtio_disk_intr: go in %p\n", b->wait_queue->left);
         awake_wait_queue(b->wait_queue, 0);
     }
     release_spinlock(&disk.lock);
