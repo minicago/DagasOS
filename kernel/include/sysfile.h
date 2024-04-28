@@ -38,5 +38,7 @@ int sys_dup3(int oldfd, int newfd);
 int sys_chdir(uint64 va);
 int sys_getdents64(int fd, uint64 va, int size);
 int sys_fstat(int fd, uint64 va);
+int sys_mount(uint64 source_va,uint64 target_va,uint64 fs_type_va,uint64 flags,uint64 data_va);
+int sys_umount(uint64 target_va);
 
 #endif

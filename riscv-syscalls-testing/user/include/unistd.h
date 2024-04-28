@@ -11,6 +11,9 @@ int openat(int, const char*, int);
 ssize_t read(int, void *, size_t);
 ssize_t write(int, const void *, size_t);
 
+int mount(const char *special, const char *dir, const char *fstype, unsigned long flags, const void *data);
+
+int umount(const char *special);
 int close(int);
 pid_t getpid(void);
 pid_t getppid(void);

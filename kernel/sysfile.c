@@ -5,6 +5,7 @@
 #include "fs.h"
 #include "pmm.h"
 #include "coro.h"
+#include "fat32.h"
 
 // the buf addr is in user space
 int sys_write(int fd, uint64 va, uint64 size)
@@ -291,7 +292,7 @@ int sys_fstat(int fd, uint64 va) {
     }
     file_t *file = proc->open_files[fd];
     struct kstat st;
-    st.st_dev = file->node->dev;
+    st.st_dev = file->node->sb->identifier;
     st.st_ino = file->node->id;
     st.st_mode = file->flags;
     st.st_nlink = file->node->nlink;
@@ -309,4 +310,84 @@ int sys_fstat(int fd, uint64 va) {
     st.st_ctime_nsec = 0;
     copy_to_va(thread_pool[get_tid()].stack_pagetable,va, &st, sizeof(struct kstat));
     return 0;
+}
+
+int sys_mount(uint64 source_va,uint64 target_va,uint64 fs_type_va,uint64 flags,uint64 data_va) {
+    printf("sys_mount: source=%p, target=%p, fs_type=%p, flags=%p, data=%p\n",source_va,target_va,fs_type_va,flags,data_va);
+    char* mem_source = kmalloc(MAX_PATH);
+    char* source = mem_source;
+    char* mem_target = kmalloc(MAX_PATH);
+    char* target = mem_target;
+    copy_string_from_user(source_va, source, MAX_PATH);
+    copy_string_from_user(target_va, target, MAX_PATH);
+    inode_t *dir_node = get_current_proc()->cwd;
+    file_t *source_file = file_openat(dir_node, source, 0, 0);
+    if(source_file == NULL) {
+        printf("sys_mount: source_file open error\n");
+        goto sys_mount_error;
+    }
+    file_t *target_file = file_openat(dir_node, target, 0, 0);
+    if(target_file == NULL) {
+        printf("sys_mount: target_file open error\n");
+        goto sys_mount_error;
+    }
+    inode_t *source_node = source_file->node;
+    inode_t *target_node = target_file->node;
+    if(target_node->type != T_DIR) {
+        printf("sys_mount: target_file is not a directory\n");
+        goto sys_mount_error;
+    }
+    superblock_t *sb = alloc_superblock();
+    if(fat32_superblock_init(source_node, source_node->sb, sb, get_new_sb_identifier())==0) {
+        printf("sys_mount: fat32_superblock_init error\n");
+        goto sys_mount_error;
+    }
+    if(mount_inode(target_node,sb)==0) {
+        LOG("sys_mount: mount_inode error\n");
+        free_superblock(sb);
+        goto sys_mount_error;
+    }
+    LOG("sys_mount: sb->identifier=%d %d\n",sb->identifier,target_node->sb->identifier);
+    print_fs_info(target_node);
+    file_close(source_file);
+    file_close(target_file);
+    LOG("sys_mount: target_node->ref%d %p\n",target_node->refcnt,target_node);
+    kfree(mem_source);
+    kfree(mem_target);
+    return 0;
+sys_mount_error:
+    if(source_file) file_close(source_file);
+    if(target_file) file_close(target_file);
+    kfree(mem_source);
+    kfree(mem_target);
+    return -1;
+}
+
+int sys_umount(uint64 target_va) {
+    printf("sys_umount: target=%p\n",target_va);
+    char* mem_target = kmalloc(MAX_PATH);
+    char* target = mem_target;
+    copy_string_from_user(target_va, target, MAX_PATH);
+    inode_t *dir_node = get_current_proc()->cwd;
+    file_t *target_file = file_openat(dir_node, target, 0, 0);
+    if(target_file == NULL) {
+        printf("sys_umount: target_file open error\n");
+        goto sys_umount_error;
+    }
+    inode_t *target_node = target_file->node;
+    if(target_node->type != T_DIR) {
+        printf("sys_umount: target_file is not a directory\n");
+        goto sys_umount_error;
+    }
+    if(umount_inode(target_node)==0) {
+        printf("sys_umount: umount_inode error\n");
+        goto sys_umount_error;
+    }
+    file_close(target_file);
+    kfree(mem_target);
+    return 0;
+sys_umount_error:
+    if(target_file) file_close(target_file);
+    kfree(mem_target);
+    return -1;
 }

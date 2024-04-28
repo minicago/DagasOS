@@ -127,6 +127,22 @@ void syscall_handler(trapframe_t *trapframe)
         trapframe->a0 = sys_getppid();
         break;
     }
+    case SYS_mount:
+    {
+        uint64 source = trapframe->a0;
+        uint64 target = trapframe->a1;
+        uint64 fs_type = trapframe->a2;
+        uint64 flags = trapframe->a3;
+        uint64 data = trapframe->a4;
+        trapframe->a0 = sys_mount(source, target, fs_type, flags, data);
+        break;
+    }
+    case SYS_umount2:
+    {
+        uint64 target = trapframe->a0;
+        trapframe->a0 = sys_umount(target);
+        break;
+    }
     default:
     {
         printf("syscall_handler: Unknown system call\n");

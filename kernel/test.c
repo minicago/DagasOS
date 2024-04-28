@@ -14,61 +14,61 @@
 #include "console.h"
 #include "file.h"
 
-int bio_test(){
-    //Test for bio read and write
-    printf("read disk 0\n");
-    struct buf* buf = read_block(VIRTIO_DISK_DEV, 0);
-    printf("first 20 of buf->data: ");
-    for(int i=0;i<20;i++){
-        printf("%x ", buf->data[i]);
-    }
-    printf("\n");
-    printf("last 20 of buf->data: ");
-    for(int i=BSIZE-20-1;i<BSIZE;i++){
-        printf("%x ", buf->data[i]);
-    }
-    printf("\n");
-    release_block(buf);
+// int bio_test(){
+//     //Test for bio read and write
+//     printf("read disk 0\n");
+//     struct buf* buf = read_block(VIRTIO_DISK_DEV, 0);
+//     printf("first 20 of buf->data: ");
+//     for(int i=0;i<20;i++){
+//         printf("%x ", buf->data[i]);
+//     }
+//     printf("\n");
+//     printf("last 20 of buf->data: ");
+//     for(int i=BSIZE-20-1;i<BSIZE;i++){
+//         printf("%x ", buf->data[i]);
+//     }
+//     printf("\n");
+//     release_block(buf);
 
-    printf("read disk 1\n");
-    buf = read_block(VIRTIO_DISK_DEV, 1);
-    printf("first 20 of buf->data: ");
-    for(int i=0;i<20;i++){
-        printf("%x ", buf->data[i]);
-    }
-    printf("\n");
+//     printf("read disk 1\n");
+//     buf = read_block(VIRTIO_DISK_DEV, 1);
+//     printf("first 20 of buf->data: ");
+//     for(int i=0;i<20;i++){
+//         printf("%x ", buf->data[i]);
+//     }
+//     printf("\n");
 
-    printf("write disk 1\n");
-    for(int i=0;i<20;i++){
-        buf->data[i]++;
-    }
-    write_block(buf);
+//     printf("write disk 1\n");
+//     for(int i=0;i<20;i++){
+//         buf->data[i]++;
+//     }
+//     write_block(buf);
     
-    printf("read disk 1\n");
-    printf("first 20 of buf->data: ");
-    for(int i=0;i<20;i++){
-        printf("%x ", buf->data[i]);
-    }
-    printf("\n");
-    release_block(buf);
+//     printf("read disk 1\n");
+//     printf("first 20 of buf->data: ");
+//     for(int i=0;i<20;i++){
+//         printf("%x ", buf->data[i]);
+//     }
+//     printf("\n");
+//     release_block(buf);
 
-    printf("read disk 0\n");
-    buf = read_block(VIRTIO_DISK_DEV, 0);
-    printf("first 20 of buf->data: ");
-    for(int i=0;i<20;i++){
-        printf("%x ", buf->data[i]);
-    }
-    printf("\n");
-    printf("last 20 of buf->data: ");
-    for(int i=BSIZE-20-1;i<BSIZE;i++){
-        printf("%x ", buf->data[i]);
-    }
-    printf("\n");
-    release_block(buf);
-    printf("flush all disk\n");
-    flush_cache_to_disk();
-    return 1;
-}
+//     printf("read disk 0\n");
+//     buf = read_block(VIRTIO_DISK_DEV, 0);
+//     printf("first 20 of buf->data: ");
+//     for(int i=0;i<20;i++){
+//         printf("%x ", buf->data[i]);
+//     }
+//     printf("\n");
+//     printf("last 20 of buf->data: ");
+//     for(int i=BSIZE-20-1;i<BSIZE;i++){
+//         printf("%x ", buf->data[i]);
+//     }
+//     printf("\n");
+//     release_block(buf);
+//     printf("flush all disk\n");
+//     flush_cache_to_disk();
+//     return 1;
+// }
 
 int print_test(){
     // Test for printf;

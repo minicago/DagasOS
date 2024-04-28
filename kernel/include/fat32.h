@@ -54,7 +54,7 @@ typedef struct {
     uint32 *fat;
 } fat32_info_t;
 
-void fat32_superblock_init(uint32 dev, superblock_t *sb);
+int fat32_superblock_init(inode_t *node, superblock_t *parent, superblock_t *sb, uint32 identifier);
 int fat32_test();
 
 #endif
