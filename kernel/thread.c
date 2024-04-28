@@ -92,7 +92,8 @@ void free_thread(thread_t* thread){
 }
 
 void entry_to_user(){
-    // LOG("entry to user %d\n", get_tid());
+    LOG("entry to user %d\n", get_tid());
+    assert(get_cpu()->push_off_num == 1);
     int tid = get_tid();
     // if(tid == 1) printf("!!!!fork!!!!\n");
     if(tid == -1) panic("wrong coro");
@@ -115,7 +116,9 @@ void entry_to_user(){
 void sched(){
     intr_pop();
     release_spinlock(&thread_pool[get_tid()].lock);
-    switch_coro(&get_cpu()->scheduler_coro);    
+    if(get_cpu()->push_off_num != 0) panic("no pop_off\n"); 
+    switch_coro(&get_cpu()->scheduler_coro); 
+    intr_push();   
 }
 
 void sleep(){

@@ -11,7 +11,6 @@ int main(int argc, char* argv[]) {
     if(pid == 0){
         execve("mnt/test_syscall", NULL, NULL);
     }
-    while(1);
-    exit(0);
+    waitpid(-1, NULL, 0);
     return 0;
 }

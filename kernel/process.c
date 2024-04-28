@@ -176,6 +176,9 @@ void release_zombie(process_t* process){
 }
 
 void release_process(process_t* process){
+    if(process->pid == 0) {
+        return;
+    }
     acquire_spinlock(&wait_lock);
     vm_list_free(process, 1);
     LOG("vm_list_free done\n");

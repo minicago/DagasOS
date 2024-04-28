@@ -24,13 +24,16 @@ void scheduler_loop(){
     while (1)
     {
         for (int i = 0 ; i < MAX_THREAD; i++){
+            assert(get_cpu()->push_off_num == 0);
             if (try_acquire_spinlock(&thread_pool[i].lock) != 0){
                 if(thread_pool[i].state == T_READY){
                     printf("USER:%d pid:%d***********************\n",i, thread_pool[i].process->pid);
                     log_vm(thread_pool[i].stack_vm);
                     assert(i == thread_pool[i].tid);
                     thread_pool[i].state = T_RUNNING;
+                    assert(get_cpu()->push_off_num == 1);
                     switch_coro(&thread_manager_coro[i]);
+                    assert(get_cpu()->push_off_num == 0);
                     printf("STATE:%d ***********************\n",thread_pool[i].state);
                     log_vm(thread_pool[i].stack_vm);
                 } else release_spinlock(&thread_pool[i].lock);
