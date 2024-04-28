@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
     printf("initcode\n");
     int pid = fork();
     if(pid == 0){
-        execve("test_syscall", NULL, NULL);
+        execve("mnt/test_syscall", NULL, NULL);
     }
     while(1);
     exit(0);

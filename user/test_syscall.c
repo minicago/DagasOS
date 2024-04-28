@@ -8,7 +8,7 @@
 #define run_test(name) \
     if(fork() == 0){ \
         printf("exec "#name"\n");\
-        execve("syscalls_test/"#name, NULL, NULL); \
+        execve(""#name, NULL, NULL); \
     }\
     else { \
         waitpid(-1, NULL, 0); \

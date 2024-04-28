@@ -8,6 +8,7 @@
 #include "fs.h"
 #include "coro.h"
 #include "bio.h"
+#include "fat32.h"
 
 
 static file_t files[MAX_FILE];
@@ -284,8 +285,21 @@ int get_file_path(file_t *file, char *buf, int size)
 void install_initrd_img(){
     inode_t* inode = lookup_inode(get_root(), "initrd.img");
     LOG("max_pa:%p\n",MAX_PA);
-    if (inode != NULL) return;
-    else inode = create_inode(get_root(), "initrd.img", 0, T_FILE);
+    if (inode == NULL) inode = create_inode(get_root(), "initrd.img", 0, T_FILE);
     write_inode(inode, 0, INITRDIMG_SIZE, 1, (void*) INITRDIMG0);
+    file_mkdirat(get_root(),"mnt",0);
+    inode_t* mnt_inode = lookup_inode(get_root(),"mnt");
+    print_inode(inode);
+
+    superblock_t *sb = alloc_superblock();
+    if(fat32_superblock_init(inode, inode->sb, sb, get_new_sb_identifier())==0) {
+        panic("sys_mount: fat32_superblock_init error\n");
+    }
+    if(mount_inode(mnt_inode,sb)==0) {
+        panic("sys_mount: mount_inode error\n");
+    }
+
+    release_inode(inode);
+    release_inode(mnt_inode);
     flush_cache_to_disk();
 }

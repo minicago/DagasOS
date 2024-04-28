@@ -42,6 +42,17 @@ int main(){
     filesystem_init(FS_TYPE_FAT32);
     printf("filesystem init finished!\n");
     install_initrd_img();
+    file_mkdirat(get_root(),"mnt",0);
+    inode_t* mnt = lookup_inode(get_root(),"mnt");
+    inode_t* initrd = lookup_inode(get_root(),"initrd.img");
+    print_inode(initrd);
+    superblock_t *sb = alloc_superblock();
+    if(fat32_superblock_init(initrd, initrd->sb, sb, get_new_sb_identifier())==0) {
+        panic("sys_mount: fat32_superblock_init error\n");
+    }
+    if(mount_inode(mnt,sb)==0) {
+        panic("sys_mount: mount_inode error\n");
+    }
     // flush_cache_to_disk();
     console_init();
     printf("console init finished!\n");
@@ -52,7 +63,7 @@ int main(){
     init_process(p);
     prepare_initcode_process(p);
     printf("init process\n");
-    load_elf(p, "initcode");
+    load_elf(p, "mnt/initcode");
     // map_elf(p);
     //map_elf(p);
     printf("load process\n");
