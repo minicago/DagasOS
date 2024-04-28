@@ -59,9 +59,10 @@ kernel:
 sbi: utils
 	-rm sbi-qemu
 	make -C $(SBI) all
-	cp $(BUILD_DIR)/$(SBI)/sbi sbi-qemu
+	cp $(BUILD_DIR)/$(SBI)/sbi sbi-qemu 
 
 user: $(TEST)/$U/riscv64
+	cp $(TEST)/$U/build/libulib.a $(BUILD_DIR)/libulib.a
 	make -C $U all
 
 initrd: user

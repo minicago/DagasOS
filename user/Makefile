@@ -25,7 +25,7 @@ $(U_BUILD_DIR)/%.o : %.c
 .PHONY:all_prog
 
 $(U_BUILD_DIR)/_%: $(U_BUILD_DIR)/%.o
-	$(LD) $(LDFLAGS) -T lib/arch/riscv/user.ld -Ttext 0x1000 -o $@ $^ reference/libulib.a
+	$(LD) $(LDFLAGS) -T lib/arch/riscv/user.ld -Ttext 0x1000 -o $@ $^ ../$(BUILD_DIR)/libulib.a
 
 all_prog : $(UPROGS)
 
