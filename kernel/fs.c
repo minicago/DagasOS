@@ -249,6 +249,7 @@ inode_t* create_inode(inode_t* dir, char* filename, uint8 major, uint8 type) {
     if (dir->valid == 0) {
         panic("create_inode: invalid inode");
     }
+    
     if ((dir->sb->create_inode(dir, filename, type, major, &node)) == 0) {
         printf("create_inode: create error");
         return NULL;

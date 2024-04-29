@@ -354,7 +354,7 @@ int fat32_superblock_init(inode_t *node, superblock_t *parent, superblock_t *sb,
 {
     // read boot sector
     struct buf *b = NULL;
-    uint8 *dbs;
+    uint8 *dbs = NULL;
     sb->extra = kmalloc(sizeof(fat32_info_t));
     sb->fs_type = FS_TYPE_FAT32;
     sb->identifier = identifier;
@@ -405,9 +405,9 @@ int fat32_superblock_init(inode_t *node, superblock_t *parent, superblock_t *sb,
     //TODO: make the memory alloced to fat is continuous by more official function
     info->fat_blocks = fat_blocks;
     int fat_size = fat_blocks*BSIZE;
-    int page_num = ceil_div(fat_size,PG_SIZE);
-    // info->fat = (uint32 *)kmalloc(fat_size);
-    info->fat = (uint32 *)palloc_n(page_num);
+    // int page_num = ceil_div(fat_size,PG_SIZE);
+    info->fat = (uint32 *)kmalloc(fat_size);
+    // info->fat = (uint32 *)palloc_n(page_num);
     printf("fat32: info->fat%p\n",info->fat);
     int bid = info->fat_offset * info->blocks_per_sector;
     if(parent->fs_type!=FS_TYPE_DISK) {
@@ -450,8 +450,8 @@ fat32_superblock_init_error:
 
 static int free_extra(void *extra) {
     fat32_info_t *info = (fat32_info_t *)extra;
-    //kfree(info->fat);
-    pfree(info->fat);
+    kfree(info->fat);
+    // pfree(info->fat);
     kfree(extra);
     return 1;
 }
@@ -738,12 +738,13 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
         return 0;
     }
     struct sfn_entry tmp;
+    
     if (lookup_entry(sb, dir->id, filename, &tmp)!=-1)
     {
         printf("fat32: file exists\n");
         return 0;
     }
-
+    
     // get free index, if dir is too small to add the file, will add cluster
     int cid = dir->id;
     char *mem = palloc();
@@ -787,7 +788,7 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
         } else {
             int ori_cid = cid;
             cid = get_next_cid(sb, cid);
-            if(cid==FAT32_END_CID) {
+            if(!FAT32_CID_IS_VALID(cid)) {
                 cid = add_cluster(sb, ori_cid);
                 if(cid==-1) {
                     printf("fat32: add cluster error\n");

@@ -117,6 +117,7 @@ int sys_openat(int dirfd, uint64 va, int flags, int mode)
     }
     else {
         file = file_openat(dir_node, path, flags, mode);
+        
     }
     if(file == NULL) {
         printf("sys_openat: file_openat error\n");
@@ -159,7 +160,7 @@ int sys_mkdirat(int dirfd, uint64 va, int mode)
 
 int sys_close(int fd)
 {
-    printf("sys_close: fd=%d\n", fd);
+    real_printf("sys_close: fd=%d\n", fd);
     if (fd < 0 || fd >= MAX_FD) {
         printf("sys_close: fd error\n");
         return -1;
