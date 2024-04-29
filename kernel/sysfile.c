@@ -322,11 +322,11 @@ int sys_mount(uint64 source_va,uint64 target_va,uint64 fs_type_va,uint64 flags,u
     copy_string_from_user(target_va, target, MAX_PATH);
     inode_t *dir_node = get_current_proc()->cwd;
     file_t *source_file = file_openat(dir_node, source, 0, 0);
+    file_t *target_file = file_openat(dir_node, target, 0, 0);
     if(source_file == NULL) {
         printf("sys_mount: source_file open error\n");
         goto sys_mount_error;
     }
-    file_t *target_file = file_openat(dir_node, target, 0, 0);
     if(target_file == NULL) {
         printf("sys_mount: target_file open error\n");
         goto sys_mount_error;
