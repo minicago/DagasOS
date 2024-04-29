@@ -209,11 +209,13 @@ file_t* file_openat(inode_t *dir_node, const char *path, int flags, int mode)
             remove_last_file(npath);
             get_last_file(path, filename);
             if(npath[0]!='\0') dir_node = look_up_path(dir_node, npath, NULL);
+            
             if(flags & O_DIRECTORY) {
                 res = create_inode(dir_node, filename, 0, T_DIR);
             } else {
                 res = create_inode(dir_node, filename, 0, T_FILE);
             }
+            
             release_inode(dir_node);
             pfree(mem);
             if(res==NULL) return NULL;

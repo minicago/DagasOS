@@ -354,7 +354,7 @@ int fat32_superblock_init(inode_t *node, superblock_t *parent, superblock_t *sb,
 {
     // read boot sector
     struct buf *b = NULL;
-    uint8 *dbs;
+    uint8 *dbs = NULL;
     sb->extra = kmalloc(sizeof(fat32_info_t));
     sb->fs_type = FS_TYPE_FAT32;
     sb->identifier = identifier;
@@ -738,12 +738,13 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
         return 0;
     }
     struct sfn_entry tmp;
+    
     if (lookup_entry(sb, dir->id, filename, &tmp)!=-1)
     {
         printf("fat32: file exists\n");
         return 0;
     }
-
+    
     // get free index, if dir is too small to add the file, will add cluster
     int cid = dir->id;
     char *mem = palloc();
@@ -787,7 +788,7 @@ static int fat32_create_inode(inode_t* dir, char* filename, uint8 type, uint8 ma
         } else {
             int ori_cid = cid;
             cid = get_next_cid(sb, cid);
-            if(cid==FAT32_END_CID) {
+            if(!FAT32_CID_IS_VALID(cid)) {
                 cid = add_cluster(sb, ori_cid);
                 if(cid==-1) {
                     printf("fat32: add cluster error\n");

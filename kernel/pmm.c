@@ -213,6 +213,7 @@ void init_kmem_cache(){
 
 slab_t* alloc_slab(int size, int offset, int num){
     slab_t* slab = palloc_n(1);
+    memset(slab, 0 ,PG_SIZE);
     if(slab == NULL) panic("alloc slab: No page for alloc slab");
     slab->freelist = ((void*) (slab)) + offset;
     for(int i = 0; i < num; i++){
