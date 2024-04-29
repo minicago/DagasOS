@@ -405,9 +405,9 @@ int fat32_superblock_init(inode_t *node, superblock_t *parent, superblock_t *sb,
     //TODO: make the memory alloced to fat is continuous by more official function
     info->fat_blocks = fat_blocks;
     int fat_size = fat_blocks*BSIZE;
-    // int page_num = ceil_div(fat_size,PG_SIZE);
-    info->fat = (uint32 *)kmalloc(fat_size);
-    // info->fat = (uint32 *)palloc_n(page_num);
+    int page_num = ceil_div(fat_size,PG_SIZE);
+    // info->fat = (uint32 *)kmalloc(fat_size);
+    info->fat = (uint32 *)palloc_n(page_num);
     printf("fat32: info->fat%p\n",info->fat);
     int bid = info->fat_offset * info->blocks_per_sector;
     if(parent->fs_type!=FS_TYPE_DISK) {
@@ -450,8 +450,8 @@ fat32_superblock_init_error:
 
 static int free_extra(void *extra) {
     fat32_info_t *info = (fat32_info_t *)extra;
-    kfree(info->fat);
-    // pfree(info->fat);
+    //kfree(info->fat);
+    pfree(info->fat);
     kfree(extra);
     return 1;
 }
