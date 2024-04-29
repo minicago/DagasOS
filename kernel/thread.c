@@ -116,7 +116,10 @@ void entry_to_user(){
 void sched(){
     intr_pop();
     release_spinlock(&thread_pool[get_tid()].lock);
-    if(get_cpu()->push_off_num != 0) panic("no pop_off\n"); 
+    if(get_cpu()->push_off_num != 0) {
+        real_printf("cpu push_off_num %d\n", get_cpu()->push_off_num);
+        panic("no pop_off\n");
+    }
     switch_coro(&get_cpu()->scheduler_coro); 
     intr_push();   
 }

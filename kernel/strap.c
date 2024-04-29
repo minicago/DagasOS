@@ -281,7 +281,7 @@ void strap_handler()
     R_CSR(scause, scause);
     
     if((which_dev = dev_intr()) == 0) {
-        LOG("Unknown trap\n scause = %p, stval = %p, sscratch = %p, sepc = %p, sip = %p\n", scause, stval, sscratch, sepc, sip);
+        ERROR("Unknown trap\n scause = %p, stval = %p, sscratch = %p, sepc = %p, sip = %p\n", scause, stval, sscratch, sepc, sip);
         while (1)
             ;
     } else {

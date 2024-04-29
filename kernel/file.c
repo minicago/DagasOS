@@ -59,10 +59,12 @@ void file_close(file_t *file)
     if (file->refcnt == 0)
     {
         //TODO: what should do when T_DEVICE
+        release_spinlock(&files_lock);
         if(file->type == T_FILE)
         {
             release_inode(file->node);
         }
+        acquire_spinlock(&files_lock);
         file->type = T_NONE;
     }
     release_spinlock(&files_lock);

@@ -21,6 +21,12 @@
     }
 #endif
 
+#ifndef ERROR
+#define ERROR(format, ...) \
+    real_printf("ERROR:TID:%d %s:%d in %s ",get_tid(), __FILE__, __LINE__, __FUNCTION__); \
+    real_printf(format, ##__VA_ARGS__)
+#endif
+
 void printf(char *fmt, ...);
 void real_printf(char *fmt, ...);
 void panic(char *str);

@@ -6,6 +6,7 @@
 #include "pmm.h"
 #include "coro.h"
 #include "fat32.h"
+#include "cpu.h"
 
 // the buf addr is in user space
 int sys_write(int fd, uint64 va, uint64 size)
@@ -334,26 +335,32 @@ int sys_mount(uint64 source_va,uint64 target_va,uint64 fs_type_va,uint64 flags,u
     inode_t *source_node = source_file->node;
     inode_t *target_node = target_file->node;
     if(target_node->type != T_DIR) {
-        real_printf("sys_mount: target_file is not a directory\n");
         goto sys_mount_error;
     }
+    
     superblock_t *sb = alloc_superblock();
     if(fat32_superblock_init(source_node, source_node->sb, sb, get_new_sb_identifier())==0) {
         real_printf("sys_mount: fat32_superblock_init error\n");
         goto sys_mount_error;
     }
+    
     if(mount_inode(target_node,sb)==0) {
         real_printf("sys_mount: mount_inode error\n");
         free_superblock(sb);
         goto sys_mount_error;
     }
+    
     LOG("sys_mount: sb->identifier=%d %d\n",sb->identifier,target_node->sb->identifier);
     print_fs_info(target_node);
+    
     file_close(source_file);
+    
     file_close(target_file);
+    
     LOG("sys_mount: target_node->ref%d %p\n",target_node->refcnt,target_node);
     kfree(mem_source);
     kfree(mem_target);
+    
     return 0;
 sys_mount_error:
     if(source_file) file_close(source_file);
