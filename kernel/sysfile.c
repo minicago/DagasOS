@@ -324,26 +324,26 @@ int sys_mount(uint64 source_va,uint64 target_va,uint64 fs_type_va,uint64 flags,u
     file_t *source_file = file_openat(dir_node, source, 0, 0);
     file_t *target_file = file_openat(dir_node, target, 0, 0);
     if(source_file == NULL) {
-        printf("sys_mount: source_file open error\n");
+        real_printf("sys_mount: source_file open error\n");
         goto sys_mount_error;
     }
     if(target_file == NULL) {
-        printf("sys_mount: target_file open error\n");
+        real_printf("sys_mount: target_file open error\n");
         goto sys_mount_error;
     }
     inode_t *source_node = source_file->node;
     inode_t *target_node = target_file->node;
     if(target_node->type != T_DIR) {
-        printf("sys_mount: target_file is not a directory\n");
+        real_printf("sys_mount: target_file is not a directory\n");
         goto sys_mount_error;
     }
     superblock_t *sb = alloc_superblock();
     if(fat32_superblock_init(source_node, source_node->sb, sb, get_new_sb_identifier())==0) {
-        printf("sys_mount: fat32_superblock_init error\n");
+        real_printf("sys_mount: fat32_superblock_init error\n");
         goto sys_mount_error;
     }
     if(mount_inode(target_node,sb)==0) {
-        LOG("sys_mount: mount_inode error\n");
+        real_printf("sys_mount: mount_inode error\n");
         free_superblock(sb);
         goto sys_mount_error;
     }

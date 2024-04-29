@@ -71,6 +71,16 @@ No argument are supported.
 */
 
 void printf(char *fmt, ...) {
+//     va_list args;
+// #ifdef NO_PRINT
+//     return;
+// #endif
+//     if(fmt == NULL) {
+//         // panic
+//     }
+//     va_start(args, fmt);
+//     real_printf(fmt, args);
+//     va_end(args);
     va_list args;
     char ch;
     char *str;
@@ -81,7 +91,58 @@ void printf(char *fmt, ...) {
     if(fmt == NULL) {
         // panic
     }
+    va_start(args, fmt);
+    for(i = 0; (ch = fmt[i] & 0xff) != 0; ++i) {
+        // unformatted strings just put itself.
+        if(ch != '%') {
+            consputc(ch);
+            continue;
+        }
+        // deal with formatted.
+        ch = fmt[++i] & 0xff;
+        if(ch == 0) {
+            break;
+        }
+        switch(ch) {
+            case 'c':
+                consputc(va_arg(args, int) & 0xff);
+                break;
+            case 'd':
+                printint(va_arg(args, int), 10, 1);
+                break;
+            case 'u':
+                printint(va_arg(args, uint32), 10, 0);
+                break;
+            case 'x':
+                printint(va_arg(args, int), 16, 1);
+                break;
+            case 'p':
+                printptr(va_arg(args, uint64));
+                break;
+            case 's':
+                str = va_arg(args, char*);
+                for(; *str; str++) {
+                    consputc(*str);
+                }
+                break;
+            case '%':
+                consputc('%'); // for %%, puts %
+                break;
+            default:
+                consputc('%'); consputc(ch); // other cases, puts %[ch].
+                break;
+        }
+    }
+}
 
+void real_printf(char *fmt, ...) {
+    va_list args;
+    char ch;
+    char *str;
+    int i;
+    if(fmt == NULL) {
+        // panic
+    }
     va_start(args, fmt);
     for(i = 0; (ch = fmt[i] & 0xff) != 0; ++i) {
         // unformatted strings just put itself.

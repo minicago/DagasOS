@@ -291,8 +291,8 @@ void install_initrd_img(){
 
     }
 
-    file_mkdirat(get_root(),"mnt",0);
-    inode_t* mnt_inode = lookup_inode(get_root(),"mnt");
+    file_mkdirat(get_root(),"initrd_mnt",0);
+    inode_t* mnt_inode = lookup_inode(get_root(),"initrd_mnt");
     print_inode(inode);
     superblock_t *sb = alloc_superblock();
     if(fat32_superblock_init(inode, inode->sb, sb, get_new_sb_identifier())==0) {

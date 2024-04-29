@@ -22,6 +22,7 @@
 #endif
 
 void printf(char *fmt, ...);
+void real_printf(char *fmt, ...);
 void panic(char *str);
 void puts(char *str);
 

@@ -333,7 +333,8 @@ void virtio_disk_rw(struct buf *b, int write)
     // printf("virtio_disk_rw: request%d status is %d\n", disk.avail->idx - 1, disk.info[idx[0]].status);
     acquire_spinlock(&disk.lock);
     if(disk.info[idx[0]].status != 0){
-        panic("virtio_disk_rw: request failed");
+        printf("virtio_disk_rw: request failed");
+        //panic("virtio_disk_rw: request failed");
     }
     // wakeup(b);
 
@@ -366,7 +367,8 @@ void virtio_disk_intr()
         int id = disk.used->ring[disk.used_idx % NUM].id;
 
         if (disk.info[id].status != 0)
-            panic("virtio_disk_intr: virtio_disk_intr status");
+            //panic("virtio_disk_intr: virtio_disk_intr status");
+            printf("virtio_disk_intr: virtio_disk_intr status\n");
         //printf("virtio_disk_intr: finish %p disk-%d\n", disk.info[id].b,disk.info[id].b->block_id);
         struct buf *b = disk.info[id].b;
         b->disk = 0; // disk is done with buf

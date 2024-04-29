@@ -17,7 +17,6 @@
 int main(int argc, char* argv[]) {
     // return 0;
     // now can umount /mnt, because we have mounted initrd.img to /mnt
-    umount("/mnt");
     run_test(chdir);
     run_test(getcwd);
     run_test(getpid);
@@ -27,11 +26,15 @@ int main(int argc, char* argv[]) {
     run_test(execve);
     run_test(getdents);
     run_test(mkdir_);
-    run_test(mount);
     run_test(open);
+    run_test(wait);
+    run_test(exit);
     run_test(openat);
     run_test(read);
-    run_test(umount);
+    run_test(fork);
+    run_test(clone);
     run_test(write);
+    run_test(mount);
+    run_test(umount);
     return 0;
 }
