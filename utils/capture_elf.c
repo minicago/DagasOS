@@ -48,7 +48,7 @@ typedef struct prog_hdr_struct{
 #define ELF_PROG_FLAG_WRITE     2
 #define ELF_PROG_FLAG_READ      4
 
-#define ELF_OFF 0x8000000ull
+#define ELF_OFF 0x80000000ull
 
 #define SBI_SIZE 200000
 
