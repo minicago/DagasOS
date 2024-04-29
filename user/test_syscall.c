@@ -30,6 +30,7 @@ int main(int argc, char* argv[]) {
     run_test(mkdir_);
     run_test(open);
     run_test(wait);
+    run_test(waitpid);
     run_test(exit);
     run_test(openat);
     run_test(read);

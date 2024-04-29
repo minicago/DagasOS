@@ -102,6 +102,6 @@ int sys_exec(char* path);
 
 int sys_exit(int ret);
 
-int sys_wait(int pid);
+int sys_wait(int pid, uint64 exit_id);
 
 #endif

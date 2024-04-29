@@ -176,7 +176,7 @@ int sys_fork(){
     return process_new->pid;
 }
 
-void deattach_thread(thread_t* thread){
+void deattach_thread(thread_t* thread, int exit_id){
     LOG("deattach start\n");
     free_vm(thread->stack_vm);
     free_thread_stack_pagetable(thread->stack_pagetable);
@@ -186,8 +186,11 @@ void deattach_thread(thread_t* thread){
     int thread_cnt = --thread->process->thread_count;
     release_spinlock(&thread->process->lock);
     LOG("deattach fin\n");
-    if(thread_cnt == 0) release_process(thread->process);
-    LOG("release process fin\n");
+    if(thread_cnt == 0) {
+        release_process(thread->process);
+        thread->process->exit_id = exit_id;
+        LOG("release process fin\n");
+    }
     free_thread(thread);
 }
 
@@ -220,12 +223,12 @@ int sys_exec(char* path){
 }
 
 int sys_exit(int ret){
-    deattach_thread(thread_pool + get_tid() );
+    deattach_thread(thread_pool + get_tid(), ret);
     sched();
     return ret;
 }
 
-int sys_wait(int pid){
+int sys_wait(int pid, uint64 exit_id){
     thread_t* thread = thread_pool + get_tid();
     int child_cnt = 0;
     uint64 child_pid = 0;
@@ -238,6 +241,7 @@ int sys_wait(int pid){
                 release_spinlock(&child->lock);
                 release_spinlock(&wait_lock);
                 release_zombie(child);
+                if((void*)exit_id != NULL) copy_to_va(thread->stack_pagetable, exit_id, &child->exit_id, sizeof(child->exit_id));
                 return child->pid;
             } else if(pid == child->pid) {
                 wait_queue_push_back(child->wait_self, thread, &child_pid);
@@ -254,6 +258,7 @@ int sys_wait(int pid){
     thread->state = T_SLEEPING;
     release_spinlock(&wait_lock);
     sched();
+    if((void*)exit_id != NULL) copy_to_va(thread->stack_pagetable, exit_id, &thread_pool[child_pid].process->exit_id, sizeof(thread_pool[child_pid].process->exit_id));
     release_zombie(thread_pool[child_pid].process);
     return child_pid;   
 }

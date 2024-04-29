@@ -36,6 +36,9 @@ struct process_struct{
     int64 pid;
     wait_queue_t *wait_child, *wait_self;
 
+    // use for exit
+    int exit_id;
+
 
 
     vm_t* vm_list;

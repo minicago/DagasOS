@@ -114,7 +114,9 @@ void syscall_handler(trapframe_t *trapframe)
     }
     case SYS_wait4:
     {
-        trapframe->a0 = sys_wait(trapframe->a0);
+        // static int tmp;
+        trapframe->a0 = sys_wait(trapframe->a0, trapframe->a1);
+        // trapframe->a0 = sys_wait(trapframe->a0, &tmp);
         break;
     }
     case SYS_getpid:
