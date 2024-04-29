@@ -232,6 +232,7 @@ int sys_wait(int pid, uint64 exit_id){
     thread_t* thread = thread_pool + get_tid();
     int child_cnt = 0;
     uint64 child_pid = 0;
+    uint64 wait_statue;
     acquire_spinlock(&wait_lock);
     for(process_t* child = thread->process->child_list; child != NULL; child = child->next){
         acquire_spinlock(&child->lock);
@@ -258,7 +259,7 @@ int sys_wait(int pid, uint64 exit_id){
     release_spinlock(&wait_lock);
     sched();
 ret:
-    uint64 wait_statue = thread_pool[child_pid].process->exit_id << 8;
+    wait_statue = thread_pool[child_pid].process->exit_id << 8;
     if((void*)exit_id != NULL) copy_to_va(thread->stack_pagetable, exit_id, &wait_statue, sizeof(wait_statue));
     release_zombie(thread_pool[child_pid].process);
     return child_pid;   
