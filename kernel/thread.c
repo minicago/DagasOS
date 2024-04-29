@@ -240,9 +240,8 @@ int sys_wait(int pid, uint64 exit_id){
             if(child->state == ZOMBIE){
                 release_spinlock(&child->lock);
                 release_spinlock(&wait_lock);
-                release_zombie(child);
-                if((void*)exit_id != NULL) copy_to_va(thread->stack_pagetable, exit_id, &child->exit_id, sizeof(child->exit_id));
-                return child->pid;
+                child_pid = child->pid;
+                goto ret;
             } else if(pid == child->pid) {
                 wait_queue_push_back(child->wait_self, thread, &child_pid);
                 thread->waiting = child->wait_self;
@@ -258,7 +257,9 @@ int sys_wait(int pid, uint64 exit_id){
     thread->state = T_SLEEPING;
     release_spinlock(&wait_lock);
     sched();
-    if((void*)exit_id != NULL) copy_to_va(thread->stack_pagetable, exit_id, &thread_pool[child_pid].process->exit_id, sizeof(thread_pool[child_pid].process->exit_id));
+ret:
+    uint64 wait_statue = thread_pool[child_pid].process->exit_id << 8;
+    if((void*)exit_id != NULL) copy_to_va(thread->stack_pagetable, exit_id, &wait_statue, sizeof(wait_statue));
     release_zombie(thread_pool[child_pid].process);
     return child_pid;   
 }
