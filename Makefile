@@ -156,6 +156,9 @@ initrd.img :
 	-@$(ROOT_OR_SUDO) mkdir $(initrd_dst)
 	@$(ROOT_OR_SUDO) mount initrd.img $(initrd_dst)
 	-@make initrd
+	dd if=/dev/zero of=vda2 bs=512 count=512
+	mkfs.vfat -F 32 vda2
+	@$(ROOT_OR_SUDO) mv vda2 $(initrd_dst)
 	@$(ROOT_OR_SUDO) umount $(initrd_dst)
 	@echo "initrd image is ready"
 

@@ -44,14 +44,14 @@ int main(int argc, char* argv[]) {
         if(fd==-1) {
             printf("create /dev/vda2 failed\n");
         } else {
-            int initrd = open("/initrd.img", O_RDWR);
+            int initrd = open("/initrd_mnt/vda2", O_RDWR);
             if(initrd==-1) {
-                printf("open /initrd.img failed\n");
+                printf("open /initrd_mnt/vda2 failed\n");
             } else {
                 int n;
                 while((n = read(initrd, buf, SIZE)) > 0) {
                     write(fd, buf, n);
-                    //printf("write %d bytes\n", n);
+                    printf("write %d bytes\n", n);
                 }
                 close(initrd);
                 close(fd);
