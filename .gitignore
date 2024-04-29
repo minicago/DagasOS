@@ -80,3 +80,5 @@ sbi-qemu
 
 #link
 !user/build
+
+log.txt
